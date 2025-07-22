@@ -1,0 +1,10 @@
+# Yocto build output
+yocto/build/
+yocto/tmp/
+yocto/sstate-cache/
+yocto/downloads/
+yocto/cache/
+yocto/*.tar.*
+yocto/*.zst
+*.swp
+*.log
