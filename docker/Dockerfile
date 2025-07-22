@@ -21,13 +21,6 @@ RUN useradd -m yocto && echo "yocto ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 USER yocto
 WORKDIR /home/yocto
 
-# Yocto 레이어 clone
-WORKDIR /home/yocto/kirkstone
-RUN git clone -b kirkstone git://git.yoctoproject.org/poky && \
-    git clone -b kirkstone https://github.com/openembedded/meta-openembedded.git && \
-    git clone -b kirkstone https://github.com/axians/meta-microservicebus-intel-nuc.git && \
-    git clone -b kirkstone https://git.yoctoproject.org/meta-intel
-
 # 컬러 프롬프트 설정
 RUN echo "PS1='\[\e[1;36m\]yocto\[\e[0m\]@nuc:\[\e[1;32m\]\w\[\e[0m\]\\$ '" >> ~/.bashrc
 
