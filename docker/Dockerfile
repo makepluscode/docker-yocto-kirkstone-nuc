@@ -16,27 +16,28 @@ ENV LC_ALL=en_US.UTF-8
 
 # yocto 사용자 생성
 RUN useradd -m yocto && echo "yocto ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# 일반 사용자로 전환
 USER yocto
 WORKDIR /home/yocto
 
-# Yocto 레이어 직접 clone (압축 없이)
-RUN mkdir -p yocto && cd yocto && \
-  git clone -b kirkstone git://git.yoctoproject.org/poky && \
-  git clone -b kirkstone https://github.com/openembedded/meta-openembedded.git && \
-  git clone -b kirkstone https://github.com/axians/meta-microservicebus-intel-nuc.git && \
-  git clone -b kirkstone https://git.yoctoproject.org/meta-intel
+# Yocto 레이어 clone
+WORKDIR /home/yocto/kirkstone
+RUN git clone -b kirkstone git://git.yoctoproject.org/poky && \
+    git clone -b kirkstone https://github.com/openembedded/meta-openembedded.git && \
+    git clone -b kirkstone https://github.com/axians/meta-microservicebus-intel-nuc.git && \
+    git clone -b kirkstone https://git.yoctoproject.org/meta-intel
 
-# 컬러 프롬프트만 적용
+# 컬러 프롬프트 설정
 RUN echo "PS1='\[\e[1;36m\]yocto\[\e[0m\]@nuc:\[\e[1;32m\]\w\[\e[0m\]\\$ '" >> ~/.bashrc
 
-# ENTRYPOINT: 빌드 환경 진입 + bblayers.conf 설정
-ENTRYPOINT bash -c '\
-  cd ~/yocto && \
-  source poky/oe-init-build-env build && \
-  CONF=$BUILDDIR/conf/bblayers.conf && \
-  if ! grep -q "meta-microservicebus-intel-nuc" "$CONF"; then \
-    echo "🛠 Updating bblayers.conf..."; \
-    sed -i "/^BBLAYERS ?=/a \\
-  \ \ \ \ \${TOPDIR}/../meta-openembedded/meta-oe \\\n  \ \ \ \ \${TOPDIR}/../meta-openembedded/meta-python \\\n  \ \ \ \ \${TOPDIR}/../meta-openembedded/meta-networking \\\n  \ \ \ \ \${TOPDIR}/../meta-intel \\\n  \ \ \ \ \${TOPDIR}/../meta-microservicebus-intel-nuc \\" "$CONF"; \
-  fi && \
-  exec bash'
+# root로 다시 전환하여 entrypoint 복사 및 권한 설정
+USER root
+COPY entrypoint.sh /home/yocto/entrypoint.sh
+RUN chown yocto:yocto /home/yocto/entrypoint.sh && chmod +x /home/yocto/entrypoint.sh
+
+# 다시 yocto 사용자로 전환
+USER yocto
+
+# ENTRYPOINT 등록
+ENTRYPOINT ["/home/yocto/entrypoint.sh"]

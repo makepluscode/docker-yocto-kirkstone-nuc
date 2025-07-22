@@ -3,8 +3,8 @@
 IMAGE=yocto-nuc:builder
 CONTAINER=yocto-nuc
 DIR=$(dirname "$(realpath "$0")")
-HOST_YOCTO_DIR="$DIR/yocto"
-CONTAINER_YOCTO_DIR="/home/yocto/yocto"
+HOST_YOCTO_DIR="$DIR/kirkstone"
+CONTAINER_YOCTO_DIR="/home/yocto/kirkstone"
 
 # 호스트 yocto 디렉토리 없으면 생성
 mkdir -p "$HOST_YOCTO_DIR"
