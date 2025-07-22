@@ -3,6 +3,11 @@
 IMAGE=yocto-nuc:builder
 CONTAINER=yocto-nuc
 DIR=$(dirname "$(realpath "$0")")
+HOST_YOCTO_DIR="$DIR/yocto"
+CONTAINER_YOCTO_DIR="/home/yocto/yocto"
+
+# 호스트 yocto 디렉토리 없으면 생성
+mkdir -p "$HOST_YOCTO_DIR"
 
 # 이미지가 없으면 빌드
 if ! docker image inspect $IMAGE >/dev/null 2>&1; then
@@ -24,6 +29,9 @@ if docker ps -a --format '{{.Names}}' | grep -q "^$CONTAINER\$"; then
   exit 0
 fi
 
-# 새 컨테이너 실행
+# 새 컨테이너 실행 (볼륨 매핑 포함)
 echo "▶ 새로운 컨테이너를 시작합니다: $CONTAINER"
-docker run -it --name $CONTAINER $IMAGE
+docker run -it \
+  --name $CONTAINER \
+  -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
+  $IMAGE
