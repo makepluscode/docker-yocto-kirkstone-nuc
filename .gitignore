@@ -10,6 +10,7 @@ yocto/*.zst
 *.log
 
 # Yocto layer repos cloned manually
+kirkstone
 kirkstone/poky/
 kirkstone/meta-openembedded/
 kirkstone/meta-intel/

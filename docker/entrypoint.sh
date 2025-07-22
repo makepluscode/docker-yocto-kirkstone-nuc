@@ -30,7 +30,9 @@ BBLAYERS += " \\
   \${TOPDIR}/../meta-openembedded/meta-python \\
   \${TOPDIR}/../meta-openembedded/meta-networking \\
   \${TOPDIR}/../meta-intel \\
-  \${TOPDIR}/../meta-microservicebus-intel-nuc"
+  \${TOPDIR}/../meta-microservicebus-intel-nuc \\
+  \${TOPDIR}/../meta-rauc"
+
 EOF
 fi
 

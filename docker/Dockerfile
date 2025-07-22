@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
   gawk wget git diffstat unzip texinfo gcc g++ build-essential \
   chrpath socat cpio python3 python3-pip python3-pexpect xz-utils \
-  iputils-ping rsync locales sudo && \
+  iputils-ping rsync locales sudo lz4 zstd && \
   apt-get clean
 
 # 로케일 설정
