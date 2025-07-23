@@ -10,8 +10,11 @@ yocto/*.zst
 *.log
 
 # Yocto layer repos cloned manually
-kirkstone
+kirkstone/build/
 kirkstone/poky/
 kirkstone/meta-openembedded/
 kirkstone/meta-intel/
 kirkstone/meta-microservicebus-intel-nuc/
+kirkstone/meta-rauc/
+# Do NOT ignore meta-nuc, ensure it is tracked
+!kirkstone/meta-nuc/
