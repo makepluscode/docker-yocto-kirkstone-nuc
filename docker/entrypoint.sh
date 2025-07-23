@@ -31,9 +31,26 @@ BBLAYERS += " \\
   \${TOPDIR}/../meta-openembedded/meta-networking \\
   \${TOPDIR}/../meta-intel \\
   \${TOPDIR}/../meta-microservicebus-intel-nuc \\
+  \${TOPDIR}/../meta-nuc \\
   \${TOPDIR}/../meta-rauc"
 
 EOF
+fi
+
+# local.conf 자동 배포/초기화
+LOCALCONF="$BUILDDIR/conf/local.conf"
+LOCALCONF_TEMPLATE="$TOPDIR/../local.conf.sample"
+
+if [ ! -f "$LOCALCONF" ] && [ -f "$LOCALCONF_TEMPLATE" ]; then
+  echo "🛠 Copying local.conf template..."
+  cp "$LOCALCONF_TEMPLATE" "$LOCALCONF"
+elif [ -f "$LOCALCONF" ] && [ -f "$LOCALCONF_TEMPLATE" ]; then
+  # 필요시 강제 초기화 옵션 처리 (예: ./entrypoint.sh --reset-localconf)
+  if [[ "$@" == *"--reset-localconf"* ]]; then
+    echo "🛠 Backing up and resetting local.conf..."
+    cp "$LOCALCONF" "$LOCALCONF.bak.$(date +%Y%m%d%H%M%S)"
+    cp "$LOCALCONF_TEMPLATE" "$LOCALCONF"
+  fi
 fi
 
 exec bash
