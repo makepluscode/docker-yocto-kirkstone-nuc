@@ -37,20 +37,29 @@ BBLAYERS += " \\
 EOF
 fi
 
-# local.conf 자동 배포/초기화
+# local.conf 자동 배포/초기화 (Yocto 기본 생성 후 덮어쓰기)
 LOCALCONF="$BUILDDIR/conf/local.conf"
-LOCALCONF_TEMPLATE="$TOPDIR/../local.conf.sample"
+LOCALCONF_TEMPLATE="/home/yocto/kirkstone/meta-nuc/conf/local.conf.sample"
 
-if [ ! -f "$LOCALCONF" ] && [ -f "$LOCALCONF_TEMPLATE" ]; then
-  echo "🛠 Copying local.conf template..."
-  cp "$LOCALCONF_TEMPLATE" "$LOCALCONF"
-elif [ -f "$LOCALCONF" ] && [ -f "$LOCALCONF_TEMPLATE" ]; then
-  # 필요시 강제 초기화 옵션 처리 (예: ./entrypoint.sh --reset-localconf)
-  if [[ "$@" == *"--reset-localconf"* ]]; then
-    echo "🛠 Backing up and resetting local.conf..."
-    cp "$LOCALCONF" "$LOCALCONF.bak.$(date +%Y%m%d%H%M%S)"
+echo "🔍 DEBUG: LOCALCONF=$LOCALCONF"
+echo "🔍 DEBUG: LOCALCONF_TEMPLATE=$LOCALCONF_TEMPLATE"
+echo "🔍 DEBUG: local.conf exists: $([ -f "$LOCALCONF" ] && echo 'YES' || echo 'NO')"
+echo "🔍 DEBUG: template exists: $([ -f "$LOCALCONF_TEMPLATE" ] && echo 'YES' || echo 'NO')"
+
+if [ -f "$LOCALCONF_TEMPLATE" ]; then
+  # 강제 초기화 옵션이 있거나, 기본 Yocto local.conf를 커스텀 템플릿으로 교체
+  if [[ "$@" == *"--reset-localconf"* ]] || ! grep -q "MACHINE.*intel-corei7-64" "$LOCALCONF" 2>/dev/null; then
+    echo "🛠 Replacing default local.conf with custom template..."
+    if [ -f "$LOCALCONF" ]; then
+      cp "$LOCALCONF" "$LOCALCONF.bak.$(date +%Y%m%d%H%M%S)"
+    fi
     cp "$LOCALCONF_TEMPLATE" "$LOCALCONF"
+    echo "✅ local.conf replaced with custom template"
+  else
+    echo "ℹ️  Using existing custom local.conf (use --reset-localconf to force reset)"
   fi
+else
+  echo "❌ Template file not found: $LOCALCONF_TEMPLATE"
 fi
 
 exec bash
