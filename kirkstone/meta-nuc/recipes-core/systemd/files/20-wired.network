@@ -1,0 +1,11 @@
+[Match]
+Name=eno1
+
+[Network]
+Address=192.168.1.100/24
+Gateway=192.168.1.1
+DNS=8.8.8.8
+DNS=8.8.4.4
+
+[Link]
+RequiredForOnline=yes 

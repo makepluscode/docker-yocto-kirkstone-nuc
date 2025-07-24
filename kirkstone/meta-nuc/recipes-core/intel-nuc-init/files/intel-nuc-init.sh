@@ -2,7 +2,7 @@
 #
 # Init Intel NUC
 # 
-# Set hostname
+# Set hostname and enable network services
 #
 #***********************************************************************
 
@@ -10,14 +10,14 @@ RESULT=0
 
 # Set hostname to serial number
 hostnamectl set-hostname $(/usr/sbin/dmidecode -s system-serial-number)
-#/usr/sbin/dmidecode -s system-serial-number > /etc/hostname
 
-DNS1="nameserver 8.8.8.8"
-DNS2="nameserver 8.8.4.4"
-RESOLVECONF="/etc/resolv.conf"
+# Enable systemd-networkd for static IP configuration
+systemctl enable systemd-networkd
+systemctl start systemd-networkd
 
-grep -qxF "$DNS1" $RESOLVECONF || echo $DNS1 >> $RESOLVECONF
-grep -qxF "$DNS2" $RESOLVECONF || echo $DNS2 >> $RESOLVECONF
+# Enable systemd-resolved for DNS
+systemctl enable systemd-resolved
+systemctl start systemd-resolved
 
 systemd-notify --ready
 exit $RESULT 

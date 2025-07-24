@@ -21,8 +21,12 @@ DISTRO_FEATURES_BACKFILL_CONSIDERED += "sysvinit"
 VIRTUAL-RUNTIME_init_manager = "systemd"
 VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 
+# Network Configuration - Enable systemd-networkd
+PACKAGECONFIG:append:pn-systemd = " networkd resolved"
+PACKAGECONFIG:remove:pn-systemd = "machined"
+
 # Package Installation
-IMAGE_INSTALL:append = " intel-nuc-init rauc"
+IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf"
 
 # RAUC Configuration
 RAUC_BUNDLE_VERSION = "0.0.1"
