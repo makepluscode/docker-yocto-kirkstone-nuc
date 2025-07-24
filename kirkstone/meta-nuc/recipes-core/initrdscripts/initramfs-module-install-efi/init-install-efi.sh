@@ -55,7 +55,7 @@ esac
 
 echo "Searching for hard drives ..."
 echo "🔍 DEBUG: Listing /sys/block/ contents:"
-ls /sys/block/ | head -10
+ls /sys/block/ | head -n 10
 
 # Some eMMC devices have special sub devices such as mmcblk0boot0 etc
 # we're currently only interested in the root device so pick them wisely
@@ -355,7 +355,7 @@ echo "****************************************"
 echo " CONSOLE...press CTRL+D if all is ok"
 echo "****************************************"
 echo ""
-/bin/bash
+/bin/sh
 echo end console
 
 umount /boot
