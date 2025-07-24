@@ -23,7 +23,7 @@ VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 
 # Network Configuration - Enable systemd-networkd
 PACKAGECONFIG:append:pn-systemd = " networkd resolved"
-PACKAGECONFIG:remove:pn-systemd = "machined"
+PACKAGECONFIG:remove:pn-systemd = "nss-mymachines"
 
 # Package Installation
 IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf"
