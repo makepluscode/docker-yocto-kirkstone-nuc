@@ -1,0 +1,13 @@
+# Git Commit Message Style Guide
+
+All git commit messages must follow the rules in [GIT_COMMIT_RULE.md](mdc:GIT_COMMIT_RULE.md):
+
+- Messages must be in English and start with a capital letter.
+- Use Conventional Commits prefixes: feat, fix, docs, chore, refactor, style, test, perf.
+- Prefix and message are separated by a colon and a space.
+- Message should be concise (16~32 words), not imperative.
+- See [GIT_COMMIT_RULE.md](mdc:GIT_COMMIT_RULE.md) for full details and examples.
+description:
+globs:
+alwaysApply: false
+---
