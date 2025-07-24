@@ -1,12 +1,36 @@
 # Git Commit Message Style Guide
 
-All git commit messages must follow the rules in [GIT_COMMIT_RULE.md](mdc:GIT_COMMIT_RULE.md):
+All git commit messages must follow Conventional Commits specification:
 
-- Messages must be in English and start with a capital letter.
-- Use Conventional Commits prefixes: feat, fix, docs, chore, refactor, style, test, perf.
-- Prefix and message are separated by a colon and a space.
-- Message should be concise (16~32 words), not imperative.
-- See [GIT_COMMIT_RULE.md](mdc:GIT_COMMIT_RULE.md) for full details and examples.
+## Rules:
+- Messages must be in English and start with a capital letter
+- Use lowercase prefixes: feat, fix, docs, chore, refactor, style, test, perf
+- Format: `<type>: <description>`
+- Prefix and message are separated by a colon and space
+- Description should be concise (16~32 words), not imperative
+- Use present tense: "Add feature" not "Added feature"
+
+## Examples:
+✅ Good:
+- `feat: Add user account configuration to local.conf template`
+- `fix: Improve installation script for SATA SSD compatibility`
+- `docs: Update README with RAUC testing procedures`
+
+❌ Bad:
+- `Fix: Update script` (capital F)
+- `added new feature` (no prefix, past tense)
+- `feat:add feature` (no space after colon)
+
+## Types:
+- **feat**: New feature
+- **fix**: Bug fix
+- **docs**: Documentation changes
+- **chore**: Maintenance tasks
+- **refactor**: Code refactoring
+- **style**: Code style changes
+- **test**: Adding tests
+- **perf**: Performance improvements
+
 description:
 globs:
 alwaysApply: false
