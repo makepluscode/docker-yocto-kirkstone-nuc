@@ -51,6 +51,9 @@ INITRD_IMAGE_LIVE = "core-image-minimal-initramfs"
 do_image_wic[depends] += "${INITRD_IMAGE_LIVE}:do_image_complete"
 do_rootfs[depends] += "virtual/kernel:do_deploy"
 
+# Console Configuration
+SERIAL_CONSOLES = ""
+
 # Boot Files Configuration
 IMAGE_BOOT_FILES:append = "\
     ${KERNEL_IMAGETYPE} \
