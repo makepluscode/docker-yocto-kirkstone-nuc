@@ -31,7 +31,7 @@ Docker-based Yocto build environment for Intel NUC using the Kirkstone (Yocto 4.
 ./download.sh
 ```
 
-- Clones poky, meta-openembedded, meta-intel, meta-microservicebus-intel-nuc, and meta-rauc (kirkstone branch).
+- Clones poky, meta-openembedded, meta-intel, and meta-rauc (kirkstone branch).
 - Skips cloning if the directory already exists.
 
 ---

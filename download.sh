@@ -26,7 +26,6 @@ echo -e "📂 \033[1;36mCloning Yocto layers into: $KIRKSTONE_DIR\033[0m"
 clone_repo git://git.yoctoproject.org/poky poky
 clone_repo https://github.com/openembedded/meta-openembedded.git meta-openembedded
 clone_repo https://git.yoctoproject.org/meta-intel meta-intel
-clone_repo https://github.com/axians/meta-microservicebus-intel-nuc.git meta-microservicebus-intel-nuc
 clone_repo https://github.com/rauc/meta-rauc.git meta-rauc
 
 echo -e "✅ \033[1;32mAll layers prepared.\033[0m"
