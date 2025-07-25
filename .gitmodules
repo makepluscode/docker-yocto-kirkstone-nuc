@@ -1,0 +1,4 @@
+[submodule "kirkstone/meta-qt5"]
+	path = kirkstone/meta-qt5
+	url = https://github.com/meta-qt5/meta-qt5.git
+	branch = kirkstone
