@@ -1,5 +1,4 @@
-DESCRIPTION = "A console-only image with more full-featured Linux system \
-functionality installed.\nCustom image for Intel NUC with RAUC and GRUB"
+DESCRIPTION = "Intel NUC image with Qt5 (QtQuick, QML) support"
 
 IMAGE_FEATURES += "splash ssh-server-openssh"
 
@@ -9,6 +8,10 @@ IMAGE_INSTALL = "\
     ${CORE_IMAGE_EXTRA_INSTALL} \
     intel-nuc-init \
     rauc \
+    qtbase \
+    qtdeclarative \
+    qtquickcontrols \
+    qtquickcontrols2 \
     "
 
 inherit core-image
@@ -30,4 +33,4 @@ IMAGE_BOOT_FILES:append = "\
     ${@bb.utils.contains('EFI_PROVIDER', 'grub-efi', '${IMAGE_ROOTFS}/boot/EFI/BOOT/grub.cfg;EFI/BOOT/grub.cfg', '', d)} \
 "
 
-do_image_wic[depends] += "${PN}:do_image_ext4"
+do_image_wic[depends] += "${PN}:do_image_ext4" 

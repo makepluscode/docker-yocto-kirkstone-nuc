@@ -20,20 +20,19 @@ if [ ! -f "$CONF" ]; then
   exit 1
 fi
 
-# 레이어 추가 (중복 방지)
-if ! grep -q "meta-microservicebus-intel-nuc" "$CONF"; then
+if ! grep -q "meta-nuc" "$CONF"; then
   echo "🛠 Updating bblayers.conf..."
-  cat <<EOF >> "$CONF"
+  cat <<'EOF' >> "$CONF"
 
-BBLAYERS += " \\
-  \${TOPDIR}/../meta-openembedded/meta-oe \\
-  \${TOPDIR}/../meta-openembedded/meta-python \\
-  \${TOPDIR}/../meta-openembedded/meta-networking \\
-  \${TOPDIR}/../meta-intel \\
-  \${TOPDIR}/../meta-microservicebus-intel-nuc \\
-  \${TOPDIR}/../meta-nuc \\
-  \${TOPDIR}/../meta-rauc"
-
+BBLAYERS += " \
+  ${TOPDIR}/../meta-openembedded/meta-oe \
+  ${TOPDIR}/../meta-openembedded/meta-python \
+  ${TOPDIR}/../meta-openembedded/meta-networking \
+  ${TOPDIR}/../meta-intel \
+  ${TOPDIR}/../meta-nuc \
+  ${TOPDIR}/../meta-rauc \
+  ${TOPDIR}/../meta-qt5 \
+"
 EOF
 fi
 

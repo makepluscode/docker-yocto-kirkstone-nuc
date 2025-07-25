@@ -2,8 +2,29 @@
 
 set -e
 
+# Prompt for image type
+echo "Available image types:"
+echo "  1. nuc-image (default)"
+echo "  2. nuc-image-qt5"
+read -p "Select image type (1 or 2, default: 1): " IMAGE_TYPE
+
+case "$IMAGE_TYPE" in
+  "2"|"nuc-image-qt5")
+    IMAGE_NAME="nuc-image-qt5"
+    ;;
+  ""|"1"|"nuc-image")
+    IMAGE_NAME="nuc-image"
+    ;;
+  *)
+    echo "Invalid selection. Using default: nuc-image"
+    IMAGE_NAME="nuc-image"
+    ;;
+esac
+
+echo "Selected image: $IMAGE_NAME"
+
 # Default image path
-DEFAULT_WIC="./kirkstone/build/tmp-glibc/deploy/images/intel-corei7-64/nuc-image-intel-corei7-64.wic"
+DEFAULT_WIC="./kirkstone/build/tmp-glibc/deploy/images/intel-corei7-64/${IMAGE_NAME}-intel-corei7-64.wic"
 WIC_IMAGE=""
 
 if [ -f "$DEFAULT_WIC" ]; then
@@ -31,7 +52,10 @@ fi
 echo "\nAvailable removable devices (excluding system disk):"
 lsblk -d -o NAME,SIZE,MODEL,TRAN,TYPE | grep -E 'disk'
 
-read -p "Enter the device name to flash (e.g. sdb): /dev/" DEV_NAME
+read -p "Enter the device name to flash (default: sda): /dev/" DEV_NAME
+if [ -z "$DEV_NAME" ]; then
+  DEV_NAME="sda"
+fi
 DEV_PATH="/dev/$DEV_NAME"
 
 # Check if device exists
@@ -43,8 +67,8 @@ fi
 # Confirm with user
 echo "\n⚠️  WARNING: All data on $DEV_PATH will be erased!"
 echo "Image: $WIC_IMAGE -> $DEV_PATH"
-read -p "Type 'YES' to continue: " CONFIRM
-if [ "$CONFIRM" != "YES" ]; then
+read -p "Type 'Y' or 'y' to continue: " CONFIRM
+if [ "$CONFIRM" != "Y" ] && [ "$CONFIRM" != "y" ]; then
   echo "Aborted."
   exit 3
 fi
