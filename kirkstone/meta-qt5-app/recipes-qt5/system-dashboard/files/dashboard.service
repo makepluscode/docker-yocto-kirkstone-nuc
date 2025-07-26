@@ -3,7 +3,6 @@ Description=Dashboard Application (LinuxFB)
 After=network.target
 
 [Service]
-Environment=QT_QPA_PLATFORM=linuxfb
 ExecStart=/usr/bin/dashboard
 Restart=always
 

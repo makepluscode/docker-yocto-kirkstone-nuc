@@ -28,7 +28,7 @@ RDEPENDS:${PN} = "qtbase qtdeclarative qtquickcontrols2 qtgraphicaleffects"
 inherit cmake_qt5 systemd
 
 # SystemD service - use LinuxFB as default (more stable)
-SYSTEMD_SERVICE:${PN} = "dashboard.service"
+SYSTEMD_SERVICE:${PN} = "dashboard-eglfs.service"
 SYSTEMD_AUTO_ENABLE = "enable"
 
 #do_install append
