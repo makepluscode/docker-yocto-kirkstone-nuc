@@ -33,8 +33,9 @@ VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 PACKAGECONFIG:append:pn-systemd = " networkd resolved"
 PACKAGECONFIG:remove:pn-systemd = "nss-mymachines"
 
-# Qt5 Configuration - X11 and OpenGL support
-DISTRO_FEATURES:append = " x11 opengl"
+# Qt5 Configuration - OpenGL, KMS, and hardware acceleration support
+DISTRO_FEATURES:append = " opengl kde"
+MACHINE_FEATURES:append = " drm"
 
 # Package Installation
 IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf"
