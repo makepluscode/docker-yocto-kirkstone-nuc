@@ -41,7 +41,7 @@ DISTRO_FEATURES:append = " opengl kde"
 MACHINE_FEATURES:append = " drm"
 
 # Package Installation
-IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf"
+IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf dlt-daemon"
 
 # RAUC Configuration
 RAUC_BUNDLE_VERSION = "0.0.1"
