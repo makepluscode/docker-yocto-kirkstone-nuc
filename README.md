@@ -4,11 +4,15 @@ Docker-based Yocto build environment for Intel NUC using the Kirkstone (Yocto 4.
 
 ## 🐳 Usage
 
-### 1. Run build environment
+### 1. Quick Start
 
 ```bash
-./run-docker.sh
+./download.sh          # Download Yocto layers (first time)
+./run-docker.sh        # Enter Docker container
+bitbake nuc-image-qt5  # Build Qt5 image
 ```
+
+For detailed build instructions, see [doc/BUILD.md](doc/BUILD.md).
 
 ## 🧹 Clean Docker Environment
 
