@@ -7,8 +7,9 @@ Item {
     property alias manager: raucManager
 
     width: parent.width
+
     Column {
-        spacing: 8
+        spacing: 10
         anchors.margins: 12
         anchors.fill: parent
 
@@ -18,8 +19,22 @@ Item {
             font.bold: true
         }
 
+        GridLayout {
+            columns: 2
+            rowSpacing: 6
+            columnSpacing: 20
+
+            Text { text: "Booted Slot:"; color: "#cccccc" }
+            Text { text: manager.bootSlot; color: "#ffffff" }
+
+            Text { text: "Activated Slot:"; color: "#cccccc" }
+            Text { text: manager.activatedSlot; color: "#ffffff" }
+        }
+
+        Rectangle { height: 1; width: parent.width; color: "#444" }
+
         ScrollView {
-            height: 200
+            height: 160
             TextArea {
                 text: manager.statusText
                 readOnly: true
@@ -29,18 +44,9 @@ Item {
 
         Row {
             spacing: 12
-            Button {
-                text: "Boot Slot A"
-                onClicked: manager.bootSlotA()
-            }
-            Button {
-                text: "Boot Slot B"
-                onClicked: manager.bootSlotB()
-            }
-            Button {
-                text: "Refresh"
-                onClicked: manager.refresh()
-            }
+            Button { text: "Boot Slot A"; onClicked: manager.bootSlotA() }
+            Button { text: "Boot Slot B"; onClicked: manager.bootSlotB() }
+            Button { text: "Refresh";   onClicked: manager.refresh() }
         }
     }
 
