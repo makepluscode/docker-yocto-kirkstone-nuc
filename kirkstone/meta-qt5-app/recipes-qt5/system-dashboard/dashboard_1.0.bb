@@ -22,8 +22,8 @@ SRC_URI = " \
 
 S = "${WORKDIR}"
 
-DEPENDS = "qtbase qtdeclarative qtquickcontrols2"
-RDEPENDS:${PN} = "qtbase qtdeclarative qtquickcontrols2 qtgraphicaleffects"
+DEPENDS = "qtbase qtdeclarative qtquickcontrols2 dlt-daemon"
+RDEPENDS:${PN} = "qtbase qtdeclarative qtquickcontrols2 qtgraphicaleffects dlt-daemon"
 
 inherit cmake_qt5 systemd
 

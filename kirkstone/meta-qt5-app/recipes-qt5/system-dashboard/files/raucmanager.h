@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QProcess>
+#include <dlt/dlt.h>
 
 class RaucManager : public QObject {
     Q_OBJECT
@@ -14,6 +15,8 @@ public:
     Q_INVOKABLE void bootSlotA();
     Q_INVOKABLE void bootSlotB();
 
+    // DLT context accessible from helper functions
+    static DltContext m_ctx;
     QString statusText() const { return m_status; }
     QString bootSlot() const { return m_bootSlot; }
     QString activatedSlot() const { return m_activatedSlot; }
@@ -25,6 +28,7 @@ private:
     QString m_status;
     QString m_bootSlot;
     QString m_activatedSlot;
+
     void runProcess(const QString &cmd, const QStringList &args = {});
     void updateStatus(const QString &output);
     void parseStatus(const QString &output);

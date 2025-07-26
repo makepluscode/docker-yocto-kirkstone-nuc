@@ -40,6 +40,7 @@ target_link_libraries(dashboard
     Qt5::Quick
     Qt5::Network
     Qt5::DBus
+    dlt
 )
 
 # Install target
