@@ -1,0 +1,10 @@
+[Unit]
+Description=Dashboard Application (EGLFS)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/dashboard --platform eglfs
+Restart=always
+
+[Install]
+WantedBy=multi-user.target 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(system-dashboard VERSION 1.0.0 LANGUAGES CXX)
+project(dashboard VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,12 +28,14 @@ set(CPP_FILES
 
 qt5_add_resources(QT_RESOURCES qml.qrc)
 
-add_executable(system-dashboard
+add_executable(dashboard
     ${CPP_FILES}
     ${QT_RESOURCES}
 )
 
-target_link_libraries(system-dashboard
+set_target_properties(dashboard PROPERTIES OUTPUT_NAME dashboard)
+
+target_link_libraries(dashboard
     Qt5::Core
     Qt5::Quick
     Qt5::Network
@@ -41,6 +43,6 @@ target_link_libraries(system-dashboard
 )
 
 # Install target
-install(TARGETS system-dashboard
+install(TARGETS dashboard
     RUNTIME DESTINATION bin
 ) 

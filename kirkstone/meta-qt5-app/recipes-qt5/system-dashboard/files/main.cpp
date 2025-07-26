@@ -4,6 +4,7 @@
 #include <QFontDatabase>
 #include <QDir>
 #include "systeminfo.h"
+#include "raucmanager.h"
 
 int main(int argc, char *argv[])
 {
@@ -16,6 +17,7 @@ int main(int argc, char *argv[])
 
     // Register QML types
     qmlRegisterType<SystemInfo>("SystemInfo", 1, 0, "SystemInfo");
+    qmlRegisterType<RaucManager>("Rauc", 1, 0, "RaucManager");
 
     QQmlApplicationEngine engine;
     
