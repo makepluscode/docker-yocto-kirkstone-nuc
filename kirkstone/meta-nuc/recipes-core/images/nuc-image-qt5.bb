@@ -12,6 +12,8 @@ IMAGE_INSTALL = "\
     qtdeclarative \
     qtquickcontrols \
     qtquickcontrols2 \
+    qtgraphicaleffects \
+    system-dashboard \
     "
 
 inherit core-image

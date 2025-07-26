@@ -1,0 +1,18 @@
+[Unit]
+Description=System Dashboard Application
+After=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+User=root
+Environment=QT_QPA_PLATFORM=eglfs
+Environment=QT_QPA_EGLFS_ALWAYS_SET_MODE=1
+Environment=QT_QPA_EGLFS_WIDTH=1024
+Environment=QT_QPA_EGLFS_HEIGHT=768
+ExecStart=/usr/bin/system-dashboard
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target 

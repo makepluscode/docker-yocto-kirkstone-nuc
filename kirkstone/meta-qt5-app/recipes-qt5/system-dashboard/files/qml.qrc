@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>DashboardCard.qml</file>
+        <file>InfoRow.qml</file>
+    </qresource>
+</RCC> 
