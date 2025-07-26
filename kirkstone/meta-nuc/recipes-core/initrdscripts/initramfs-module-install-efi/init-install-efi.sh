@@ -355,7 +355,7 @@ echo "****************************************"
 echo " CONSOLE...press CTRL+D if all is ok"
 echo "****************************************"
 echo ""
-/bin/sh
+# /bin/sh
 echo end console
 
 umount /boot
