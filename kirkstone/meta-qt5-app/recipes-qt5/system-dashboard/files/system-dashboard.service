@@ -6,9 +6,10 @@ Wants=multi-user.target
 [Service]
 Type=simple
 User=root
-Environment=QT_QPA_PLATFORM=offscreen
+Environment=QT_QPA_PLATFORM=eglfs
+Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
+Environment=QT_QPA_EGLFS_KMS_CONFIG=/etc/qt5/eglfs_kms_config.json
 Environment=QT_QPA_FONTDIR=/usr/share/fonts
-Environment=QT_QUICK_BACKEND=software
 Environment=XDG_RUNTIME_DIR=/tmp/runtime-root
 ExecStart=/usr/bin/system-dashboard
 Restart=always

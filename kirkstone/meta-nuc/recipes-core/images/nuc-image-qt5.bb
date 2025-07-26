@@ -1,7 +1,7 @@
 DESCRIPTION = "Intel NUC image with Qt5 (QtQuick, QML) support"
 
-# Enable Qt platform plugins
-PACKAGECONFIG:pn-qtbase = "eglfs linuxfb kms gbm freetype accessibility dbus udev evdev widgets tools libs release openssl"
+# Enable Qt platform plugins for hardware acceleration
+PACKAGECONFIG:pn-qtbase = "eglfs linuxfb kms gbm freetype accessibility dbus udev evdev widgets tools libs release"
 
 IMAGE_FEATURES += "splash ssh-server-openssh"
 
@@ -24,8 +24,7 @@ IMAGE_INSTALL = "\
     libgbm \
     mesa \
     mesa-megadriver \
-    xf86-video-intel \
-    linux-firmware \
+    virtual/egl \
     kernel-modules \
     "
 
