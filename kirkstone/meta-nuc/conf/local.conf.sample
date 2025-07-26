@@ -12,6 +12,9 @@ PARALLEL_MAKE ?= "-j 16"
 DL_DIR ?= "${TOPDIR}/../downloads"
 SSTATE_DIR ?= "${TOPDIR}/../sstate-cache"
 
+# Qt5 Configuration - OpenGL, KMS, and hardware acceleration support
+PACKAGECONFIG:append:pn-qtbase = " eglfs kms gbm"
+
 # User Account Configuration
 EXTRA_USERS_PARAMS = "\
     useradd -p '' root; \
