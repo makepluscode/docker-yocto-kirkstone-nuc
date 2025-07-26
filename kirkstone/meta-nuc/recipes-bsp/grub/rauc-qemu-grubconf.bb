@@ -8,6 +8,7 @@ RPROVIDES:${PN} += "virtual-grub-bootconf"
 
 SRC_URI += " \
     file://grub.cfg \
+    file://grubenv.default \
     "
 
 S = "${WORKDIR}"
@@ -15,14 +16,31 @@ S = "${WORKDIR}"
 inherit deploy
 
 do_install() {
-        install -d ${D}${EFI_FILES_PATH}
-        install -m 644 ${WORKDIR}/grub.cfg ${D}${EFI_FILES_PATH}/grub.cfg
+    # Ensure target directories exist
+    install -d ${D}/boot/EFI/BOOT
+    install -d ${D}/grubenv/EFI/BOOT
+
+    # Substitute BitBake variables into the template so that the final cfg
+    # contains real values (otherwise the kernel cannot find rootfs and
+    # panics).
+    sed -e "s|@ROOT_BLOCK_DEVICE_NAME@|${ROOT_BLOCK_DEVICE_NAME}|g" \
+        -e "s|@GRUB_RAUC_BOOT_CMD@|${GRUB_RAUC_BOOT_CMD}|g" \
+        ${WORKDIR}/grub.cfg > ${D}/boot/EFI/BOOT/grub.cfg
+
+    # Copy the same config to the grubenv partition path so both locations
+    # stay in sync.
+    install -m 644 ${D}/boot/EFI/BOOT/grub.cfg ${D}/grubenv/EFI/BOOT/grub.cfg
+
+    # Install initial grubenv with default A/B variables so RAUC can operate
+    # without manual initialization on first boot.
+    install -m 644 ${WORKDIR}/grubenv.default ${D}/grubenv/grubenv
 }
 
-FILES:${PN} += "${EFI_FILES_PATH}"
+# Package the installed paths
+FILES:${PN} += "/boot/EFI/BOOT/grub.cfg /grubenv/EFI/BOOT/grub.cfg /grubenv/grubenv"
 
 do_deploy() {
-	install -m 644 ${WORKDIR}/grub.cfg ${DEPLOYDIR}
+    install -m 644 ${D}/boot/EFI/BOOT/grub.cfg ${DEPLOYDIR}
 }
 
 addtask deploy after do_install before do_build 

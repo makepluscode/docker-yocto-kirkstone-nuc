@@ -1,19 +1,15 @@
 [Unit]
-Description=System Dashboard Application
-After=multi-user.target
-Wants=multi-user.target
+Description=Dashboard Application (EGLFS)
+After=network.target
 
 [Service]
-Type=simple
-User=root
 Environment=QT_QPA_PLATFORM=eglfs
 Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
 Environment=QT_QPA_EGLFS_KMS_CONFIG=/etc/qt5/eglfs_kms_config.json
 Environment=QT_QPA_FONTDIR=/usr/share/fonts
 Environment=XDG_RUNTIME_DIR=/tmp/runtime-root
-ExecStart=/usr/bin/system-dashboard
+ExecStart=/usr/bin/dashboard --platform eglfs
 Restart=always
-RestartSec=5
 
 [Install]
 WantedBy=multi-user.target 

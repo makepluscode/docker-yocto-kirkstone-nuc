@@ -1,0 +1,10 @@
+[Unit]
+Description=Dashboard Application (LinuxFB)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/dashboard
+Restart=always
+
+[Install]
+WantedBy=multi-user.target 

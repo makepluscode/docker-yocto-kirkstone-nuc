@@ -3,6 +3,7 @@ import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import SystemInfo 1.0
+import Rauc 1.0
 
 ApplicationWindow {
     id: mainWindow
@@ -287,6 +288,13 @@ ApplicationWindow {
                         }
                     }
                 }
+            }
+
+            // RAUC Status Card
+            RaucCard {
+                Layout.columnSpan: 2
+                Layout.fillWidth: true
+                Layout.preferredHeight: 300
             }
         }
     }

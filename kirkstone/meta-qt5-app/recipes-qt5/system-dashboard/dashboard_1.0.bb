@@ -1,4 +1,4 @@
-DESCRIPTION = "System Dashboard Application with Qt5/QML"
+DESCRIPTION = "Dashboard Application with Qt5/QML"
 HOMEPAGE = "https://github.com/makepluscode"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
@@ -7,44 +7,46 @@ SRC_URI = " \
     file://main.cpp \
     file://systeminfo.h \
     file://systeminfo.cpp \
+    file://raucmanager.h \
+    file://raucmanager.cpp \
     file://main.qml \
     file://DashboardCard.qml \
     file://InfoRow.qml \
+    file://RaucCard.qml \
     file://CMakeLists.txt \
     file://qml.qrc \
-    file://system-dashboard.service \
-    file://system-dashboard-eglfs.service \
+    file://dashboard.service \
+    file://dashboard-eglfs.service \
     file://eglfs_kms_config.json \
 "
 
 S = "${WORKDIR}"
 
-DEPENDS = "qtbase qtdeclarative qtquickcontrols2"
-RDEPENDS:${PN} = "qtbase qtdeclarative qtquickcontrols2 qtgraphicaleffects"
+DEPENDS = "qtbase qtdeclarative qtquickcontrols2 dlt-daemon"
+RDEPENDS:${PN} = "qtbase qtdeclarative qtquickcontrols2 qtgraphicaleffects dlt-daemon"
 
 inherit cmake_qt5 systemd
 
 # SystemD service - use LinuxFB as default (more stable)
-SYSTEMD_SERVICE:${PN} = "system-dashboard.service"
+SYSTEMD_SERVICE:${PN} = "dashboard-eglfs.service"
 SYSTEMD_AUTO_ENABLE = "enable"
 
+#do_install append
+
 do_install:append() {
-    # Install systemd service files
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/system-dashboard.service ${D}${systemd_system_unitdir}/
-    install -m 0644 ${WORKDIR}/system-dashboard-eglfs.service ${D}${systemd_system_unitdir}/
-    
-    # Install EGLFS KMS config
+    install -m 0644 ${WORKDIR}/dashboard.service ${D}${systemd_system_unitdir}/
+    install -m 0644 ${WORKDIR}/dashboard-eglfs.service ${D}${systemd_system_unitdir}/
+
     install -d ${D}${sysconfdir}/qt5
     install -m 0644 ${WORKDIR}/eglfs_kms_config.json ${D}${sysconfdir}/qt5/
-    
-    # Create desktop entry for manual launch (optional)
+
     install -d ${D}${datadir}/applications
-    cat > ${D}${datadir}/applications/system-dashboard.desktop << EOF
+    cat > ${D}${datadir}/applications/dashboard.desktop << EOF
 [Desktop Entry]
-Name=System Dashboard
+Name=Dashboard
 Comment=Real-time system monitoring dashboard
-Exec=/usr/bin/system-dashboard
+Exec=/usr/bin/dashboard
 Icon=utilities-system-monitor
 Type=Application
 Categories=System;Monitor;
@@ -52,8 +54,8 @@ EOF
 }
 
 FILES:${PN} += " \
-    ${systemd_system_unitdir}/system-dashboard.service \
-    ${systemd_system_unitdir}/system-dashboard-eglfs.service \
+    ${systemd_system_unitdir}/dashboard.service \
+    ${systemd_system_unitdir}/dashboard-eglfs.service \
     ${sysconfdir}/qt5/eglfs_kms_config.json \
-    ${datadir}/applications/system-dashboard.desktop \
+    ${datadir}/applications/dashboard.desktop \
 " 

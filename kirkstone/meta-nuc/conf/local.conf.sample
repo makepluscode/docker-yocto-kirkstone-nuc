@@ -41,7 +41,7 @@ DISTRO_FEATURES:append = " opengl kde"
 MACHINE_FEATURES:append = " drm"
 
 # Package Installation
-IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf"
+IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf dlt-daemon"
 
 # RAUC Configuration
 RAUC_BUNDLE_VERSION = "0.0.1"
@@ -52,8 +52,10 @@ IMAGE_ROOTFS_EXTRA_SPACE = "1048576"
 IMAGE_ROOTFS_SIZE = "4096000"
 
 # GRUB Configuration
-PREFERRED_RPROVIDER_virtual/grub-bootconf = "rauc-qemu-grubconf"
+PREFERRED_PROVIDER_virtual/grub-bootconf = "rauc-qemu-grubconf"
 EFI_PROVIDER = "grub-efi"
+# Additional kernel cmdline parameters (empty by default)
+GRUB_RAUC_BOOT_CMD = "quiet"
 
 # Image and WIC Configuration
 WKS_FILE = "image-installer.wks.in"

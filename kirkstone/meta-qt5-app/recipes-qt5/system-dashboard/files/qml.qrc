@@ -3,5 +3,6 @@
         <file>main.qml</file>
         <file>DashboardCard.qml</file>
         <file>InfoRow.qml</file>
+        <file>RaucCard.qml</file>
     </qresource>
 </RCC> 
