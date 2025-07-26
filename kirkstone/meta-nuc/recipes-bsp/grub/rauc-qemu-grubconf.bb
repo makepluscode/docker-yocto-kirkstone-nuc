@@ -8,6 +8,7 @@ RPROVIDES:${PN} += "virtual-grub-bootconf"
 
 SRC_URI += " \
     file://grub.cfg \
+    file://grubenv.default \
     "
 
 S = "${WORKDIR}"
@@ -29,10 +30,14 @@ do_install() {
     # Copy the same config to the grubenv partition path so both locations
     # stay in sync.
     install -m 644 ${D}/boot/EFI/BOOT/grub.cfg ${D}/grubenv/EFI/BOOT/grub.cfg
+
+    # Install initial grubenv with default A/B variables so RAUC can operate
+    # without manual initialization on first boot.
+    install -m 644 ${WORKDIR}/grubenv.default ${D}/grubenv/grubenv
 }
 
 # Package the installed paths
-FILES:${PN} += "/boot/EFI/BOOT/grub.cfg /grubenv/EFI/BOOT/grub.cfg"
+FILES:${PN} += "/boot/EFI/BOOT/grub.cfg /grubenv/EFI/BOOT/grub.cfg /grubenv/grubenv"
 
 do_deploy() {
     install -m 644 ${D}/boot/EFI/BOOT/grub.cfg ${DEPLOYDIR}
