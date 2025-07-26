@@ -37,6 +37,7 @@ Item {
         ScrollView {
             height: 160
             TextArea {
+                width: parent.width
                 text: manager.statusText
                 readOnly: true
                 wrapMode: TextArea.Wrap
