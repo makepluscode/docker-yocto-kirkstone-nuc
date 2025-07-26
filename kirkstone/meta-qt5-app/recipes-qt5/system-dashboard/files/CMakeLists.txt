@@ -15,12 +15,15 @@ set(QML_FILES
     main.qml
     DashboardCard.qml
     InfoRow.qml
+    RaucCard.qml
 )
 
 set(CPP_FILES
     main.cpp
     systeminfo.cpp
     systeminfo.h
+    raucmanager.cpp
+    raucmanager.h
 )
 
 qt5_add_resources(QT_RESOURCES qml.qrc)
@@ -34,6 +37,7 @@ target_link_libraries(system-dashboard
     Qt5::Core
     Qt5::Quick
     Qt5::Network
+    Qt5::DBus
 )
 
 # Install target

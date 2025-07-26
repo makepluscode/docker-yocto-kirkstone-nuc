@@ -10,6 +10,9 @@ SRC_URI = " \
     file://main.qml \
     file://DashboardCard.qml \
     file://InfoRow.qml \
+    file://RaucCard.qml \
+    file://raucmanager.h \
+    file://raucmanager.cpp \
     file://CMakeLists.txt \
     file://qml.qrc \
     file://system-dashboard.service \
@@ -20,6 +23,7 @@ SRC_URI = " \
 S = "${WORKDIR}"
 
 DEPENDS = "qtbase qtdeclarative qtquickcontrols2"
+DEPENDS += " qtsystems qtdatavis3d qttools"
 RDEPENDS:${PN} = "qtbase qtdeclarative qtquickcontrols2 qtgraphicaleffects"
 
 inherit cmake_qt5 systemd
