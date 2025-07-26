@@ -25,6 +25,10 @@ S = "${WORKDIR}"
 DEPENDS = "qtbase qtdeclarative qtquickcontrols2"
 RDEPENDS:${PN} = "qtbase qtdeclarative qtquickcontrols2 qtgraphicaleffects"
 
+# Keep backward compatibility with old name
+PROVIDES += "system-dashboard"
+RPROVIDES:${PN} += "system-dashboard"
+
 inherit cmake_qt5 systemd
 
 # SystemD service - use LinuxFB as default (more stable)
