@@ -20,6 +20,29 @@ if [ ! -f "$CONF" ]; then
   exit 1
 fi
 
+# ----------------------------------------------
+# local.conf 및 bblayers.conf 설정 이후에만 빌드 수행
+# ----------------------------------------------
+
+# local.conf 처리 블록 아래쪽(파일 복사 이후)에 위치해야 함
+
+complete_build() {
+  echo "🧹 Cleaning sstate for dashboard and rauc ..."
+  for r in dashboard rauc; do
+    if bitbake-layers show-recipes "$r" | grep -q "^$r"; then
+      bitbake -c cleansstate "$r" || true
+    else
+      echo "ℹ️  Recipe $r not found (layer missing?) – skipping cleansstate"
+    fi
+  done
+
+  echo "🚀 Building nuc-image-qt5 ..."
+  if ! bitbake nuc-image-qt5; then
+    echo "❌ Build failed"; exec bash; fi
+  echo "✅ Build completed successfully"
+  return 0
+}
+
 if ! grep -q "meta-nuc" "$CONF"; then
   echo "🛠 Updating bblayers.conf..."
   cat <<'EOF' >> "$CONF"
@@ -60,6 +83,12 @@ if [ -f "$LOCALCONF_TEMPLATE" ]; then
   fi
 else
   echo "❌ Template file not found: $LOCALCONF_TEMPLATE"
+fi
+
+# 모든 설정이 끝났으면 빌드 수행
+if complete_build; then
+  echo "🏁 Exiting container after successful build"
+  exit 0
 fi
 
 exec bash
