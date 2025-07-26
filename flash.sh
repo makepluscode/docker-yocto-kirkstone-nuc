@@ -49,14 +49,45 @@ if [ ! -f "$WIC_IMAGE" ]; then
   exit 1
 fi
 
-echo "\nAvailable removable devices (excluding system disk):"
-lsblk -d -o NAME,SIZE,MODEL,TRAN,TYPE | grep -E 'disk'
+echo "\nAvailable USB devices:"
 
-read -p "Enter the device name to flash (default: sda): /dev/" DEV_NAME
-if [ -z "$DEV_NAME" ]; then
-  DEV_NAME="sda"
+# Get USB devices and store in arrays
+USB_DEVICES=()
+USB_INFO=()
+while IFS= read -r line; do
+  if [[ "$line" =~ ^([a-z]+[0-9]*)[[:space:]]+([^[:space:]]+)[[:space:]]+(.+)[[:space:]]+usb[[:space:]]+disk$ ]]; then
+    device_name="${BASH_REMATCH[1]}"
+    device_size="${BASH_REMATCH[2]}"
+    device_model="${BASH_REMATCH[3]}"
+    USB_DEVICES+=("$device_name")
+    USB_INFO+=("$device_size $device_model")
+  fi
+done < <(lsblk -d -o NAME,SIZE,MODEL,TRAN,TYPE | grep -E 'usb.*disk')
+
+# Check if any USB devices found
+if [ ${#USB_DEVICES[@]} -eq 0 ]; then
+  echo "❌ Error: No USB devices found."
+  exit 2
 fi
-DEV_PATH="/dev/$DEV_NAME"
+
+# Display USB devices with numbers
+for i in "${!USB_DEVICES[@]}"; do
+  echo "  $((i+1)). /dev/${USB_DEVICES[$i]} - ${USB_INFO[$i]}"
+done
+
+# Get user selection
+while true; do
+  read -p "Select USB device (1-${#USB_DEVICES[@]}): " SELECTION
+  if [[ "$SELECTION" =~ ^[0-9]+$ ]] && [ "$SELECTION" -ge 1 ] && [ "$SELECTION" -le "${#USB_DEVICES[@]}" ]; then
+    DEV_NAME="${USB_DEVICES[$((SELECTION-1))]}"
+    DEV_PATH="/dev/$DEV_NAME"
+    break
+  else
+    echo "❌ Invalid selection. Please enter a number between 1 and ${#USB_DEVICES[@]}."
+  fi
+done
+
+echo "Selected device: $DEV_PATH"
 
 # Check if device exists
 if [ ! -b "$DEV_PATH" ]; then

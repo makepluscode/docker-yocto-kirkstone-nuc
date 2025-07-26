@@ -1,5 +1,8 @@
 DESCRIPTION = "Intel NUC image with Qt5 (QtQuick, QML) support"
 
+# Enable Qt platform plugins
+PACKAGECONFIG:pn-qtbase = "eglfs linuxfb kms gbm freetype accessibility dbus udev evdev widgets tools libs release openssl"
+
 IMAGE_FEATURES += "splash ssh-server-openssh"
 
 IMAGE_INSTALL = "\
@@ -9,11 +12,21 @@ IMAGE_INSTALL = "\
     intel-nuc-init \
     rauc \
     qtbase \
+    qtbase-plugins \
+    qtbase-tools \
     qtdeclarative \
+    qtdeclarative-plugins \
     qtquickcontrols \
     qtquickcontrols2 \
     qtgraphicaleffects \
     system-dashboard \
+    libdrm \
+    libgbm \
+    mesa \
+    mesa-megadriver \
+    xf86-video-intel \
+    linux-firmware \
+    kernel-modules \
     "
 
 inherit core-image

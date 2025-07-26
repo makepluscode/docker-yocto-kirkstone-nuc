@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 네트워크 설정
-IFACE="eno1"
+IFACE="enp42s0"
 HOST_IP="192.168.1.101"
 NETMASK="255.255.255.0"
 
@@ -28,6 +28,12 @@ else
     chmod 700 "$HOME/.ssh"
     chmod 600 "$KNOWN_HOSTS"
 fi
+
+echo "[3] Removing old host key for $TARGET_IP if exists..."
+ssh-keygen -f "$KNOWN_HOSTS" -R "$TARGET_IP" 2>/dev/null || true
+
+echo "[4] Adding new host key for $TARGET_IP..."
+ssh-keyscan -H "$TARGET_IP" >> "$KNOWN_HOSTS" 2>/dev/null || true
 
 echo "[5] Connecting to $TARGET_USER@$TARGET_IP via SSH..."
 ssh $TARGET_USER@$TARGET_IP

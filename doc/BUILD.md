@@ -26,7 +26,18 @@ Downloads required layers to `kirkstone` directory:
 - meta-intel
 - meta-rauc
 
-### Step 3: Run Docker Build Environment
+### Step 3: Clean Environment (Recommended)
+```bash
+./clean.sh
+rm -rf ./kirkstone/build/conf
+```
+
+This step:
+- Stops and removes existing Docker containers
+- Removes Docker images to ensure fresh environment
+- Removes build configuration to prevent conflicts
+
+### Step 4: Run Docker Build Environment
 ```bash
 ./run-docker.sh
 ```
@@ -37,7 +48,7 @@ Script behavior:
 - Restarts stopped container if exists
 - Creates new container if needed
 
-### Step 4: Build Environment Setup (Automatic)
+### Step 5: Build Environment Setup (Automatic)
 When entering Docker container, `entrypoint.sh` runs automatically:
 
 Expected output:
@@ -57,7 +68,7 @@ Common targets are:
 
 Prompt changes to: `yocto@nuc:~/kirkstone/build$`
 
-### Step 5: Build Qt5 Image
+### Step 6: Build Qt5 Image for NUC
 ```bash
 bitbake nuc-image-qt5
 ```

@@ -11,6 +11,8 @@ yocto/*.zst
 
 # Yocto layer repos cloned manually
 kirkstone/build/
+kirkstone/sstate-cache/
+kirkstone/downloads/
 kirkstone/poky/
 kirkstone/meta-openembedded/
 kirkstone/meta-intel/

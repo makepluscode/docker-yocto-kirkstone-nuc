@@ -1,18 +1,18 @@
 [Unit]
 Description=System Dashboard Application
-After=graphical-session.target
-Wants=graphical-session.target
+After=multi-user.target
+Wants=multi-user.target
 
 [Service]
 Type=simple
 User=root
-Environment=QT_QPA_PLATFORM=eglfs
-Environment=QT_QPA_EGLFS_ALWAYS_SET_MODE=1
-Environment=QT_QPA_EGLFS_WIDTH=1024
-Environment=QT_QPA_EGLFS_HEIGHT=768
+Environment=QT_QPA_PLATFORM=linuxfb
+Environment=QT_QPA_FB_DRM=1
+Environment=DISPLAY=:0
+Environment=QT_QPA_FONTDIR=/usr/share/fonts
 ExecStart=/usr/bin/system-dashboard
 Restart=always
 RestartSec=5
 
 [Install]
-WantedBy=graphical.target 
+WantedBy=multi-user.target 
