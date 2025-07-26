@@ -4,6 +4,14 @@ MACHINE ?= "intel-corei7-64"
 # Target Device Configuration (SATA SSD)
 ROOT_BLOCK_DEVICE_NAME = "sda"
 
+# Build Optimization
+BB_NUMBER_THREADS ?= "16"
+PARALLEL_MAKE ?= "-j 16"
+
+# Download and State Cache Directories (for faster rebuilds)
+DL_DIR ?= "${TOPDIR}/../downloads"
+SSTATE_DIR ?= "${TOPDIR}/../sstate-cache"
+
 # User Account Configuration
 EXTRA_USERS_PARAMS = "\
     useradd -p '' root; \
@@ -25,6 +33,9 @@ VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 PACKAGECONFIG:append:pn-systemd = " networkd resolved"
 PACKAGECONFIG:remove:pn-systemd = "nss-mymachines"
 
+# Qt5 Configuration - X11 and OpenGL support
+DISTRO_FEATURES:append = " x11 opengl"
+
 # Package Installation
 IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf"
 
@@ -33,8 +44,8 @@ RAUC_BUNDLE_VERSION = "0.0.1"
 RAUC_BUNDLE_DESCRIPTION = "Intel NUC"
 
 # Rootfs Configuration
-IMAGE_ROOTFS_EXTRA_SPACE = "0"
-IMAGE_ROOTFS_SIZE = "2048000"
+IMAGE_ROOTFS_EXTRA_SPACE = "1048576"
+IMAGE_ROOTFS_SIZE = "4096000"
 
 # GRUB Configuration
 PREFERRED_RPROVIDER_virtual/grub-bootconf = "rauc-qemu-grubconf"
