@@ -14,7 +14,12 @@ clone_repo() {
   local branch="kirkstone"
 
   if [ -d "$dir" ]; then
-    echo -e "🔁 \033[1;33m$dir already exists. Skipping.\033[0m"
+    echo -e "🔁 \033[1;33m$dir already exists. Checking out $branch branch...\033[0m"
+    cd "$dir"
+    git fetch origin
+    git checkout "$branch"
+    git pull origin "$branch"
+    cd ..
   else
     echo -e "📥 \033[1;32mCloning $dir...\033[0m"
     git clone -b "$branch" "$url" "$dir"
