@@ -21,4 +21,13 @@ else
   echo "✔ No image to remove"
 fi
 
+# 빌드 설정 디렉토리 정리
+if [ -d "kirkstone/build/conf" ]; then
+  echo "▶ Removing build configuration: kirkstone/build/conf/*"
+  rm -rf kirkstone/build/conf/*
+  echo "✔ Build configuration cleaned"
+else
+  echo "✔ No build configuration to clean"
+fi
+
 echo "✅ Cleanup complete"
