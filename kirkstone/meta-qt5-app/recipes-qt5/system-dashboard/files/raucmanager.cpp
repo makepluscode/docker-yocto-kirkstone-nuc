@@ -2,9 +2,7 @@
 #include <QTextStream>
 #include <QDebug>
 
-RaucManager::RaucManager(QObject *parent) : QObject(parent) {
-    refresh();
-}
+RaucManager::RaucManager(QObject *parent) : QObject(parent) {}
 
 void RaucManager::runProcess(const QString &cmd, const QStringList &args) {
     QProcess proc;
