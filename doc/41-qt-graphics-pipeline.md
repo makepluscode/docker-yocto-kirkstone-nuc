@@ -1,18 +1,18 @@
 # Qt Graphics Pipeline Guide
 
-Intel NUC에서 Qt 애플리케이션의 그래픽 렌더링 파이프라인에 대한 상세 가이드입니다.
+Detailed guide for Qt application graphics rendering pipeline on Intel NUC.
 
-## 📋 목차
+## Table of Contents
 
-1. [그래픽 파이프라인 개요](#그래픽-파이프라인-개요)
-2. [각 레이어 상세 설명](#각-레이어-상세-설명)
-3. [플랫폼별 특징](#플랫폼별-특징)
-4. [문제 진단 가이드](#문제-진단-가이드)
-5. [성능 최적화](#성능-최적화)
+1. [Graphics Pipeline Overview](#graphics-pipeline-overview)
+2. [Layer Details](#layer-details)
+3. [Platform Comparison](#platform-comparison)
+4. [Troubleshooting Guide](#troubleshooting-guide)
+5. [Performance Optimization](#performance-optimization)
 
-## 🎨 그래픽 파이프라인 개요
+## Graphics Pipeline Overview
 
-Qt에서 GPU까지의 완전한 그래픽 파이프라인 흐름:
+Complete graphics pipeline flow from Qt to GPU:
 
 ```
 ┌─────────────────────────────────┐
@@ -32,32 +32,32 @@ Qt에서 GPU까지의 완전한 그래픽 파이프라인 흐름:
 └─────────────────────────────────┘
 ```
 
-## 🔧 각 레이어 상세 설명
+## Layer Details
 
 ### 1. Qt Application Layer
 
-**구성 요소:**
+**Components:**
 - QML Engine
 - QtQuick Components
 - Qt Scene Graph
 
-**역할:**
-- UI 요소를 Scene Graph 노드로 변환
-- 애니메이션 및 상태 관리
-- 이벤트 처리
+**Functions:**
+- Convert UI elements to Scene Graph nodes
+- Animation and state management
+- Event handling
 
-**출력:**
-- OpenGL/Vulkan 렌더링 명령
-- 기하학적 데이터 (vertices, textures)
+**Output:**
+- OpenGL/Vulkan rendering commands
+- Geometric data (vertices, textures)
 
 ### 2. Qt Platform Abstraction (QPA)
 
-**역할:**
-- 플랫폼 독립적 인터페이스 제공
-- 창 관리 추상화
-- 입력 이벤트 통합
+**Functions:**
+- Provide platform-independent interface
+- Window management abstraction
+- Input event integration
 
-**주요 클래스:**
+**Key Classes:**
 - `QPlatformIntegration`
 - `QPlatformWindow`
 - `QPlatformScreen`
@@ -69,13 +69,13 @@ Qt에서 GPU까지의 완전한 그래픽 파이프라인 흐름:
 Qt App → EGL → OpenGL ES → Mesa → DRM/KMS → GPU
 ```
 
-**특징:**
-- 직접 GPU 하드웨어 가속
-- Fullscreen 전용
-- 최고 성능
-- 복잡한 설정
+**Features:**
+- Direct GPU hardware acceleration
+- Fullscreen only
+- Best performance
+- Complex configuration
 
-**설정 파일:**
+**Configuration File:**
 ```json
 {
   "device": "/dev/dri/card0",
@@ -95,76 +95,76 @@ Qt App → EGL → OpenGL ES → Mesa → DRM/KMS → GPU
 Qt App → Linux FB → Kernel FB Driver → Display
 ```
 
-**특징:**
-- 소프트웨어 렌더링
-- 설정 간단
-- 안정성 높음
-- 성능 제한적
+**Features:**
+- Software rendering
+- Simple configuration
+- High stability
+- Limited performance
 
 #### XCB (X11)
 ```
 Qt App → X11 → GPU Driver → Display
 ```
 
-**특징:**
-- 윈도우 시스템 지원
-- 다중 애플리케이션
-- 높은 메모리 사용량
+**Features:**
+- Window system support
+- Multi-application support
+- High memory usage
 
 #### Wayland
 ```
 Qt App → Wayland → Compositor → GPU
 ```
 
-**특징:**
-- 현대적 디스플레이 서버
-- 보안성 우수
-- 낮은 지연시간
+**Features:**
+- Modern display server
+- Excellent security
+- Low latency
 
 ### 4. Graphics API Layer
 
 #### Mesa 3D Graphics Library
-- 오픈소스 OpenGL/Vulkan 구현
-- 하드웨어 추상화 레이어
-- 다양한 GPU 드라이버 지원
+- Open source OpenGL/Vulkan implementation
+- Hardware abstraction layer
+- Multiple GPU driver support
 
 #### EGL (Embedded-System Graphics Library)
-- OpenGL ES와 네이티브 플랫폼 연결
-- 컨텍스트 관리
-- 표면(Surface) 관리
+- Connect OpenGL ES to native platform
+- Context management
+- Surface management
 
 ### 5. Kernel Graphics Stack
 
 #### DRM (Direct Rendering Manager)
-- GPU 리소스 관리
-- 메모리 관리
-- 보안 및 동기화
+- GPU resource management
+- Memory management
+- Security and synchronization
 
 #### KMS (Kernel Mode Setting)
-- 디스플레이 모드 설정
-- 해상도/주사율 제어
-- 다중 디스플레이 지원
+- Display mode configuration
+- Resolution/refresh rate control
+- Multi-display support
 
 #### Graphics Driver (Intel i915)
-- 하드웨어 특화 명령 변환
-- GPU 메모리 관리
-- 전력 관리
+- Hardware-specific command translation
+- GPU memory management
+- Power management
 
 ### 6. Hardware Layer
 
 #### GPU Hardware
-- 3D 렌더링 파이프라인
-- 텍스처 샘플링
-- 셰이더 실행
+- 3D rendering pipeline
+- Texture sampling
+- Shader execution
 
 #### Display Controller
-- 픽셀 데이터 출력
-- 디스플레이 타이밍 제어
-- 색상 공간 변환
+- Pixel data output
+- Display timing control
+- Color space conversion
 
-## 🔄 데이터 흐름 예시
+## Data Flow Example
 
-### EGLFS 경로 (하드웨어 가속)
+### EGLFS Path (Hardware Acceleration)
 ```
 QML Rectangle {
     color: "blue"
@@ -174,109 +174,109 @@ QML Rectangle {
      ↓
 Qt Scene Graph (Blue Rectangle Node)
      ↓
-OpenGL glDrawElements() 명령
+OpenGL glDrawElements() commands
      ↓
-Mesa → Intel i915 드라이버
+Mesa → Intel i915 driver
      ↓
-GPU 셰이더 실행
+GPU shader execution
      ↓
-프레임버퍼 → 디스플레이
+Framebuffer → Display
 ```
 
-### LinuxFB 경로 (소프트웨어 렌더링)
+### LinuxFB Path (Software Rendering)
 ```
 QML Rectangle
      ↓
 Qt Scene Graph
      ↓
-소프트웨어 래스터라이저
+Software rasterizer
      ↓
-CPU 픽셀 연산
+CPU pixel operations
      ↓
-/dev/fb0 프레임버퍼
+/dev/fb0 framebuffer
      ↓
-디스플레이
+Display
 ```
 
-## 🔍 플랫폼별 특징 비교
+## Platform Comparison
 
-| 플랫폼 | 성능 | 안정성 | 설정 복잡도 | 메모리 사용량 | 사용 사례 |
-|--------|------|--------|-------------|---------------|-----------|
-| **EGLFS** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ | 임베디드, 키오스크 |
-| **LinuxFB** | ⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐ | ⭐⭐⭐ | 간단한 UI, 디버깅 |
-| **XCB** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ | 데스크톱 환경 |
-| **Wayland** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | 현대적 임베디드 |
+| Platform | Performance | Stability | Setup Complexity | Memory Usage | Use Case |
+|----------|-------------|-----------|------------------|--------------|----------|
+| **EGLFS** | Excellent | Good | High | Low | Embedded, Kiosk |
+| **LinuxFB** | Limited | Excellent | Low | Moderate | Simple UI, Debug |
+| **XCB** | Good | Good | Low | High | Desktop Environment |
+| **Wayland** | Good | Good | Moderate | Moderate | Modern Embedded |
 
-## 🚨 문제 진단 가이드
+## Troubleshooting Guide
 
-### 1. Qt Platform Plugin 문제
+### 1. Qt Platform Plugin Issues
 
-**증상:**
+**Symptoms:**
 ```
 qt.qpa.plugin: Could not find the Qt platform plugin "eglfs"
 Available platform plugins are: minimal, offscreen, vnc, xcb.
 ```
 
-**원인:**
-- qtbase PACKAGECONFIG에서 플랫폼 지원 누락
+**Cause:**
+- Missing platform support in qtbase PACKAGECONFIG
 
-**해결:**
+**Solution:**
 ```bitbake
 PACKAGECONFIG:pn-qtbase = "eglfs linuxfb kms gbm"
 ```
 
-### 2. DRM/KMS 접근 문제
+### 2. DRM/KMS Access Issues
 
-**증상:**
+**Symptoms:**
 ```
 qt.qpa.eglfs.kms: Could not open DRM device
 ```
 
-**확인:**
+**Check:**
 ```bash
 ls -la /dev/dri/
-# 권한 확인
-# Intel 드라이버 로드 확인
+# Check permissions
+# Check Intel driver loading
 dmesg | grep i915
 ```
 
-**해결:**
-- 사용자를 video 그룹에 추가
-- DRM 모듈 로드 확인
+**Solution:**
+- Add user to video group
+- Verify DRM module loading
 
-### 3. EGL 초기화 실패
+### 3. EGL Initialization Failure
 
-**증상:**
+**Symptoms:**
 ```
 qt.qpa.eglfs: Failed to initialize EGL display
 ```
 
-**확인:**
+**Check:**
 ```bash
-# Mesa 설치 확인
+# Check Mesa installation
 find /usr -name "*libEGL*"
-# GPU 정보 확인
+# Check GPU information
 lspci | grep VGA
 ```
 
-### 4. 프레임버퍼 문제
+### 4. Framebuffer Issues
 
-**증상:**
+**Symptoms:**
 ```
 qt.qpa.linuxfb: Failed to open framebuffer
 ```
 
-**확인:**
+**Check:**
 ```bash
 ls -la /dev/fb*
 cat /proc/fb
 ```
 
-## ⚡ 성능 최적화
+## Performance Optimization
 
-### EGLFS 최적화
+### EGLFS Optimization
 
-#### 1. KMS 설정 최적화
+#### 1. KMS Configuration Optimization
 ```json
 {
   "device": "/dev/dri/card0",
@@ -294,60 +294,60 @@ cat /proc/fb
 }
 ```
 
-#### 2. 환경 변수 최적화
+#### 2. Environment Variable Optimization
 ```bash
 export QT_QPA_EGLFS_INTEGRATION=eglfs_kms
 export QT_QPA_EGLFS_KMS_CONFIG=/etc/qt5/eglfs_kms_config.json
 export QT_QPA_EGLFS_ALWAYS_SET_MODE=1
 ```
 
-#### 3. Qt Scene Graph 최적화
+#### 3. Qt Scene Graph Optimization
 ```bash
 export QSG_RENDER_LOOP=basic
 export QSG_RHI_BACKEND=opengl
 ```
 
-### LinuxFB 최적화
+### LinuxFB Optimization
 
-#### 1. 프레임버퍼 설정
+#### 1. Framebuffer Configuration
 ```bash
-# 색 깊이 설정
+# Set color depth
 fbset -depth 32
-# 해상도 설정
+# Set resolution
 fbset -xres 1920 -yres 1080
 ```
 
-#### 2. Qt 렌더링 최적화
+#### 2. Qt Rendering Optimization
 ```bash
 export QT_QPA_FB_FORCE_FULLSCREEN=1
 export QT_QPA_FB_DISABLE_INPUT=0
 ```
 
-## 🛠️ 디버깅 도구
+## Debugging Tools
 
-### Qt 디버깅
+### Qt Debugging
 ```bash
-# 모든 Qt 로그 활성화
+# Enable all Qt logging
 export QT_LOGGING_RULES="*=true"
 
-# 특정 카테고리만
+# Specific categories only
 export QT_LOGGING_RULES="qt.qpa.*=true"
 export QT_LOGGING_RULES="qt.qpa.eglfs.*=true"
 ```
 
-### 시스템 디버깅
+### System Debugging
 ```bash
-# DRM 정보
+# DRM information
 cat /sys/kernel/debug/dri/0/i915_display_info
 
-# GPU 사용률
+# GPU usage
 intel_gpu_top
 
-# 프레임버퍼 정보
+# Framebuffer information
 fbset -i
 ```
 
-## 📚 참고 자료
+## References
 
 - [Qt Platform Abstraction Documentation](https://doc.qt.io/qt-5/qpa.html)
 - [Intel Graphics Driver Documentation](https://01.org/linuxgraphics/documentation)
@@ -356,4 +356,4 @@ fbset -i
 
 ---
 
-*마지막 업데이트: 2025-07-26* 
+*Last updated: 2025-07-26* 
