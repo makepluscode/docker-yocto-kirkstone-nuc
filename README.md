@@ -12,7 +12,21 @@ Docker-based Yocto build environment for Intel NUC using the Kirkstone (Yocto 4.
 bitbake nuc-image-qt5  # Build Qt5 image
 ```
 
-For detailed build instructions, see [doc/BUILD.md](doc/BUILD.md).
+For detailed build instructions, see [doc/00-build-guide.md](doc/00-build-guide.md).
+
+## 📚 Documentation
+
+The project documentation is organized with numbered prefixes for easy navigation:
+
+### Build Documentation (00-09)
+- **[00-build-guide.md](doc/00-build-guide.md)** - Complete build process guide for Intel NUC Yocto images
+
+### RAUC Documentation (31-32)
+- **[31-rauc-grub-good-mark.md](doc/31-rauc-grub-good-mark.md)** - RAUC + GRUB good-mark flow and boot management
+- **[32-rauc-service-dbus-api.md](doc/32-rauc-service-dbus-api.md)** - RAUC Installer D-Bus API reference
+
+### Qt Documentation (41-49)
+- **[41-qt-graphics-pipeline.md](doc/41-qt-graphics-pipeline.md)** - Qt graphics pipeline guide for Intel NUC
 
 ## 🧹 Clean Docker Environment
 
