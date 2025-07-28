@@ -1,6 +1,6 @@
 # Intel NUC Yocto Build Guide
 
-Docker-based Yocto build environment for Intel NUC using Kirkstone (Yocto 4.0 LTS) release.
+Docker-based Yocto build environment for Intel NUC using Kirkstone (Yocto 4.0 LTS) release with **automatic RAUC (Robust Auto-Update Controller) integration**.
 
 ## Prerequisites
 
@@ -10,23 +10,12 @@ Docker-based Yocto build environment for Intel NUC using Kirkstone (Yocto 4.0 LT
 
 ## Build Process
 
-### Step 1: Navigate to Project Directory
-```bash
-cd /home/makepluscode/docker-yocto-kirkstone-nuc
-```
-
-### Step 2: Download Yocto Layers (First Time Only)
+### Step 1: Download Yocto Layers (First Time Only)
 ```bash
 ./download.sh
 ```
 
-Downloads required layers to `kirkstone` directory:
-- poky (Yocto core)
-- meta-openembedded
-- meta-intel
-- meta-rauc
-
-### Step 3: Clean Environment (Recommended)
+### Step 2: Clean Environment (Recommended)
 ```bash
 ./clean.sh
 rm -rf ./kirkstone/build/conf
@@ -37,59 +26,142 @@ This step:
 - Removes Docker images to ensure fresh environment
 - Removes build configuration to prevent conflicts
 
-### Step 4: Run Docker Build Environment
+### Step 3: Choose Build Mode
+
+#### Option A: Automatic Build (Recommended)
 ```bash
-./run-docker.sh
+./build.sh
+# or explicitly
+./build.sh auto
+```
+**Default behavior**: Automatically builds the complete NUC image with RAUC integration and exits.
+
+#### Option B: Manual Build Mode
+```bash
+./build.sh manual
+```
+**Manual mode**: Enters the Docker container with build environment setup for manual operations.
+
+#### Option C: Direct Docker Control
+```bash
+./run-docker.sh auto     # Automatic build and exit
+./run-docker.sh manual   # Manual mode
 ```
 
-Script behavior:
-- Builds Docker image if not exists
-- Attaches to running container if exists
-- Restarts stopped container if exists
-- Creates new container if needed
+### Step 4: Automatic Build Environment Setup
+When using automatic mode, `entrypoint.sh` runs automatically and performs:
 
-### Step 5: Build Environment Setup (Automatic)
-When entering Docker container, `entrypoint.sh` runs automatically:
+#### 4.1 Layer Configuration
+- **Automatic bblayers.conf setup** with all required layers:
+  - `meta-openembedded/meta-oe`
+  - `meta-openembedded/meta-python`
+  - `meta-openembedded/meta-networking`
+  - `meta-intel`
+  - `meta-nuc` (NUC-specific configurations)
+  - `meta-rauc` (RAUC auto-update system)
+  - `meta-qt5`
+  - `meta-qt5-app`
 
-Expected output:
+#### 4.2 RAUC Integration
+- **Automatic RAUC configuration** including:
+  - RAUC feature enabled in `DISTRO_FEATURES`
+  - RAUC package installation in images
+  - GRUB configuration for A/B boot slots
+  - RAUC bundle version and description setup
+  - System configuration for dual-slot updates
+
+#### 4.3 Build Configuration
+- **Automatic local.conf setup** with NUC-optimized settings:
+  - Intel Core i7-64 machine configuration
+  - Qt5 with OpenGL/KMS/GBM support
+  - SystemD with networkd/resolved
+  - User account setup (root/nuc users)
+  - RAUC-compatible boot configuration
+
+Expected output (Auto mode):
 ```
 ### Shell environment set up for builds. ###
 
-You can now run 'bitbake <target>'
-
-Common targets are:
-    core-image-minimal
-    core-image-full-cmdline
-    core-image-sato
-    core-image-weston
-    meta-toolchain
-    meta-ide-support
+🛠 Updating bblayers.conf...
+✅ local.conf replaced with custom template
+🧹 Cleaning sstate for dashboard and rauc ...
+🚀 Building nuc-image-qt5 ...
 ```
 
-Prompt changes to: `yocto@nuc:~/kirkstone/build$`
+Expected output (Manual mode):
+```
+### Shell environment set up for builds. ###
 
-### Step 6: Build Qt5 Image for NUC
+🛠 Updating bblayers.conf...
+✅ local.conf replaced with custom template
+🔧 Manual mode: Build environment setup complete
+   You can now run manual commands like:
+   - bitbake nuc-image-qt5
+   - bitbake nuc-bundle
+   - bitbake -c menuconfig virtual/kernel
+```
+
+### Step 5: Build Execution
+
+#### Automatic Mode
+The entrypoint script automatically:
+1. **Cleans sstate cache** for dashboard and RAUC components
+2. **Builds nuc-image-qt5** with full RAUC integration
+3. **Exits container** upon successful completion
+
+#### Manual Mode
+After environment setup, you can run commands manually:
 ```bash
+# Build the complete image
 bitbake nuc-image-qt5
+
+# Build RAUC bundle
+bitbake nuc-bundle
+
+# Configure kernel
+bitbake -c menuconfig virtual/kernel
+
+# Clean specific components
+bitbake -c cleansstate rauc
 ```
 
-Build starts with:
-```
-Loading cache: 100% |######################################################
+## Build Scripts
+
+### Primary Scripts
+- **`./build.sh`** - Main build script (defaults to auto mode)
+- **`./run-docker.sh`** - Direct Docker container control
+- **`./download.sh`** - Download Yocto layers
+- **`./clean.sh`** - Clean Docker environment
+
+### Script Usage
+```bash
+# Automatic build (default)
+./build.sh
+
+# Explicit automatic build
+./build.sh auto
+
+# Manual mode
+./build.sh manual
+
+# Direct Docker control
+./run-docker.sh auto     # Automatic build
+./run-docker.sh manual   # Manual mode
+
+# Help
+./run-docker.sh          # Shows usage
 ```
 
 ## Build Targets
 
 ### Primary Target
-- `nuc-image-qt5` - Custom NUC image with Qt5 support
+- `nuc-image-qt5` - Custom NUC image with Qt5 and RAUC support
 
-### Available Targets
-- `core-image-minimal` - Minimal image
-- `core-image-full-cmdline` - Full command line environment
-- `core-image-sato` - Sato desktop environment
-- `core-image-weston` - Weston compositor
-- `meta-toolchain` - Cross-compilation toolchain
-- `meta-ide-support` - IDE support packages
+### RAUC Components
+- **RAUC System**: Robust auto-update controller
+- **A/B Boot Slots**: Dual partition system for safe updates
+- **GRUB Integration**: Bootloader configured for RAUC slots
+- **Bundle Support**: RAUC update bundle creation capability
 
 ## Directory Structure
 
@@ -99,9 +171,21 @@ docker-yocto-kirkstone-nuc/
 │   ├── poky/
 │   ├── meta-openembedded/
 │   ├── meta-intel/
-│   ├── meta-rauc/
+│   ├── meta-nuc/           # NUC-specific configurations
+│   │   ├── conf/
+│   │   │   ├── local.conf.sample    # RAUC-enabled config template
+│   │   │   └── layer.conf
+│   │   ├── recipes-core/
+│   │   │   ├── rauc/               # RAUC configurations
+│   │   │   ├── bundles/            # RAUC bundle recipes
+│   │   │   └── images/             # NUC image recipes
+│   │   └── create-example-keys.sh  # RAUC key generation
+│   ├── meta-rauc/          # RAUC layer
 │   └── build/              # Build output directory
 ├── docker/                 # Docker configuration files
+│   ├── Dockerfile          # Docker image definition
+│   └── entrypoint.sh       # Automatic build setup script (with debugging)
+├── build.sh               # Main build script (auto/manual modes)
 ├── run-docker.sh          # Docker container execution script
 ├── download.sh            # Yocto layer download script
 ├── clean.sh              # Docker environment cleanup script
@@ -110,17 +194,29 @@ docker-yocto-kirkstone-nuc/
 
 ## Command Sequence
 
-Complete build sequence:
+### Complete Automatic Build Sequence:
 ```bash
 # On host system
 ./download.sh              # Download layers (first time)
-./run-docker.sh            # Enter Docker container
+./build.sh                 # Automatic build and exit
+# or
+./build.sh auto            # Explicit automatic build
 
-# Inside Docker container (automatic)
-./entrypoint.sh            # Runs automatically, sets up environment
+# Or using direct Docker control
+./run-docker.sh auto       # Automatic build and exit
+```
 
-# Build command (manual)
-bitbake nuc-image-qt5      # Build Qt5 image
+### Manual Development Sequence:
+```bash
+# On host system
+./download.sh              # Download layers (first time)
+./build.sh manual          # Enter container for manual operations
+
+# Inside Docker container (manual mode)
+source poky/oe-init-build-env build  # Setup build environment
+bitbake nuc-image-qt5      # Build image manually
+bitbake nuc-bundle         # Build RAUC bundle
+# ... other manual commands
 ```
 
 ## Environment Details
@@ -131,9 +227,15 @@ bitbake nuc-image-qt5      # Build Qt5 image
 - Build directory: `/home/yocto/kirkstone/build`
 - Shared volume: Host `kirkstone/` ↔ Container `/home/yocto/kirkstone`
 
+### RAUC Configuration
+- **Dual-slot boot system**: A/B partitions for safe updates
+- **GRUB integration**: Bootloader configured for RAUC slots
+- **Bundle support**: RAUC update bundle creation
+- **System integration**: RAUC service and configuration files
+
 ### Build Configuration
 - Build system automatically configures when `entrypoint.sh` runs
-- Uses existing `local.conf` if present
+- Uses existing `local.conf` if present (with RAUC settings)
 - BitBake environment variables set automatically
 - Working directory changes to `~/kirkstone/build`
 
@@ -145,36 +247,56 @@ kirkstone/build/tmp/deploy/images/
 ```
 
 Generated files:
-- `.wic` - Flashable disk image
+- `.wic` - Flashable disk image with RAUC support
 - `.rootfs.tar.bz2` - Root filesystem archive
 - `.manifest` - Package list
+- RAUC bundles (if configured)
+
+## RAUC Features
+
+### Automatic Integration
+- **Pre-configured**: RAUC is automatically included in all builds
+- **Dual-slot boot**: A/B partition system for safe updates
+- **GRUB integration**: Bootloader configured for RAUC slots
+- **Bundle support**: Ready for RAUC update bundle creation
+
+### Manual RAUC Operations
+To create RAUC keys (development):
+```bash
+cd kirkstone/meta-nuc
+./create-example-keys.sh
+```
+
+To build RAUC bundle:
+```bash
+bitbake nuc-bundle
+```
+
+## Build Modes Summary
+
+| Mode | Command | Behavior |
+|------|---------|----------|
+| **Auto (default)** | `./build.sh` | Automatic build and exit |
+| **Auto (explicit)** | `./build.sh auto` | Explicit automatic build |
+| **Manual** | `./build.sh manual` | Enter container for manual operations |
+| **Direct Auto** | `./run-docker.sh auto` | Direct automatic build |
+| **Direct Manual** | `./run-docker.sh manual` | Direct manual mode |
 
 ## Troubleshooting
 
-### Manual Environment Setup
-If build environment not set up:
-```bash
-./entrypoint.sh
-```
+### Manual Mode Issues
+If manual mode still runs automatic build:
+1. Check that `run-docker.sh` has been updated with the latest changes
+2. Ensure containers are properly cleaned with `./clean.sh`
+3. Verify that `entrypoint.sh` debugging logs appear when expected
 
-### Container Re-entry
-```bash
-./run-docker.sh
-```
+### Debugging
+The `entrypoint.sh` script includes debugging information:
+- Shows arguments passed to the script
+- Displays manual mode detection logic
+- Indicates which execution path is taken
 
-### Clean Environment Reset
-```bash
-./clean.sh
-./run-docker.sh
-```
-
-## Build Process Flow
-
-1. Host system: `./run-docker.sh`
-2. Docker container starts
-3. `entrypoint.sh` runs automatically
-4. Environment configured
-5. Prompt: `yocto@nuc:~/kirkstone/build$`
-6. Execute: `bitbake nuc-image-qt5`
-7. Build completes
-8. Output in `kirkstone/build/tmp/deploy/images/` 
+### Container Management
+- **Clean environment**: `./clean.sh` removes all containers and images
+- **Manual container control**: Use `./run-docker.sh` for direct Docker operations
+- **Container inspection**: Use `docker ps -a` to check container status

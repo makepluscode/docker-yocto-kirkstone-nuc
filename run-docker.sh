@@ -6,6 +6,27 @@ DIR=$(dirname "$(realpath "$0")")
 HOST_YOCTO_DIR="$DIR/kirkstone"
 CONTAINER_YOCTO_DIR="/home/yocto/kirkstone"
 
+# Check for required argument
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <mode>"
+    echo "  auto   - Automatic build mode: clean, configure, and build nuc-image-qt5"
+    echo "  manual - Manual mode: enter container with build environment setup"
+    echo ""
+    echo "Examples:"
+    echo "  $0 auto     # Run automatic build and exit"
+    echo "  $0 manual   # Enter container for manual operations"
+    exit 1
+fi
+
+MODE=$1
+
+# Validate mode argument
+if [ "$MODE" != "auto" ] && [ "$MODE" != "manual" ]; then
+    echo "Error: Invalid mode '$MODE'"
+    echo "Valid modes: auto, manual"
+    exit 1
+fi
+
 # 호스트 yocto 디렉토리 없으면 생성
 mkdir -p "$HOST_YOCTO_DIR"
 
@@ -18,20 +39,44 @@ fi
 # 컨테이너가 실행 중이면 attach
 if docker ps --format '{{.Names}}' | grep -q "^$CONTAINER\$"; then
   echo "▶ 실행 중인 컨테이너에 attach 합니다: $CONTAINER"
-  docker exec -it $CONTAINER bash
+  if [ "$MODE" = "auto" ]; then
+    # Auto mode: run entrypoint script and exit
+    docker exec -it $CONTAINER /home/yocto/entrypoint.sh
+  else
+    # Manual mode: just enter bash
+    docker exec -it $CONTAINER bash
+  fi
   exit 0
 fi
 
 # 정지된 컨테이너가 있으면 재시작
 if docker ps -a --format '{{.Names}}' | grep -q "^$CONTAINER\$"; then
   echo "▶ 이전에 종료된 컨테이너를 재시작합니다: $CONTAINER"
-  docker start -ai $CONTAINER
+  if [ "$MODE" = "auto" ]; then
+    # Auto mode: start and run entrypoint script
+    docker start $CONTAINER
+    docker exec -it $CONTAINER /home/yocto/entrypoint.sh
+  else
+    # Manual mode: start and enter bash (override entrypoint)
+    docker start $CONTAINER
+    docker exec -it $CONTAINER bash
+  fi
   exit 0
 fi
 
 # 새 컨테이너 실행 (볼륨 매핑 포함)
 echo "▶ 새로운 컨테이너를 시작합니다: $CONTAINER"
-docker run -it \
-  --name $CONTAINER \
-  -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
-  $IMAGE
+if [ "$MODE" = "auto" ]; then
+  # Auto mode: run with entrypoint script
+  docker run -it \
+    --name $CONTAINER \
+    -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
+    $IMAGE /home/yocto/entrypoint.sh
+else
+  # Manual mode: run with bash entrypoint
+  docker run -it \
+    --name $CONTAINER \
+    -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
+    --entrypoint /bin/bash \
+    $IMAGE
+fi

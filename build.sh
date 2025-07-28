@@ -1,28 +1,33 @@
-#!/usr/bin/env bash
-# Composite build script
-# 1. clean workspace via clean.sh
-# 2. run Docker-based Yocto build via run-docker.sh
-# Only if each step succeeds will the next run.
-# Usage: ./build.sh [additional args passed to run-docker.sh]
+#!/bin/bash
 
-set -euo pipefail
+# Build script for Intel NUC Yocto project
+# Defaults to auto mode, but allows manual mode
 
-SCRIPT_DIR=$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Step 1: clean
-echo "🔄 Running clean.sh ..."
-if "$SCRIPT_DIR/clean.sh"; then
-  echo "✅ clean.sh completed"
+# Check if manual mode is requested
+if [ "$1" = "manual" ]; then
+    echo "🔧 Manual build mode requested"
+    exec "$SCRIPT_DIR/run-docker.sh" manual
+elif [ "$1" = "auto" ] || [ $# -eq 0 ]; then
+    echo "🔄 Running clean.sh ..."
+    if "$SCRIPT_DIR/clean.sh"; then
+        echo "✅ clean.sh completed"
+    else
+        echo "❌ clean.sh failed. Aborting."
+        exit 1
+    fi
+    echo "🚀 Auto build mode (default)"
+    exec "$SCRIPT_DIR/run-docker.sh" auto
 else
-  echo "❌ clean.sh failed. Aborting."
-  exit 1
-fi
-
-# Step 2: run docker build
-echo "🐳 Starting Docker build ..."
-if "$SCRIPT_DIR/run-docker.sh" "$@"; then
-  echo "🎉 Build finished successfully"
-else
-  echo "❌ Docker build failed"
-  exit 1
+    echo "Usage: $0 [auto|manual]"
+    echo "  (no args) - Auto build mode: clean, configure, and build nuc-image-qt5"
+    echo "  auto      - Auto build mode: clean, configure, and build nuc-image-qt5"
+    echo "  manual    - Manual mode: enter container with build environment setup"
+    echo ""
+    echo "Examples:"
+    echo "  $0         # Run automatic build and exit"
+    echo "  $0 auto    # Run automatic build and exit"
+    echo "  $0 manual  # Enter container for manual operations"
+    exit 1
 fi 

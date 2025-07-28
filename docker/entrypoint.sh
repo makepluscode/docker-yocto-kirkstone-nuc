@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# 디버깅을 위한 로그 추가
+echo "🔍 DEBUG: entrypoint.sh started with args: $@"
+echo "🔍 DEBUG: Number of arguments: $#"
+
 cd ~/kirkstone || exit 1
 
 # poky/oe-init-build-env가 없으면 오류 출력 후 종료
@@ -85,10 +89,31 @@ else
   echo "❌ Template file not found: $LOCALCONF_TEMPLATE"
 fi
 
-# 모든 설정이 끝났으면 빌드 수행
-if complete_build; then
-  echo "🏁 Exiting container after successful build"
-  exit 0
+# 디버깅을 위한 로그 추가
+echo "🔍 DEBUG: About to check manual mode"
+echo "🔍 DEBUG: Arguments: '$@'"
+echo "🔍 DEBUG: Number of args: $#"
+echo "🔍 DEBUG: Manual check: [ $# -eq 0 ] = $([ $# -eq 0 ] && echo 'true' || echo 'false')"
+echo "🔍 DEBUG: Manual check: [[ '$@' == *'manual'* ]] = $([[ "$@" == *"manual"* ]] && echo 'true' || echo 'false')"
+
+# Check if we're in manual mode (no arguments or manual argument)
+if [ $# -eq 0 ] || [[ "$@" == *"manual"* ]]; then
+  echo "🔧 Manual mode: Build environment setup complete"
+  echo "   You can now run manual commands like:"
+  echo "   - bitbake nuc-image-qt5"
+  echo "   - bitbake nuc-bundle"
+  echo "   - bitbake -c menuconfig virtual/kernel"
+  echo ""
+  echo "🔍 DEBUG: Manual mode detected, executing bash"
+  exec bash
+else
+  # Auto mode: run complete build
+  echo "🚀 Auto mode: Starting automatic build..."
+  if complete_build; then
+    echo "🏁 Exiting container after successful build"
+    exit 0
+  fi
 fi
 
+echo "🔍 DEBUG: Reached end of script, executing bash"
 exec bash
