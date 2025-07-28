@@ -17,7 +17,6 @@ RAUC selects one of two root partitions (`rootfs.0`, `rootfs.1`) in an *A/B* con
 The following sequence diagram shows the first boot process after a normal update as an example.
 
 ```mermaid
-autonumber
 sequenceDiagram
     participant FW as UEFI/BIOS
     participant GRUB as GRUB EFI Loader
