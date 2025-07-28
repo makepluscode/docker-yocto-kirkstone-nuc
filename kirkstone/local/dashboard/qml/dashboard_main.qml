@@ -98,7 +98,7 @@ ApplicationWindow {
             width: contentArea.width - 20
             
             // System Information Card
-            DashboardCard {
+            dashboard_card {
                 title: "System Information"
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
@@ -110,16 +110,16 @@ ApplicationWindow {
                     rowSpacing: 10
                     columnSpacing: 20
                     
-                    InfoRow { label: "Hostname:"; value: systemInfo.hostname }
-                    InfoRow { label: "Kernel:"; value: systemInfo.kernelVersion }
-                    InfoRow { label: "Architecture:"; value: systemInfo.architecture }
-                    InfoRow { label: "Uptime:"; value: systemInfo.uptime }
-                    InfoRow { label: "Temperature:"; value: systemInfo.temperature.toFixed(1) + "°C" }
+                    info_row { label: "Hostname:"; value: systemInfo.hostname }
+                    info_row { label: "Kernel:"; value: systemInfo.kernelVersion }
+                    info_row { label: "Architecture:"; value: systemInfo.architecture }
+                    info_row { label: "Uptime:"; value: systemInfo.uptime }
+                    info_row { label: "Temperature:"; value: systemInfo.temperature.toFixed(1) + "°C" }
                 }
             }
             
             // CPU Usage Card
-            DashboardCard {
+            dashboard_card {
                 title: "CPU Usage"
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
@@ -165,7 +165,7 @@ ApplicationWindow {
             }
             
             // Memory Usage Card
-            DashboardCard {
+            dashboard_card {
                 title: "Memory Usage"
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
@@ -228,7 +228,7 @@ ApplicationWindow {
             }
             
             // Disk Usage Card
-            DashboardCard {
+            dashboard_card {
                 title: "Root Filesystem"
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
@@ -291,7 +291,7 @@ ApplicationWindow {
             }
 
             // RAUC Status Card
-            RaucCard {
+            rauc_card {
                 Layout.columnSpan: 2
                 Layout.fillWidth: true
                 Layout.preferredHeight: 300

@@ -20,12 +20,12 @@ SYSTEMD_SERVICE:${PN} = "dashboard-eglfs.service"
 do_install:append() {
     # Install systemd services
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${EXTERNALSRC}/dashboard.service ${D}${systemd_system_unitdir}/
-    install -m 0644 ${EXTERNALSRC}/dashboard-eglfs.service ${D}${systemd_system_unitdir}/
+    install -m 0644 ${EXTERNALSRC}/services/dashboard.service ${D}${systemd_system_unitdir}/
+    install -m 0644 ${EXTERNALSRC}/services/dashboard-eglfs.service ${D}${systemd_system_unitdir}/
 
     # Install Qt5 configuration
     install -d ${D}${sysconfdir}/qt5
-    install -m 0644 ${EXTERNALSRC}/eglfs_kms_config.json ${D}${sysconfdir}/qt5/qt5_config.json
+    install -m 0644 ${EXTERNALSRC}/config/qt5_eglfs_config.json ${D}${sysconfdir}/qt5/qt5_config.json
 
     # Create desktop file
     install -d ${D}${datadir}/applications

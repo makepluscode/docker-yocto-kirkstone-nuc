@@ -1,4 +1,4 @@
-#include "systeminfo.h"
+#include "system_info.h"
 #include <QFile>
 #include <QTextStream>
 #include <QStringList>

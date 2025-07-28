@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../qml/dashboard_main.qml</file>
+        <file>../qml/dashboard_card.qml</file>
+        <file>../qml/info_row.qml</file>
+        <file>../qml/rauc_card.qml</file>
+    </qresource>
+</RCC> 

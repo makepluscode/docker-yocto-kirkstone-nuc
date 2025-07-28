@@ -3,8 +3,8 @@
 #include <QQmlContext>
 #include <QFontDatabase>
 #include <QDir>
-#include "systeminfo.h"
-#include "raucmanager.h"
+#include "system_info.h"
+#include "rauc_manager.h"
 #include <dlt/dlt.h>
 
 static DltContext ctxUI;
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     
     // Load main QML file
-    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+    engine.load(QUrl(QStringLiteral("qrc:/dashboard_main.qml")));
     
     if (engine.rootObjects().isEmpty())
         return -1;

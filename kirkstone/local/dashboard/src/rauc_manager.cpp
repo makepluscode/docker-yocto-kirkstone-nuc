@@ -1,4 +1,4 @@
-#include "raucmanager.h"
+#include "rauc_manager.h"
 #include <QTextStream>
 #include <QDebug>
 #include <dlt/dlt.h>

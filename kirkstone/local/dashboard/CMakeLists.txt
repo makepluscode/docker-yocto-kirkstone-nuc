@@ -12,21 +12,21 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5 REQUIRED COMPONENTS Core Quick Network DBus)
 
 set(QML_FILES
-    main.qml
-    DashboardCard.qml
-    InfoRow.qml
-    RaucCard.qml
+    qml/dashboard_main.qml
+    qml/dashboard_card.qml
+    qml/info_row.qml
+    qml/rauc_card.qml
 )
 
 set(CPP_FILES
-    main.cpp
-    systeminfo.cpp
-    systeminfo.h
-    raucmanager.cpp
-    raucmanager.h
+    src/main.cpp
+    src/system_info.cpp
+    src/system_info.h
+    src/rauc_manager.cpp
+    src/rauc_manager.h
 )
 
-qt5_add_resources(QT_RESOURCES qml.qrc)
+qt5_add_resources(QT_RESOURCES resources/dashboard_resources.qrc)
 
 add_executable(dashboard
     ${CPP_FILES}

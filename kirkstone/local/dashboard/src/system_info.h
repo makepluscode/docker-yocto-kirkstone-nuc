@@ -1,5 +1,5 @@
-#ifndef SYSTEMINFO_H
-#define SYSTEMINFO_H
+#ifndef SYSTEM_INFO_H
+#define SYSTEM_INFO_H
 
 #include <QObject>
 #include <QString>
@@ -116,4 +116,4 @@ private:
     qint64 m_lastCpuIdle;
 };
 
-#endif // SYSTEMINFO_H 
+#endif // SYSTEM_INFO_H 
