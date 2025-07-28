@@ -22,6 +22,9 @@ SSTATE_DIR ?= "${TOPDIR}/../sstate-cache"
 # Qt5 Configuration - OpenGL, KMS, and hardware acceleration support
 PACKAGECONFIG:append:pn-qtbase = " eglfs kms gbm"
 
+# Qt Git Protocol Configuration - Use HTTPS instead of git protocol
+QT_GIT_PROTOCOL = "https"
+
 # User Account Configuration
 EXTRA_USERS_PARAMS = "\
     useradd -p '' root; \
