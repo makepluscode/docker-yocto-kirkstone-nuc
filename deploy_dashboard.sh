@@ -17,7 +17,7 @@ fi
 
 echo "📦 Found binary: $BIN_PATH"
 
-SERVICE_DIR="$(dirname $(readlink -f $0))/kirkstone/meta-qt5-app/recipes-qt5/system-dashboard/files"
+SERVICE_DIR="$(dirname $(readlink -f $0))/kirkstone/local/dashboard"
 SERVICE_EGLFS="$SERVICE_DIR/dashboard-eglfs.service"
 
 if [[ ! -f "$SERVICE_EGLFS" ]]; then

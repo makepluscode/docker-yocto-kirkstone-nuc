@@ -59,7 +59,7 @@ BBLAYERS += " \
   ${TOPDIR}/../meta-nuc \
   ${TOPDIR}/../meta-rauc \
   ${TOPDIR}/../meta-qt5 \
-  ${TOPDIR}/../meta-qt5-app \
+  ${TOPDIR}/../meta-apps \
 "
 EOF
 fi

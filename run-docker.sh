@@ -52,14 +52,21 @@ fi
 # 정지된 컨테이너가 있으면 재시작
 if docker ps -a --format '{{.Names}}' | grep -q "^$CONTAINER\$"; then
   echo "▶ 이전에 종료된 컨테이너를 재시작합니다: $CONTAINER"
+  # 기존 컨테이너 제거 (볼륨 마운트를 위해)
+  docker rm $CONTAINER
   if [ "$MODE" = "auto" ]; then
     # Auto mode: start and run entrypoint script
-    docker start $CONTAINER
-    docker exec -it $CONTAINER /home/yocto/entrypoint.sh
+    docker run -it \
+      --name $CONTAINER \
+      -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
+      $IMAGE /home/yocto/entrypoint.sh
   else
     # Manual mode: start and enter bash (override entrypoint)
-    docker start $CONTAINER
-    docker exec -it $CONTAINER bash
+    docker run -it \
+      --name $CONTAINER \
+      -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
+      --entrypoint /bin/bash \
+      $IMAGE
   fi
   exit 0
 fi

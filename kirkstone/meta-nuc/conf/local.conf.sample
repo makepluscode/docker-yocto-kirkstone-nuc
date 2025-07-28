@@ -1,6 +1,13 @@
 # Intel NUC Machine Configuration
 MACHINE ?= "intel-corei7-64"
 
+# Local source code directory configuration
+LOCAL ?= "/home/yocto/kirkstone/local"
+
+# External source configuration for dashboard
+EXTERNALSRC:pn-dashboard = "${LOCAL}/dashboard"
+EXTERNALSRC_BUILD:pn-dashboard = "${WORKDIR}/build"
+
 # Target Device Configuration (SATA SSD)
 ROOT_BLOCK_DEVICE_NAME = "sda"
 

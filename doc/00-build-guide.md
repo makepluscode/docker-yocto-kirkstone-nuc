@@ -60,7 +60,7 @@ When using automatic mode, `entrypoint.sh` runs automatically and performs:
   - `meta-nuc` (NUC-specific configurations)
   - `meta-rauc` (RAUC auto-update system)
   - `meta-qt5`
-  - `meta-qt5-app`
+  - `meta-apps`
 
 #### 4.2 RAUC Integration
 - **Automatic RAUC configuration** including:
