@@ -25,6 +25,21 @@ PACKAGECONFIG:append:pn-qtbase = " eglfs kms gbm"
 # Qt Git Protocol Configuration - Use HTTPS instead of git protocol
 QT_GIT_PROTOCOL = "https"
 
+# Build Configuration - Fix linker issues
+PACKAGECONFIG:remove:pn-libpcre = "pcregrep pcretest"
+PACKAGECONFIG:remove:pn-nativesdk-libpcre = "pcregrep pcretest"
+
+# Disable problematic Qt features for nativesdk builds
+PACKAGECONFIG:remove:pn-nativesdk-qtbase = "gui widgets"
+
+# Additional fixes for nativesdk builds
+PACKAGECONFIG:remove:pn-nativesdk-libpcre = "pcregrep pcretest pcrecpp_unittest pcre_scanner_unittest pcre_stringpiece_unittest"
+PACKAGECONFIG:remove:pn-libpcre = "pcregrep pcretest pcrecpp_unittest pcre_scanner_unittest pcre_stringpiece_unittest"
+
+# Disable tests for problematic packages
+PACKAGECONFIG:remove:pn-nativesdk-libpcre = "tests"
+PACKAGECONFIG:remove:pn-libpcre = "tests"
+
 # User Account Configuration
 EXTRA_USERS_PARAMS = "\
     useradd -p '' root; \
