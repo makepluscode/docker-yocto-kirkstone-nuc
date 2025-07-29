@@ -183,12 +183,12 @@ void SystemInfo::updateMemoryInfo()
 
 void SystemInfo::updateTemperature()
 {
-    // Try to read from k10temp (AMD CPU typical) first
-    QString tempContent = readFileContent("/sys/class/hwmon/hwmon2/temp1_input");
+    // Try to read from coretemp (Intel CPU) first
+    QString tempContent = readFileContent("/sys/class/hwmon/hwmon1/temp1_input");
     if (!tempContent.isEmpty()) {
         bool ok;
         double temp = tempContent.trimmed().toDouble(&ok);
-        if (ok) {
+        if (ok && temp > 1000) { // Ensure it's a reasonable temperature value
             double newTemperature = temp / 1000.0; // Convert from millidegrees to degrees
             if (qAbs(m_temperature - newTemperature) > 0.1) {
                 m_temperature = newTemperature;
