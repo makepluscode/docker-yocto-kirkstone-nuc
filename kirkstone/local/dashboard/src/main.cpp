@@ -5,6 +5,7 @@
 #include <QDir>
 #include "system_info.h"
 #include "rauc_manager.h"
+#include "grub_manager.h"
 #include <dlt/dlt.h>
 
 static DltContext ctxUI;
@@ -25,6 +26,7 @@ int main(int argc, char *argv[])
     // Register QML types
     qmlRegisterType<SystemInfo>("SystemInfo", 1, 0, "SystemInfo");
     qmlRegisterType<RaucManager>("Rauc", 1, 0, "RaucManager");
+    qmlRegisterType<GrubManager>("Grub", 1, 0, "GrubManager");
 
     QQmlApplicationEngine engine;
     

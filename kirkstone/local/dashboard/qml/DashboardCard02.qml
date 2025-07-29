@@ -13,6 +13,11 @@ Rectangle {
     
     property SystemInfo systemInfo: null
     
+    Timer {
+        interval: 1000; running: true; repeat: true
+        onTriggered: if (systemInfo) systemInfo.refresh()
+    }
+    
     Column {
         anchors.fill: parent
         spacing: 0
@@ -25,9 +30,7 @@ Rectangle {
             radius: 8
             
             Text {
-                anchors.left: parent.left
-                anchors.leftMargin: 15
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
                 text: "Memory"
                 color: "#ffffff"
                 font.pointSize: 12

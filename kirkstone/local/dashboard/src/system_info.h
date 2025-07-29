@@ -62,6 +62,8 @@ public slots:
     void updateSystemInfo();
     void updateTime();
     QString formatBytes(qint64 bytes);
+    Q_INVOKABLE void rebootSystem();
+    Q_INVOKABLE void refresh();
 
 signals:
     void cpuUsageChanged();

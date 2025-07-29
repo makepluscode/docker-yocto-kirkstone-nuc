@@ -183,8 +183,8 @@ void SystemInfo::updateMemoryInfo()
 
 void SystemInfo::updateTemperature()
 {
-    // Try to read CPU temperature from thermal zone
-    QString tempContent = readFileContent("/sys/class/thermal/thermal_zone0/temp");
+    // Try to read from k10temp (AMD CPU typical) first
+    QString tempContent = readFileContent("/sys/class/hwmon/hwmon2/temp1_input");
     if (!tempContent.isEmpty()) {
         bool ok;
         double temp = tempContent.trimmed().toDouble(&ok);
@@ -197,19 +197,31 @@ void SystemInfo::updateTemperature()
             return;
         }
     }
-    
-    // Fallback: try hwmon
+    // Fallback: try thermal_zone0
+    tempContent = readFileContent("/sys/class/thermal/thermal_zone0/temp");
+    if (!tempContent.isEmpty()) {
+        bool ok;
+        double temp = tempContent.trimmed().toDouble(&ok);
+        if (ok) {
+            double newTemperature = temp / 1000.0;
+            if (qAbs(m_temperature - newTemperature) > 0.1) {
+                m_temperature = newTemperature;
+                emit temperatureChanged();
+            }
+            return;
+        }
+    }
+    // Fallback: try hwmon scan (as before)
     QProcess process;
     process.start("find", QStringList() << "/sys/class/hwmon" << "-name" << "temp*_input");
     process.waitForFinished(1000);
-    
     QStringList tempFiles = QString::fromUtf8(process.readAllStandardOutput()).split('\n', Qt::SkipEmptyParts);
     for (const QString &tempFile : tempFiles) {
         QString content = readFileContent(tempFile);
         if (!content.isEmpty()) {
             bool ok;
             double temp = content.trimmed().toDouble(&ok);
-            if (ok && temp > 1000) { // Reasonable temperature in millidegrees
+            if (ok && temp > 1000) {
                 double newTemperature = temp / 1000.0;
                 if (qAbs(m_temperature - newTemperature) > 0.1) {
                     m_temperature = newTemperature;
@@ -396,4 +408,12 @@ QString SystemInfo::formatBytes(qint64 bytes)
     } else {
         return QString("%1 GB").arg(bytes / (1024.0 * 1024.0 * 1024.0), 0, 'f', 1);
     }
+} 
+
+void SystemInfo::rebootSystem() {
+    QProcess::startDetached("reboot");
+} 
+
+void SystemInfo::refresh() {
+    updateSystemInfo();
 } 

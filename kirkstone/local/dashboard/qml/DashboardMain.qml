@@ -4,6 +4,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import SystemInfo 1.0
 import Rauc 1.0
+import Grub 1.0
 
 ApplicationWindow {
     id: mainWindow
@@ -20,9 +21,14 @@ ApplicationWindow {
         id: raucManager
     }
 
+    GrubManager {
+        id: grubManager
+    }
+
     Component.onCompleted: {
-        // Initialize RAUC manager on startup
+        // Initialize managers on startup
         raucManager.refresh()
+        grubManager.refresh()
     }
 
     // Status Bar at top
@@ -164,7 +170,7 @@ ApplicationWindow {
             }
             
             DashboardCard42 {
-                // Empty card - no properties needed
+                grubManager: grubManager
             }
             
             DashboardCard43 {
@@ -415,10 +421,9 @@ ApplicationWindow {
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
-                enabled: false
                 
                 background: Rectangle {
-                    color: "#1a1a1a"
+                    color: "#333333"
                     radius: 5
                 }
                 
@@ -428,19 +433,20 @@ ApplicationWindow {
                     
                     Text {
                         text: "F8"
-                        color: "#666666"
+                        color: "#ffffff"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                     
                     Text {
-                        text: "Empty"
-                        color: "#666666"
+                        text: "Reboot"
+                        color: "#ffffff"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
+                onClicked: systemInfo.rebootSystem()
             }
         }
     }

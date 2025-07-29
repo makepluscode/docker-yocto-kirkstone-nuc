@@ -60,6 +60,7 @@ void RaucManager::parseStatus(const QString &output) {
 }
 
 void RaucManager::parseJsonStatus(const QString &jsonOutput) {
+    RUC_LOG(QString("Parsing JSON output: %1").arg(jsonOutput).toUtf8().constData());
     // Parse JSON using regex patterns
     QRegExp compatiblePattern("\"compatible\":\"([^\"]+)\"");
     QRegExp variantPattern("\"variant\":\"([^\"]*)\"");
@@ -89,36 +90,61 @@ void RaucManager::parseJsonStatus(const QString &jsonOutput) {
         }
     }
     
-    // Parse slots using regex
-    QRegExp slotAPattern("\"rootfs\\.0\":\\s*\\{[^}]*\"state\":\"([^\"]+)\"[^}]*\"boot_status\":\"([^\"]+)\"[^}]*\"device\":\"([^\"]+)\"");
-    QRegExp slotBPattern("\"rootfs\\.1\":\\s*\\{[^}]*\"state\":\"([^\"]+)\"[^}]*\"boot_status\":\"([^\"]+)\"[^}]*\"device\":\"([^\"]+)\"");
-    
-    // Parse slot A
-    if (slotAPattern.indexIn(jsonOutput) != -1) {
-        m_slotAState = slotAPattern.cap(1);
-        m_slotAStatus = slotAPattern.cap(2);
-        m_slotADevice = slotAPattern.cap(3);
+    // Parse slots using regex - updated for actual JSON structure
+    // The slots are in an array, so we need to find them within the array
+    // More flexible patterns that can handle the compact JSON format
+    // First find the slots array and then parse each slot
+    QRegExp slotsArrayPattern("\"slots\":\\s*\\[([^\\]]+)\\]");
+    if (slotsArrayPattern.indexIn(jsonOutput) != -1) {
+        QString slotsArray = slotsArrayPattern.cap(1);
+        RUC_LOG(QString("Found slots array: %1").arg(slotsArray).toUtf8().constData());
         
-        if (m_slotAState == "booted") {
-            m_bootSlot = "rootfs.0";
-        }
-        if (m_slotAState == "active") {
-            m_activatedSlot = "rootfs.0";
-        }
-    }
+        // Parse slot A (rootfs.0) - search in the entire JSON for the slot
+        QRegExp slotAPattern("\"rootfs\\.0\":\\s*\\{[^}]*\"state\":\"([^\"]+)\"[^}]*\"boot_status\":\"([^\"]+)\"[^}]*\"device\":\"([^\"]+)\"[^}]*\"bootname\":\"([^\"]+)\"");
+        // Parse slot B (rootfs.1) - search in the entire JSON for the slot
+        QRegExp slotBPattern("\"rootfs\\.1\":\\s*\\{[^}]*\"state\":\"([^\"]+)\"[^}]*\"boot_status\":\"([^\"]+)\"[^}]*\"device\":\"([^\"]+)\"[^}]*\"bootname\":\"([^\"]+)\"");
     
-    // Parse slot B
-    if (slotBPattern.indexIn(jsonOutput) != -1) {
-        m_slotBState = slotBPattern.cap(1);
-        m_slotBStatus = slotBPattern.cap(2);
-        m_slotBDevice = slotBPattern.cap(3);
+        // Parse slot A
+        if (slotAPattern.indexIn(jsonOutput) != -1) {
+            m_slotAState = slotAPattern.cap(1);
+            m_slotAStatus = slotAPattern.cap(2);
+            m_slotADevice = slotAPattern.cap(3);
+            QString bootname = slotAPattern.cap(4);
+            
+            RUC_LOG(QString("Slot A parsed - State: %1, Status: %2, Device: %3, Bootname: %4")
+                    .arg(m_slotAState).arg(m_slotAStatus).arg(m_slotADevice).arg(bootname).toUtf8().constData());
+            
+            if (m_slotAState == "booted") {
+                m_bootSlot = "rootfs.0";
+            }
+            if (m_slotAState == "active") {
+                m_activatedSlot = "rootfs.0";
+            }
+        } else {
+            RUC_LOG("Failed to parse Slot A");
+        }
         
-        if (m_slotBState == "booted") {
-            m_bootSlot = "rootfs.1";
+        // Parse slot B
+        if (slotBPattern.indexIn(jsonOutput) != -1) {
+            m_slotBState = slotBPattern.cap(1);
+            m_slotBStatus = slotBPattern.cap(2);
+            m_slotBDevice = slotBPattern.cap(3);
+            QString bootname = slotBPattern.cap(4);
+            
+            RUC_LOG(QString("Slot B parsed - State: %1, Status: %2, Device: %3, Bootname: %4")
+                    .arg(m_slotBState).arg(m_slotBStatus).arg(m_slotBDevice).arg(bootname).toUtf8().constData());
+            
+            if (m_slotBState == "booted") {
+                m_bootSlot = "rootfs.1";
+            }
+            if (m_slotBState == "active") {
+                m_activatedSlot = "rootfs.1";
+            }
+        } else {
+            RUC_LOG("Failed to parse Slot B");
         }
-        if (m_slotBState == "active") {
-            m_activatedSlot = "rootfs.1";
-        }
+    } else {
+        RUC_LOG("Failed to find slots array in JSON");
     }
     
     // Update status text for backward compatibility

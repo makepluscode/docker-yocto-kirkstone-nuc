@@ -24,9 +24,7 @@ Rectangle {
             radius: 8
             
             Text {
-                anchors.left: parent.left
-                anchors.leftMargin: 15
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
                 text: "System Temp (°C)"
                 color: "#ffffff"
                 font.pointSize: 12

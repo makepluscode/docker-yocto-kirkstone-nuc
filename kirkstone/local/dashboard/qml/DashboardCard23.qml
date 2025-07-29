@@ -21,9 +21,7 @@ Rectangle {
             radius: 8
             
             Text {
-                anchors.left: parent.left
-                anchors.leftMargin: 15
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
                 text: "Empty Card"
                 color: "#666666"
                 font.pointSize: 12

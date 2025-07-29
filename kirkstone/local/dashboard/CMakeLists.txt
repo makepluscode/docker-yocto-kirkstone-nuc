@@ -40,6 +40,8 @@ set(CPP_FILES
     src/system_info.h
     src/rauc_manager.cpp
     src/rauc_manager.h
+    src/grub_manager.cpp
+    src/grub_manager.h
 )
 
 qt5_add_resources(QT_RESOURCES resources/dashboard_resources.qrc)

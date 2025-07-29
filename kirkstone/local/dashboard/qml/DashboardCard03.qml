@@ -25,9 +25,7 @@ Rectangle {
             radius: 8
             
             Text {
-                anchors.left: parent.left
-                anchors.leftMargin: 15
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
                 text: "Storage"
                 color: "#ffffff"
                 font.pointSize: 12
