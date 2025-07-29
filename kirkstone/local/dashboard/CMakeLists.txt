@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt5 REQUIRED COMPONENTS Core Quick Network DBus)
+find_package(Qt5 REQUIRED COMPONENTS Core Quick Network DBus Widgets)
 
 set(QML_FILES
     qml/DashboardMain.qml
@@ -56,6 +56,7 @@ target_link_libraries(dashboard
     Qt5::Quick
     Qt5::Network
     Qt5::DBus
+    Qt5::Widgets
 )
 
 # Add DLT (required)
