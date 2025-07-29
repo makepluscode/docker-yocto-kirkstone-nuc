@@ -44,18 +44,33 @@ Rectangle {
             
             Row {
                 spacing: 10
-                Text { text: "Booted Slot:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
-                Text { text: raucManager ? raucManager.bootSlot : ""; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+                Text { text: "Compatible:"; color: "#cccccc"; font.pointSize: 9; width: 80; horizontalAlignment: Text.AlignRight }
+                Text { text: raucManager ? raucManager.compatible : "Loading..."; color: "#ffffff"; font.pointSize: 9; font.bold: true }
             }
             Row {
                 spacing: 10
-                Text { text: "Activated Slot:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
-                Text { text: raucManager ? raucManager.activatedSlot : ""; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+                Text { text: "Booted:"; color: "#cccccc"; font.pointSize: 9; width: 80; horizontalAlignment: Text.AlignRight }
+                Text { text: raucManager ? raucManager.booted : "Loading..."; color: "#ffffff"; font.pointSize: 9; font.bold: true }
             }
             Row {
                 spacing: 10
-                Text { text: "Status:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
-                Text { text: raucManager ? (raucManager.statusText.split('\n')[0] || "Unknown") : "Unknown"; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+                Text { text: "Slot A:"; color: "#cccccc"; font.pointSize: 9; width: 80; horizontalAlignment: Text.AlignRight }
+                Text { 
+                    text: raucManager ? (raucManager.slotAState + " (" + raucManager.slotAStatus + ")") : "Loading..."; 
+                    color: raucManager ? (raucManager.slotAStatus === "good" ? "#44ff44" : "#ff4444") : "#ffffff"; 
+                    font.pointSize: 9; 
+                    font.bold: true 
+                }
+            }
+            Row {
+                spacing: 10
+                Text { text: "Slot B:"; color: "#cccccc"; font.pointSize: 9; width: 80; horizontalAlignment: Text.AlignRight }
+                Text { 
+                    text: raucManager ? (raucManager.slotBState + " (" + raucManager.slotBStatus + ")") : "Loading..."; 
+                    color: raucManager ? (raucManager.slotBStatus === "good" ? "#44ff44" : "#ff4444") : "#ffffff"; 
+                    font.pointSize: 9; 
+                    font.bold: true 
+                }
             }
         }
     }
