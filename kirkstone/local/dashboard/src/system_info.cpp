@@ -195,8 +195,9 @@ void SystemInfo::updateUptime()
     int days = uptimeSeconds / 86400;
     int hours = (int(uptimeSeconds) % 86400) / 3600;
     int minutes = (int(uptimeSeconds) % 3600) / 60;
+    int seconds = int(uptimeSeconds) % 60;
     
-    QString newUptime = QString("%1d %2h %3m").arg(days).arg(hours).arg(minutes);
+    QString newUptime = QString("%1d %2h %3m %4s").arg(days).arg(hours).arg(minutes).arg(seconds);
     if (m_uptime != newUptime) {
         m_uptime = newUptime;
         emit uptimeChanged();
