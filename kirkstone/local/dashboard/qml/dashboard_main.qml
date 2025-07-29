@@ -96,13 +96,13 @@ ApplicationWindow {
             columnSpacing: 15
             width: contentArea.width - 20
             
-            // Version Info Card
+            // Version Info Card (Non-empty)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
                 color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
+                border.color: "#444444"
+                border.width: 2
                 radius: 8
                 
                 Column {
@@ -158,13 +158,13 @@ ApplicationWindow {
                 }
             }
             
-            // CPU Load Card
+            // CPU Load Card (Non-empty)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
                 color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
+                border.color: "#444444"
+                border.width: 2
                 radius: 8
                 
                 Column {
@@ -225,13 +225,13 @@ ApplicationWindow {
                 }
             }
             
-            // Memory Card
+            // Memory Card (Non-empty)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
                 color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
+                border.color: "#444444"
+                border.width: 2
                 radius: 8
                 
                 Column {
@@ -299,13 +299,13 @@ ApplicationWindow {
                 }
             }
             
-            // Storage Card
+            // Storage Card (Non-empty)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
                 color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
+                border.color: "#444444"
+                border.width: 2
                 radius: 8
                 
                 Column {
@@ -373,13 +373,13 @@ ApplicationWindow {
                 }
             }
             
-            // System Temp Card
+            // System Temp Card (Non-empty)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
                 color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
+                border.color: "#444444"
+                border.width: 2
                 radius: 8
                 
                 Column {
@@ -432,12 +432,12 @@ ApplicationWindow {
                 }
             }
             
-            // Empty Card 1
+            // Empty Card 1 (Empty - darker color)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
-                color: "#1a1a1a"
-                border.color: "#333333"
+                color: "#0f0f0f"
+                border.color: "#222222"
                 border.width: 1
                 radius: 8
                 
@@ -449,7 +449,7 @@ ApplicationWindow {
                     Rectangle {
                         width: parent.width
                         height: 35
-                        color: "#2a2a2a"
+                        color: "#1a1a1a"
                         radius: 8
                         
                         Text {
@@ -457,7 +457,7 @@ ApplicationWindow {
                             anchors.leftMargin: 15
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Empty Card"
-                            color: "#ffffff"
+                            color: "#666666"
                             font.pointSize: 12
                             font.bold: true
                         }
@@ -467,19 +467,19 @@ ApplicationWindow {
                     Text {
                         anchors.centerIn: parent
                         text: "Empty"
-                        color: "#666666"
+                        color: "#444444"
                         font.pointSize: 12
                     }
                 }
             }
             
-            // Booting Info Card
+            // Booting Info Card (Non-empty)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
                 color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
+                border.color: "#444444"
+                border.width: 2
                 radius: 8
                 
                 Column {
@@ -530,12 +530,12 @@ ApplicationWindow {
                 }
             }
             
-            // Empty Card 2
+            // Empty Card 2 (Empty - darker color)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
-                color: "#1a1a1a"
-                border.color: "#333333"
+                color: "#0f0f0f"
+                border.color: "#222222"
                 border.width: 1
                 radius: 8
                 
@@ -547,7 +547,7 @@ ApplicationWindow {
                     Rectangle {
                         width: parent.width
                         height: 35
-                        color: "#2a2a2a"
+                        color: "#1a1a1a"
                         radius: 8
                         
                         Text {
@@ -555,7 +555,7 @@ ApplicationWindow {
                             anchors.leftMargin: 15
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Empty Card"
-                            color: "#ffffff"
+                            color: "#666666"
                             font.pointSize: 12
                             font.bold: true
                         }
@@ -565,7 +565,7 @@ ApplicationWindow {
                     Text {
                         anchors.centerIn: parent
                         text: "Empty"
-                        color: "#666666"
+                        color: "#444444"
                         font.pointSize: 12
                     }
                 }
@@ -691,9 +691,10 @@ ApplicationWindow {
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: false
                 
                 background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#333333"
+                    color: "#1a1a1a"
                     radius: 5
                 }
                 
@@ -703,7 +704,7 @@ ApplicationWindow {
                     
                     Text {
                         text: "F4"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -711,21 +712,20 @@ ApplicationWindow {
                     
                     Text {
                         text: "Empty"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
-                enabled: false
             }
             
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: false
                 
                 background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#333333"
+                    color: "#1a1a1a"
                     radius: 5
                 }
                 
@@ -735,7 +735,7 @@ ApplicationWindow {
                     
                     Text {
                         text: "F5"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -743,21 +743,20 @@ ApplicationWindow {
                     
                     Text {
                         text: "Empty"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
-                enabled: false
             }
             
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: false
                 
                 background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#333333"
+                    color: "#1a1a1a"
                     radius: 5
                 }
                 
@@ -767,7 +766,7 @@ ApplicationWindow {
                     
                     Text {
                         text: "F6"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -775,21 +774,20 @@ ApplicationWindow {
                     
                     Text {
                         text: "Empty"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
-                enabled: false
             }
             
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: false
                 
                 background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#333333"
+                    color: "#1a1a1a"
                     radius: 5
                 }
                 
@@ -799,7 +797,7 @@ ApplicationWindow {
                     
                     Text {
                         text: "F7"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -807,21 +805,20 @@ ApplicationWindow {
                     
                     Text {
                         text: "Empty"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
-                enabled: false
             }
             
             Button {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: false
                 
                 background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#333333"
+                    color: "#1a1a1a"
                     radius: 5
                 }
                 
@@ -831,7 +828,7 @@ ApplicationWindow {
                     
                     Text {
                         text: "F8"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -839,13 +836,11 @@ ApplicationWindow {
                     
                     Text {
                         text: "Empty"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
-                enabled: false
             }
         }
     }
