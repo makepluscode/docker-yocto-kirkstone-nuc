@@ -26,6 +26,9 @@ do_install:append() {
     # Install Qt5 configuration
     install -d ${D}${sysconfdir}/qt5
     install -m 0644 ${EXTERNALSRC}/config/qt5_eglfs_config.json ${D}${sysconfdir}/qt5/qt5_config.json
+    install -m 0644 ${EXTERNALSRC}/config/qt5_eglfs_config.json ${D}${sysconfdir}/qt5/eglfs_kms_config.json
+
+    # QML files are included in binary resources
 
     # Create desktop file
     install -d ${D}${datadir}/applications
