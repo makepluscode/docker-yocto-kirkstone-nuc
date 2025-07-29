@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # dlt-receive.sh – Dashboard DLT log receiver
 # Usage:
-#   ./dlt-receive.sh <NUC_IP> [PORT] [EXTRA_DLT_OPTIONS]
+#   ./dlt-receive.sh [NUC_IP] [PORT] [EXTRA_DLT_OPTIONS]
 # Example:
-#   ./dlt-receive.sh 192.168.1.100               # default port 3490
-#   ./dlt-receive.sh 192.168.1.100 3491 -e DBO   # custom port + filter for dashboard app
+#   ./dlt-receive.sh                              # use default IP 192.168.1.100, port 3490
+#   ./dlt-receive.sh 192.168.1.100               # custom IP, default port 3490
+#   ./dlt-receive.sh 192.168.1.100 3491 -e DBO   # custom IP + port + filter for dashboard app
 #   ./dlt-receive.sh 192.168.1.100 3490 -e RUC   # filter for RAUC manager logs
 #
 set -e
@@ -14,18 +15,14 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
   exit 0
 fi
 
+# Default IP address
+DEFAULT_IP="192.168.1.100"
+
 if [[ -z "$1" ]]; then
-  # Try to read TARGET_IP from connect.sh located in the same directory as this script
-  CONNECT_SH="$(dirname "$0")/../connect.sh"
-  if [[ -f "$CONNECT_SH" ]]; then
-    NUC_IP=$(grep -E '^TARGET_IP=' "$CONNECT_SH" | head -n1 | cut -d'"' -f2)
-  fi
-  if [[ -z "$NUC_IP" ]]; then
-    echo "❌ Error: NUC IP address required and could not be determined from connect.sh" >&2
-    echo "Run $0 --help for usage." >&2
-    exit 1
-  fi
-  PORT="${1:-3490}"
+  # Use default IP if no argument provided
+  NUC_IP="$DEFAULT_IP"
+  PORT="3490"
+  echo "📡 Using default IP: $NUC_IP"
 else
   NUC_IP="$1"
   PORT="${2:-3490}"
