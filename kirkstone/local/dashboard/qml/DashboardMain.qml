@@ -20,6 +20,11 @@ ApplicationWindow {
         id: raucManager
     }
 
+    Component.onCompleted: {
+        // Initialize RAUC manager on startup
+        raucManager.refresh()
+    }
+
     // Status Bar at top
     Rectangle {
         id: statusBar
@@ -155,7 +160,7 @@ ApplicationWindow {
             }
             
             DashboardCard41 {
-                // Empty card - no properties needed
+                raucManager: raucManager
             }
             
             DashboardCard42 {
