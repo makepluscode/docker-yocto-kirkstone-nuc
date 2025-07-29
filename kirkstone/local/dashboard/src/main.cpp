@@ -33,14 +33,14 @@ int main(int argc, char *argv[])
     
     // First try Qt resources
     qDebug() << "Trying to load QML from resources...";
-    engine.load(QUrl(QStringLiteral("qrc:/dashboard_main.qml")));
+    engine.load(QUrl(QStringLiteral("qrc:/DashboardMain.qml")));
     if (!engine.rootObjects().isEmpty()) {
         qDebug() << "Successfully loaded QML from resources";
         loaded = true;
     } else {
         qDebug() << "Failed to load from resources, trying file system...";
         // Fallback to file system
-        QString qmlPath = "/usr/share/dashboard/qml/dashboard_main.qml";
+        QString qmlPath = "/usr/share/dashboard/qml/DashboardMain.qml";
         qDebug() << "Checking file:" << qmlPath;
         if (QFile::exists(qmlPath)) {
             qDebug() << "File exists, loading from file system...";

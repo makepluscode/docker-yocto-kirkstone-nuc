@@ -12,10 +12,22 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5 REQUIRED COMPONENTS Core Quick Network DBus)
 
 set(QML_FILES
-    qml/dashboard_main.qml
-    qml/dashboard_card.qml
-    qml/info_row.qml
-    qml/rauc_card.qml
+    qml/DashboardMain.qml
+    qml/DashboardCard.qml
+    qml/InfoRow.qml
+    qml/RaucCard.qml
+    qml/DashboardCard00.qml
+    qml/DashboardCard01.qml
+    qml/DashboardCard02.qml
+    qml/DashboardCard03.qml
+    qml/DashboardCard10.qml
+    qml/DashboardCard11.qml
+    qml/DashboardCard12.qml
+    qml/DashboardCard13.qml
+    qml/DashboardCard20.qml
+    qml/DashboardCard21.qml
+    qml/DashboardCard22.qml
+    qml/DashboardCard23.qml
 )
 
 set(CPP_FILES
