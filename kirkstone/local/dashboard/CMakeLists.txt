@@ -40,8 +40,12 @@ target_link_libraries(dashboard
     Qt5::Quick
     Qt5::Network
     Qt5::DBus
-    dlt
 )
+
+# Add DLT (required)
+target_include_directories(dashboard PRIVATE /usr/local/oecore-x86_64/sysroots/corei7-64-oe-linux/usr/include)
+target_link_libraries(dashboard dlt)
+target_compile_definitions(dashboard PRIVATE HAVE_DLT=1)
 
 # Install target
 install(TARGETS dashboard

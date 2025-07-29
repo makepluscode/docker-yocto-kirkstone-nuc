@@ -10,11 +10,14 @@ ApplicationWindow {
     width: 1024
     height: 768
     visible: true
-    title: qsTr("System Dashboard")
     color: "#000000"
 
     SystemInfo {
         id: systemInfo
+    }
+
+    RaucManager {
+        id: raucManager
     }
 
     // Status Bar at top
@@ -98,10 +101,13 @@ ApplicationWindow {
             width: contentArea.width - 20
             
             // System Information Card
-            dashboard_card {
-                title: "System Information"
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
                 
                 GridLayout {
                     anchors.fill: parent
@@ -110,19 +116,42 @@ ApplicationWindow {
                     rowSpacing: 10
                     columnSpacing: 20
                     
-                    info_row { label: "Hostname:"; value: systemInfo.hostname }
-                    info_row { label: "Kernel:"; value: systemInfo.kernelVersion }
-                    info_row { label: "Architecture:"; value: systemInfo.architecture }
-                    info_row { label: "Uptime:"; value: systemInfo.uptime }
-                    info_row { label: "Temperature:"; value: systemInfo.temperature.toFixed(1) + "°C" }
+                    Row {
+                        spacing: 10
+                        Text { text: "Hostname:"; color: "#cccccc" }
+                        Text { text: systemInfo.hostname; color: "#ffffff" }
+                    }
+                    Row {
+                        spacing: 10
+                        Text { text: "Kernel:"; color: "#cccccc" }
+                        Text { text: systemInfo.kernelVersion; color: "#ffffff" }
+                    }
+                    Row {
+                        spacing: 10
+                        Text { text: "Architecture:"; color: "#cccccc" }
+                        Text { text: systemInfo.architecture; color: "#ffffff" }
+                    }
+                    Row {
+                        spacing: 10
+                        Text { text: "Uptime:"; color: "#cccccc" }
+                        Text { text: systemInfo.uptime; color: "#ffffff" }
+                    }
+                    Row {
+                        spacing: 10
+                        Text { text: "Temperature:"; color: "#cccccc" }
+                        Text { text: systemInfo.temperature.toFixed(1) + "°C"; color: "#ffffff" }
+                    }
                 }
             }
             
             // CPU Usage Card
-            dashboard_card {
-                title: "CPU Usage"
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
                 
                 Column {
                     anchors.fill: parent
@@ -165,10 +194,13 @@ ApplicationWindow {
             }
             
             // Memory Usage Card
-            dashboard_card {
-                title: "Memory Usage"
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
                 
                 Column {
                     anchors.fill: parent
@@ -228,10 +260,13 @@ ApplicationWindow {
             }
             
             // Disk Usage Card
-            dashboard_card {
-                title: "Root Filesystem"
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
                 
                 Column {
                     anchors.fill: parent
@@ -291,10 +326,58 @@ ApplicationWindow {
             }
 
             // RAUC Status Card
-            rauc_card {
+            Rectangle {
                 Layout.columnSpan: 2
                 Layout.fillWidth: true
                 Layout.preferredHeight: 300
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
+
+                Column {
+                    spacing: 10
+                    anchors.margins: 12
+                    anchors.fill: parent
+
+                    Text {
+                        text: "RAUC Status"
+                        font.pixelSize: 24
+                        font.bold: true
+                        color: "#ffffff"
+                    }
+
+                    GridLayout {
+                        columns: 2
+                        rowSpacing: 6
+                        columnSpacing: 20
+
+                        Text { text: "Booted Slot:"; color: "#cccccc" }
+                        Text { text: raucManager.bootSlot; color: "#ffffff" }
+
+                        Text { text: "Activated Slot:"; color: "#cccccc" }
+                        Text { text: raucManager.activatedSlot; color: "#ffffff" }
+                    }
+
+                    Rectangle { height: 1; width: parent.width; color: "#444" }
+
+                    ScrollView {
+                        height: 160
+                        TextArea {
+                            width: parent.width
+                            text: raucManager.statusText
+                            readOnly: true
+                            wrapMode: TextArea.Wrap
+                        }
+                    }
+
+                    Row {
+                        spacing: 12
+                        Button { text: "Boot Slot A"; onClicked: raucManager.bootSlotA() }
+                        Button { text: "Boot Slot B"; onClicked: raucManager.bootSlotB() }
+                        Button { text: "Refresh";   onClicked: raucManager.refresh() }
+                    }
+                }
             }
         }
     }

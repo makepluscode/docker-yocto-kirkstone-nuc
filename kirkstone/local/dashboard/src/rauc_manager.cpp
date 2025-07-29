@@ -14,8 +14,6 @@ static void ensureDltContext()
     }
 }
 
-RaucManager::RaucManager(QObject *parent) : QObject(parent) {}
-
 // Helper macro to log info with DLT
 #define RUC_LOG(str)                              \
     do {                                         \
@@ -24,6 +22,8 @@ RaucManager::RaucManager(QObject *parent) : QObject(parent) {}
                 DLT_LOG_INFO,                    \
                 DLT_STRING(str));                \
     } while (0)
+
+RaucManager::RaucManager(QObject *parent) : QObject(parent) {}
 
 void RaucManager::runProcess(const QString &cmd, const QStringList &args) {
     RUC_LOG(QString("Run process: %1 %2").arg(cmd, args.join(" ")).toUtf8().constData());

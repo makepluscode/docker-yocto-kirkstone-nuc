@@ -68,6 +68,10 @@ MACHINE_FEATURES:append = " drm"
 # Package Installation
 IMAGE_INSTALL:append = " intel-nuc-init rauc systemd-conf dlt-daemon"
 
+# SDK/Toolchain Configuration - Include DLT in toolchain
+TOOLCHAIN_TARGET_TASK:append = " dlt-daemon-dev"
+SDK_INCLUDE_PKGS:append = " dlt-daemon-dev"
+
 # RAUC Configuration
 RAUC_BUNDLE_VERSION = "0.0.1"
 RAUC_BUNDLE_DESCRIPTION = "Intel NUC"
