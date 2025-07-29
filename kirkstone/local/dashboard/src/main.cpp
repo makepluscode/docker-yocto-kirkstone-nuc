@@ -28,8 +28,28 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     
-    // Load main QML file from Qt resources (for Yocto build compatibility)
+    // Load main QML file with fallback strategy
+    bool loaded = false;
+    
+    // First try Qt resources
     engine.load(QUrl(QStringLiteral("qrc:/dashboard_main.qml")));
+    if (!engine.rootObjects().isEmpty()) {
+        loaded = true;
+    } else {
+        // Fallback to file system
+        QString qmlPath = "/usr/share/dashboard/qml/dashboard_main.qml";
+        if (QFile::exists(qmlPath)) {
+            engine.load(QUrl::fromLocalFile(qmlPath));
+            if (!engine.rootObjects().isEmpty()) {
+                loaded = true;
+            }
+        }
+    }
+    
+    if (!loaded) {
+        qDebug() << "Failed to load QML from both resources and file system";
+        return -1;
+    }
     
     if (engine.rootObjects().isEmpty())
         return -1;

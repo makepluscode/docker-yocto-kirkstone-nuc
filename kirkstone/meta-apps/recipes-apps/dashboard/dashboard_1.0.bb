@@ -28,7 +28,9 @@ do_install:append() {
     install -m 0644 ${EXTERNALSRC}/config/qt5_eglfs_config.json ${D}${sysconfdir}/qt5/qt5_config.json
     install -m 0644 ${EXTERNALSRC}/config/qt5_eglfs_config.json ${D}${sysconfdir}/qt5/eglfs_kms_config.json
 
-    # QML files are included in binary resources
+    # Install QML files for fallback
+    install -d ${D}${datadir}/dashboard/qml
+    install -m 0644 ${EXTERNALSRC}/qml/*.qml ${D}${datadir}/dashboard/qml/
 
     # Create desktop file
     install -d ${D}${datadir}/applications
@@ -48,4 +50,5 @@ FILES:${PN} += " \
     ${systemd_system_unitdir}/dashboard-eglfs.service \
     ${sysconfdir}/qt5/eglfs_kms_config.json \
     ${datadir}/applications/dashboard.desktop \
+    ${datadir}/dashboard/qml/*.qml \
 " 
