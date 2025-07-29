@@ -7,6 +7,7 @@
 #include <QStorageInfo>
 #include <QHostInfo>
 #include <QSysInfo>
+#include <QRegExp>
 
 SystemInfo::SystemInfo(QObject *parent)
     : QObject(parent)
@@ -21,11 +22,14 @@ SystemInfo::SystemInfo(QObject *parent)
     , m_rootPartitionUsed(0)
     , m_rootPartitionFree(0)
     , m_rootPartitionUsagePercent(0.0)
+    , m_buildTime("")
+    , m_yoctoVersion("")
     , m_lastCpuTotal(0)
     , m_lastCpuIdle(0)
 {
     // Initialize system details that don't change frequently
     updateSystemDetails();
+    updateBuildInfo();
     
     // Setup timers
     m_updateTimer = new QTimer(this);
@@ -44,6 +48,7 @@ SystemInfo::SystemInfo(QObject *parent)
 void SystemInfo::updateSystemInfo()
 {
     updateCpuUsage();
+    updateCpuCoreUsage();
     updateMemoryInfo();
     updateTemperature();
     updateUptime();
@@ -92,6 +97,42 @@ void SystemInfo::updateCpuUsage()
     
     m_lastCpuTotal = total;
     m_lastCpuIdle = idle;
+}
+
+void SystemInfo::updateCpuCoreUsage()
+{
+    QString statContent = readFileContent("/proc/stat");
+    if (statContent.isEmpty()) return;
+    
+    QStringList lines = statContent.split('\n');
+    QStringList newCpuCoreUsage;
+    
+    // Find all CPU core lines (cpu0, cpu1, cpu2, etc.)
+    for (const QString &line : lines) {
+        if (line.startsWith("cpu") && line != lines[0]) { // Skip the first "cpu" line (total)
+            QStringList cpuData = line.split(' ', Qt::SkipEmptyParts);
+            if (cpuData.size() < 8) continue;
+            
+            qint64 idle = cpuData[4].toLongLong();
+            qint64 total = 0;
+            for (int i = 1; i < cpuData.size(); ++i) {
+                total += cpuData[i].toLongLong();
+            }
+            
+            // Calculate usage percentage
+            double usage = 0.0;
+            if (total > 0) {
+                usage = 100.0 * (total - idle) / total;
+            }
+            
+            newCpuCoreUsage.append(QString::number(usage, 'f', 1));
+        }
+    }
+    
+    if (m_cpuCoreUsage != newCpuCoreUsage) {
+        m_cpuCoreUsage = newCpuCoreUsage;
+        emit cpuCoreUsageChanged();
+    }
 }
 
 void SystemInfo::updateMemoryInfo()
@@ -299,6 +340,49 @@ QString SystemInfo::readFileContent(const QString &filePath)
     
     QTextStream stream(&file);
     return stream.readAll();
+}
+
+void SystemInfo::updateBuildInfo()
+{
+    // Read build time from /etc/buildinfo or similar
+    QString buildTimeFile = "/etc/buildinfo";
+    QString newBuildTime = readFileContent(buildTimeFile);
+    if (newBuildTime.isEmpty()) {
+        // Fallback: try to get from /proc/version
+        QString procVersion = readFileContent("/proc/version");
+        if (!procVersion.isEmpty()) {
+            // Extract build date from kernel version string
+            QRegExp rx("\\w+\\s+\\w+\\s+\\d+\\s+\\d+:\\d+:\\d+\\s+\\w+\\s+\\d+");
+            if (rx.indexIn(procVersion) != -1) {
+                newBuildTime = rx.cap(0);
+            }
+        }
+    }
+    
+    if (m_buildTime != newBuildTime) {
+        m_buildTime = newBuildTime;
+        emit buildTimeChanged();
+    }
+    
+    // Read Yocto version from /etc/os-release
+    QString osReleaseFile = "/etc/os-release";
+    QString osReleaseContent = readFileContent(osReleaseFile);
+    QString newYoctoVersion = "";
+    
+    if (!osReleaseContent.isEmpty()) {
+        QStringList lines = osReleaseContent.split('\n');
+        for (const QString &line : lines) {
+            if (line.startsWith("VERSION=")) {
+                newYoctoVersion = line.mid(8).remove('"');
+                break;
+            }
+        }
+    }
+    
+    if (m_yoctoVersion != newYoctoVersion) {
+        m_yoctoVersion = newYoctoVersion;
+        emit yoctoVersionChanged();
+    }
 }
 
 QString SystemInfo::formatBytes(qint64 bytes)

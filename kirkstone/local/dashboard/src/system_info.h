@@ -11,6 +11,7 @@ class SystemInfo : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(double cpuUsage READ cpuUsage NOTIFY cpuUsageChanged)
+    Q_PROPERTY(QStringList cpuCoreUsage READ cpuCoreUsage NOTIFY cpuCoreUsageChanged)
     Q_PROPERTY(double memoryUsage READ memoryUsage NOTIFY memoryUsageChanged)
     Q_PROPERTY(qint64 totalMemory READ totalMemory NOTIFY totalMemoryChanged)
     Q_PROPERTY(qint64 usedMemory READ usedMemory NOTIFY usedMemoryChanged)
@@ -28,12 +29,15 @@ class SystemInfo : public QObject
     Q_PROPERTY(qint64 rootPartitionUsed READ rootPartitionUsed NOTIFY rootPartitionUsedChanged)
     Q_PROPERTY(qint64 rootPartitionFree READ rootPartitionFree NOTIFY rootPartitionFreeChanged)
     Q_PROPERTY(double rootPartitionUsagePercent READ rootPartitionUsagePercent NOTIFY rootPartitionUsagePercentChanged)
+    Q_PROPERTY(QString buildTime READ buildTime NOTIFY buildTimeChanged)
+    Q_PROPERTY(QString yoctoVersion READ yoctoVersion NOTIFY yoctoVersionChanged)
 
 public:
     explicit SystemInfo(QObject *parent = nullptr);
     
     // Getters
     double cpuUsage() const { return m_cpuUsage; }
+    QStringList cpuCoreUsage() const { return m_cpuCoreUsage; }
     double memoryUsage() const { return m_memoryUsage; }
     qint64 totalMemory() const { return m_totalMemory; }
     qint64 usedMemory() const { return m_usedMemory; }
@@ -51,6 +55,8 @@ public:
     qint64 rootPartitionUsed() const { return m_rootPartitionUsed; }
     qint64 rootPartitionFree() const { return m_rootPartitionFree; }
     double rootPartitionUsagePercent() const { return m_rootPartitionUsagePercent; }
+    QString buildTime() const { return m_buildTime; }
+    QString yoctoVersion() const { return m_yoctoVersion; }
 
 public slots:
     void updateSystemInfo();
@@ -59,6 +65,7 @@ public slots:
 
 signals:
     void cpuUsageChanged();
+    void cpuCoreUsageChanged();
     void memoryUsageChanged();
     void totalMemoryChanged();
     void usedMemoryChanged();
@@ -76,19 +83,24 @@ signals:
     void rootPartitionUsedChanged();
     void rootPartitionFreeChanged();
     void rootPartitionUsagePercentChanged();
+    void buildTimeChanged();
+    void yoctoVersionChanged();
 
 private:
     void updateCpuUsage();
+    void updateCpuCoreUsage();
     void updateMemoryInfo();
     void updateTemperature();
     void updateUptime();
     void updateSystemDetails();
     void updateNetworkInfo();
     void updateDiskInfo();
+    void updateBuildInfo();
     QString readFileContent(const QString &filePath);
     
     // Member variables
     double m_cpuUsage;
+    QStringList m_cpuCoreUsage;
     double m_memoryUsage;
     qint64 m_totalMemory;
     qint64 m_usedMemory;
@@ -106,6 +118,8 @@ private:
     qint64 m_rootPartitionUsed;
     qint64 m_rootPartitionFree;
     double m_rootPartitionUsagePercent;
+    QString m_buildTime;
+    QString m_yoctoVersion;
     
     // Timers
     QTimer *m_updateTimer;
