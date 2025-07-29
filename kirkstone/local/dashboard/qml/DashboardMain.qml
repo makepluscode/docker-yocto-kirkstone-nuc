@@ -92,9 +92,11 @@ ApplicationWindow {
         GridLayout {
             id: contentGrid
             columns: 4
-            rowSpacing: 15
-            columnSpacing: 15
+            rows: 4
+            rowSpacing: 10
+            columnSpacing: 10
             width: contentArea.width - 20
+            height: contentArea.height - 20
             
             // Row 1: Cards 00-03
             DashboardCard00 {
@@ -123,7 +125,7 @@ ApplicationWindow {
             }
             
             DashboardCard12 {
-                raucManager: raucManager
+                // Empty card - no properties needed
             }
             
             DashboardCard13 {
@@ -144,6 +146,23 @@ ApplicationWindow {
             }
             
             DashboardCard23 {
+                // Empty card - no properties needed
+            }
+            
+            // Row 4: Cards 40-43
+            DashboardCard40 {
+                raucManager: raucManager
+            }
+            
+            DashboardCard41 {
+                // Empty card - no properties needed
+            }
+            
+            DashboardCard42 {
+                // Empty card - no properties needed
+            }
+            
+            DashboardCard43 {
                 // Empty card - no properties needed
             }
         }

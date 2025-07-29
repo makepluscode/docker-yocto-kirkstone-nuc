@@ -28,6 +28,10 @@ set(QML_FILES
     qml/DashboardCard21.qml
     qml/DashboardCard22.qml
     qml/DashboardCard23.qml
+    qml/DashboardCard40.qml
+    qml/DashboardCard41.qml
+    qml/DashboardCard42.qml
+    qml/DashboardCard43.qml
 )
 
 set(CPP_FILES
