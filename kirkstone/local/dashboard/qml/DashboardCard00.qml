@@ -4,7 +4,7 @@ import SystemInfo 1.0
 
 Rectangle {
     Layout.fillWidth: true
-    Layout.preferredHeight: 150
+    Layout.fillHeight: true
     color: "#1a1a1a"
     border.color: "#444444"
     border.width: 2
@@ -36,9 +36,10 @@ Rectangle {
         
         // Content
         Column {
-            anchors.fill: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.margins: 15
-            anchors.topMargin: 50
+            anchors.verticalCenter: parent.verticalCenter
             spacing: 8
             
             Row {
@@ -60,6 +61,16 @@ Rectangle {
                 spacing: 10
                 Text { text: "Uptime:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
                 Text { text: systemInfo ? systemInfo.uptime : ""; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+            }
+            Row {
+                spacing: 10
+                Text { text: "Build Time:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                Text { text: systemInfo ? systemInfo.buildTime : ""; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+            }
+            Row {
+                spacing: 10
+                Text { text: "Yocto Ver:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                Text { text: systemInfo ? systemInfo.yoctoVersion : ""; color: "#ffffff"; font.pointSize: 10; font.bold: true }
             }
         }
     }
