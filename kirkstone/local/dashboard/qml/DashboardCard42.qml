@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 Rectangle {
@@ -8,18 +9,18 @@ Rectangle {
     border.color: "#222222"
     border.width: 1
     radius: 8
-    
+
     Column {
         anchors.fill: parent
         spacing: 0
-        
+
         // Title bar
         Rectangle {
             width: parent.width
             height: 35
             color: "#1a1a1a"
             radius: 8
-            
+
             Text {
                 anchors.left: parent.left
                 anchors.leftMargin: 15
@@ -30,7 +31,7 @@ Rectangle {
                 font.bold: true
             }
         }
-        
+
         // Content
         Text {
             anchors.centerIn: parent

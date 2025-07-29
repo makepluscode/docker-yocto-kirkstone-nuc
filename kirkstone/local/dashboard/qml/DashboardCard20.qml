@@ -3,7 +3,7 @@ import QtQuick.Layouts 1.15
 
 Rectangle {
     Layout.fillWidth: true
-    Layout.preferredHeight: 150
+    Layout.fillHeight: true
     color: "#0f0f0f"
     border.color: "#222222"
     border.width: 1
@@ -36,7 +36,7 @@ Rectangle {
             anchors.centerIn: parent
             text: "Empty"
             color: "#444444"
-            font.pointSize: 12
+            font.pointSize: 14
         }
     }
 } 
