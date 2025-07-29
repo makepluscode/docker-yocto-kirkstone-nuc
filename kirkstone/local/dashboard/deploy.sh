@@ -105,15 +105,15 @@ if ! file dashboard | grep -q "x86-64"; then
     exit 1
 fi
 
-# Check if QML resources are included
-print_status "Checking QML resource inclusion..."
-if ! strings dashboard | grep -q "dashboard_main.qml"; then
-    print_warning "QML resources may not be properly included"
-    print_warning "Copying QML files to target for fallback..."
-    
-    # Copy QML files to target as fallback
-    ssh "$TARGET" "mkdir -p /usr/share/dashboard/qml"
-    scp qml/*.qml "$TARGET:/usr/share/dashboard/qml/" 2>/dev/null || true
+# Always copy QML files to target
+print_status "Copying QML files to target..."
+ssh "$TARGET" "mkdir -p /usr/share/dashboard/qml"
+scp ../qml/*.qml "$TARGET:/usr/share/dashboard/qml/"
+
+if [ $? -eq 0 ]; then
+    print_success "QML files copied successfully"
+else
+    print_warning "Failed to copy QML files, but continuing deployment..."
 fi
 
 print_success "Dashboard build completed successfully!"

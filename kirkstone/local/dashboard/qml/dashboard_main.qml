@@ -35,48 +35,44 @@ ApplicationWindow {
             anchors.fill: parent
             anchors.margins: 10
             
-            // Left side - Title
+            // Left side - Network status
+            Row {
+                spacing: 5
+                
+                Rectangle {
+                    width: 16
+                    height: 16
+                    radius: 8
+                    color: systemInfo.networkConnected ? "#00ff00" : "#ff0000"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                
+                Text {
+                    text: systemInfo.networkConnected ? 
+                          systemInfo.networkInterface + " (" + systemInfo.ipAddress + ")" : 
+                          "Disconnected"
+                    color: "#ffffff"
+                    font.pointSize: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+            
+            // Center - Title
             Text {
                 text: "NUC System Dashboard"
                 color: "#ffffff"
                 font.pointSize: 14
                 font.bold: true
                 Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
             }
             
-            // Right side - Network status and time
-            RowLayout {
-                spacing: 20
-                
-                // Network status
-                Row {
-                    spacing: 5
-                    
-                    Rectangle {
-                        width: 16
-                        height: 16
-                        radius: 8
-                        color: systemInfo.networkConnected ? "#00ff00" : "#ff0000"
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    
-                    Text {
-                        text: systemInfo.networkConnected ? 
-                              systemInfo.networkInterface + " (" + systemInfo.ipAddress + ")" : 
-                              "Disconnected"
-                        color: "#ffffff"
-                        font.pointSize: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-                
-                // Current time
-                Text {
-                    text: systemInfo.currentTime
-                    color: "#ffffff"
-                    font.pointSize: 12
-                    font.bold: true
-                }
+            // Right side - Current time
+            Text {
+                text: systemInfo.currentTime
+                color: "#ffffff"
+                font.pointSize: 12
+                font.bold: true
             }
         }
     }
@@ -87,7 +83,7 @@ ApplicationWindow {
         anchors.top: statusBar.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.bottom: buttonArea.top
         anchors.margins: 10
         
         contentWidth: contentGrid.width
@@ -95,59 +91,15 @@ ApplicationWindow {
         
         GridLayout {
             id: contentGrid
-            columns: 2
+            columns: 4
             rowSpacing: 15
             columnSpacing: 15
             width: contentArea.width - 20
             
-            // System Information Card
+            // Version Info Card
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 200
-                color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
-                radius: 8
-                
-                GridLayout {
-                    anchors.fill: parent
-                    anchors.margins: 15
-                    columns: 2
-                    rowSpacing: 10
-                    columnSpacing: 20
-                    
-                    Row {
-                        spacing: 10
-                        Text { text: "Hostname:"; color: "#cccccc" }
-                        Text { text: systemInfo.hostname; color: "#ffffff" }
-                    }
-                    Row {
-                        spacing: 10
-                        Text { text: "Kernel:"; color: "#cccccc" }
-                        Text { text: systemInfo.kernelVersion; color: "#ffffff" }
-                    }
-                    Row {
-                        spacing: 10
-                        Text { text: "Architecture:"; color: "#cccccc" }
-                        Text { text: systemInfo.architecture; color: "#ffffff" }
-                    }
-                    Row {
-                        spacing: 10
-                        Text { text: "Uptime:"; color: "#cccccc" }
-                        Text { text: systemInfo.uptime; color: "#ffffff" }
-                    }
-                    Row {
-                        spacing: 10
-                        Text { text: "Temperature:"; color: "#cccccc" }
-                        Text { text: systemInfo.temperature.toFixed(1) + "°C"; color: "#ffffff" }
-                    }
-                }
-            }
-            
-            // CPU Usage Card
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 200
+                Layout.preferredHeight: 150
                 color: "#1a1a1a"
                 border.color: "#333333"
                 border.width: 1
@@ -155,114 +107,61 @@ ApplicationWindow {
                 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: 15
-                    spacing: 10
+                    spacing: 0
                     
-                    Text {
-                        text: systemInfo.cpuUsage.toFixed(1) + "%"
-                        color: "#ffffff"
-                        font.pointSize: 24
-                        font.bold: true
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                    
-                    ProgressBar {
+                    // Title bar
+                    Rectangle {
                         width: parent.width
-                        from: 0
-                        to: 100
-                        value: systemInfo.cpuUsage
-                        
-                        background: Rectangle {
-                            color: "#333333"
-                            radius: 3
-                        }
-                        
-                        contentItem: Rectangle {
-                            color: systemInfo.cpuUsage > 80 ? "#ff4444" : 
-                                   systemInfo.cpuUsage > 60 ? "#ffaa00" : "#44ff44"
-                            radius: 3
-                        }
-                    }
-                    
-                    Text {
-                        text: "CPU Load Average"
-                        color: "#cccccc"
-                        font.pointSize: 10
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-            }
-            
-            // Memory Usage Card
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 200
-                color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
-                radius: 8
-                
-                Column {
-                    anchors.fill: parent
-                    anchors.margins: 15
-                    spacing: 10
-                    
-                    Text {
-                        text: systemInfo.memoryUsage.toFixed(1) + "%"
-                        color: "#ffffff"
-                        font.pointSize: 24
-                        font.bold: true
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                    
-                    ProgressBar {
-                        width: parent.width
-                        from: 0
-                        to: 100
-                        value: systemInfo.memoryUsage
-                        
-                        background: Rectangle {
-                            color: "#333333"
-                            radius: 3
-                        }
-                        
-                        contentItem: Rectangle {
-                            color: systemInfo.memoryUsage > 80 ? "#ff4444" : 
-                                   systemInfo.memoryUsage > 60 ? "#ffaa00" : "#44ff44"
-                            radius: 3
-                        }
-                    }
-                    
-                    Grid {
-                        columns: 2
-                        spacing: 10
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        height: 35
+                        color: "#2a2a2a"
+                        radius: 8
                         
                         Text {
-                            text: "Used: " + systemInfo.formatBytes(systemInfo.usedMemory)
-                            color: "#cccccc"
-                            font.pointSize: 9
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Version Info"
+                            color: "#ffffff"
+                            font.pointSize: 12
+                            font.bold: true
                         }
+                    }
+                    
+                    // Content
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        anchors.topMargin: 50
+                        spacing: 8
                         
-                        Text {
-                            text: "Free: " + systemInfo.formatBytes(systemInfo.freeMemory)
-                            color: "#cccccc"
-                            font.pointSize: 9
+                        Row {
+                            spacing: 10
+                            Text { text: "Hostname:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                            Text { text: systemInfo.hostname; color: "#ffffff"; font.pointSize: 10; font.bold: true }
                         }
-                        
-                        Text {
-                            text: "Total: " + systemInfo.formatBytes(systemInfo.totalMemory)
-                            color: "#cccccc"
-                            font.pointSize: 9
+                        Row {
+                            spacing: 10
+                            Text { text: "Kernel:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                            Text { text: systemInfo.kernelVersion; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+                        }
+                        Row {
+                            spacing: 10
+                            Text { text: "Architecture:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                            Text { text: systemInfo.architecture; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+                        }
+                        Row {
+                            spacing: 10
+                            Text { text: "Uptime:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                            Text { text: systemInfo.uptime; color: "#ffffff"; font.pointSize: 10; font.bold: true }
                         }
                     }
                 }
             }
             
-            // Disk Usage Card
+            // CPU Load Card
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 200
+                Layout.preferredHeight: 150
                 color: "#1a1a1a"
                 border.color: "#333333"
                 border.width: 1
@@ -270,114 +169,683 @@ ApplicationWindow {
                 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: 15
-                    spacing: 10
+                    spacing: 0
                     
-                    Text {
-                        text: systemInfo.rootPartitionUsagePercent.toFixed(1) + "%"
-                        color: "#ffffff"
-                        font.pointSize: 24
-                        font.bold: true
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                    
-                    ProgressBar {
+                    // Title bar
+                    Rectangle {
                         width: parent.width
-                        from: 0
-                        to: 100
-                        value: systemInfo.rootPartitionUsagePercent
+                        height: 35
+                        color: "#2a2a2a"
+                        radius: 8
                         
-                        background: Rectangle {
-                            color: "#333333"
-                            radius: 3
-                        }
-                        
-                        contentItem: Rectangle {
-                            color: systemInfo.rootPartitionUsagePercent > 80 ? "#ff4444" : 
-                                   systemInfo.rootPartitionUsagePercent > 60 ? "#ffaa00" : "#44ff44"
-                            radius: 3
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "CPU Load"
+                            color: "#ffffff"
+                            font.pointSize: 12
+                            font.bold: true
                         }
                     }
                     
-                    Grid {
-                        columns: 2
+                    // Content
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        anchors.topMargin: 50
                         spacing: 10
-                        anchors.horizontalCenter: parent.horizontalCenter
                         
                         Text {
-                            text: "Used: " + systemInfo.formatBytes(systemInfo.rootPartitionUsed)
-                            color: "#cccccc"
-                            font.pointSize: 9
+                            text: systemInfo.cpuUsage.toFixed(1) + "%"
+                            color: "#ffffff"
+                            font.pointSize: 20
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
                         }
                         
-                        Text {
-                            text: "Free: " + systemInfo.formatBytes(systemInfo.rootPartitionFree)
-                            color: "#cccccc"
-                            font.pointSize: 9
-                        }
-                        
-                        Text {
-                            text: "Total: " + systemInfo.formatBytes(systemInfo.rootPartitionTotal)
-                            color: "#cccccc"
-                            font.pointSize: 9
-                        }
-                    }
-                }
-            }
-
-            // RAUC Status Card
-            Rectangle {
-                Layout.columnSpan: 2
-                Layout.fillWidth: true
-                Layout.preferredHeight: 300
-                color: "#1a1a1a"
-                border.color: "#333333"
-                border.width: 1
-                radius: 8
-
-                Column {
-                    spacing: 10
-                    anchors.margins: 12
-                    anchors.fill: parent
-
-                    Text {
-                        text: "RAUC Status"
-                        font.pixelSize: 24
-                        font.bold: true
-                        color: "#ffffff"
-                    }
-
-                    GridLayout {
-                        columns: 2
-                        rowSpacing: 6
-                        columnSpacing: 20
-
-                        Text { text: "Booted Slot:"; color: "#cccccc" }
-                        Text { text: raucManager.bootSlot; color: "#ffffff" }
-
-                        Text { text: "Activated Slot:"; color: "#cccccc" }
-                        Text { text: raucManager.activatedSlot; color: "#ffffff" }
-                    }
-
-                    Rectangle { height: 1; width: parent.width; color: "#444" }
-
-                    ScrollView {
-                        height: 160
-                        TextArea {
+                        ProgressBar {
                             width: parent.width
-                            text: raucManager.statusText
-                            readOnly: true
-                            wrapMode: TextArea.Wrap
+                            from: 0
+                            to: 100
+                            value: systemInfo.cpuUsage
+                            
+                            background: Rectangle {
+                                color: "#333333"
+                                radius: 3
+                            }
+                            
+                            contentItem: Rectangle {
+                                color: systemInfo.cpuUsage > 80 ? "#ff4444" : 
+                                       systemInfo.cpuUsage > 60 ? "#ffaa00" : "#44ff44"
+                                radius: 3
+                            }
                         }
                     }
-
-                    Row {
-                        spacing: 12
-                        Button { text: "Boot Slot A"; onClicked: raucManager.bootSlotA() }
-                        Button { text: "Boot Slot B"; onClicked: raucManager.bootSlotB() }
-                        Button { text: "Refresh";   onClicked: raucManager.refresh() }
+                }
+            }
+            
+            // Memory Card
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
+                
+                Column {
+                    anchors.fill: parent
+                    spacing: 0
+                    
+                    // Title bar
+                    Rectangle {
+                        width: parent.width
+                        height: 35
+                        color: "#2a2a2a"
+                        radius: 8
+                        
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Memory"
+                            color: "#ffffff"
+                            font.pointSize: 12
+                            font.bold: true
+                        }
+                    }
+                    
+                    // Content
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        anchors.topMargin: 50
+                        spacing: 10
+                        
+                        Text {
+                            text: systemInfo.memoryUsage.toFixed(1) + "%"
+                            color: "#ffffff"
+                            font.pointSize: 20
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        
+                        ProgressBar {
+                            width: parent.width
+                            from: 0
+                            to: 100
+                            value: systemInfo.memoryUsage
+                            
+                            background: Rectangle {
+                                color: "#333333"
+                                radius: 3
+                            }
+                            
+                            contentItem: Rectangle {
+                                color: systemInfo.memoryUsage > 80 ? "#ff4444" : 
+                                       systemInfo.memoryUsage > 60 ? "#ffaa00" : "#44ff44"
+                                radius: 3
+                            }
+                        }
+                        
+                        Text {
+                            text: systemInfo.formatBytes(systemInfo.usedMemory) + " / " + systemInfo.formatBytes(systemInfo.totalMemory)
+                            color: "#cccccc"
+                            font.pointSize: 9
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
                     }
                 }
+            }
+            
+            // Storage Card
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
+                
+                Column {
+                    anchors.fill: parent
+                    spacing: 0
+                    
+                    // Title bar
+                    Rectangle {
+                        width: parent.width
+                        height: 35
+                        color: "#2a2a2a"
+                        radius: 8
+                        
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Storage"
+                            color: "#ffffff"
+                            font.pointSize: 12
+                            font.bold: true
+                        }
+                    }
+                    
+                    // Content
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        anchors.topMargin: 50
+                        spacing: 10
+                        
+                        Text {
+                            text: systemInfo.rootPartitionUsagePercent.toFixed(1) + "%"
+                            color: "#ffffff"
+                            font.pointSize: 20
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        
+                        ProgressBar {
+                            width: parent.width
+                            from: 0
+                            to: 100
+                            value: systemInfo.rootPartitionUsagePercent
+                            
+                            background: Rectangle {
+                                color: "#333333"
+                                radius: 3
+                            }
+                            
+                            contentItem: Rectangle {
+                                color: systemInfo.rootPartitionUsagePercent > 80 ? "#ff4444" : 
+                                       systemInfo.rootPartitionUsagePercent > 60 ? "#ffaa00" : "#44ff44"
+                                radius: 3
+                            }
+                        }
+                        
+                        Text {
+                            text: systemInfo.formatBytes(systemInfo.rootPartitionUsed) + " / " + systemInfo.formatBytes(systemInfo.rootPartitionTotal)
+                            color: "#cccccc"
+                            font.pointSize: 9
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+            }
+            
+            // System Temp Card
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
+                
+                Column {
+                    anchors.fill: parent
+                    spacing: 0
+                    
+                    // Title bar
+                    Rectangle {
+                        width: parent.width
+                        height: 35
+                        color: "#2a2a2a"
+                        radius: 8
+                        
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "System Temp (°C)"
+                            color: "#ffffff"
+                            font.pointSize: 12
+                            font.bold: true
+                        }
+                    }
+                    
+                    // Content
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        anchors.topMargin: 50
+                        spacing: 10
+                        
+                        Text {
+                            text: systemInfo.temperature.toFixed(1) + "°C"
+                            color: "#ffffff"
+                            font.pointSize: 24
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        
+                        Text {
+                            text: systemInfo.temperature > 80 ? "High" : 
+                                  systemInfo.temperature > 60 ? "Normal" : "Low"
+                            color: systemInfo.temperature > 80 ? "#ff4444" : 
+                                   systemInfo.temperature > 60 ? "#ffaa00" : "#44ff44"
+                            font.pointSize: 12
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+            }
+            
+            // Empty Card 1
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
+                
+                Column {
+                    anchors.fill: parent
+                    spacing: 0
+                    
+                    // Title bar
+                    Rectangle {
+                        width: parent.width
+                        height: 35
+                        color: "#2a2a2a"
+                        radius: 8
+                        
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Empty Card"
+                            color: "#ffffff"
+                            font.pointSize: 12
+                            font.bold: true
+                        }
+                    }
+                    
+                    // Content
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Empty"
+                        color: "#666666"
+                        font.pointSize: 12
+                    }
+                }
+            }
+            
+            // Booting Info Card
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
+                
+                Column {
+                    anchors.fill: parent
+                    spacing: 0
+                    
+                    // Title bar
+                    Rectangle {
+                        width: parent.width
+                        height: 35
+                        color: "#2a2a2a"
+                        radius: 8
+                        
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Booting Info"
+                            color: "#ffffff"
+                            font.pointSize: 12
+                            font.bold: true
+                        }
+                    }
+                    
+                    // Content
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        anchors.topMargin: 50
+                        spacing: 8
+                        
+                        Row {
+                            spacing: 10
+                            Text { text: "Booted Slot:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                            Text { text: raucManager.bootSlot; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+                        }
+                        Row {
+                            spacing: 10
+                            Text { text: "Activated Slot:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                            Text { text: raucManager.activatedSlot; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+                        }
+                        Row {
+                            spacing: 10
+                            Text { text: "Status:"; color: "#cccccc"; font.pointSize: 10; width: 100; horizontalAlignment: Text.AlignRight }
+                            Text { text: raucManager.statusText.split('\n')[0] || "Unknown"; color: "#ffffff"; font.pointSize: 10; font.bold: true }
+                        }
+                    }
+                }
+            }
+            
+            // Empty Card 2
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
+                color: "#1a1a1a"
+                border.color: "#333333"
+                border.width: 1
+                radius: 8
+                
+                Column {
+                    anchors.fill: parent
+                    spacing: 0
+                    
+                    // Title bar
+                    Rectangle {
+                        width: parent.width
+                        height: 35
+                        color: "#2a2a2a"
+                        radius: 8
+                        
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Empty Card"
+                            color: "#ffffff"
+                            font.pointSize: 12
+                            font.bold: true
+                        }
+                    }
+                    
+                    // Content
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Empty"
+                        color: "#666666"
+                        font.pointSize: 12
+                    }
+                }
+            }
+        }
+    }
+    
+    // Button area at bottom
+    Rectangle {
+        id: buttonArea
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 80
+        color: "#1a1a1a"
+        border.color: "#333333"
+        border.width: 1
+        
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 15
+            spacing: 10
+            
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
+                    
+                    Text {
+                        text: "F1"
+                        color: "#ffffff"
+                        font.pointSize: 10
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    
+                    Text {
+                        text: "Refresh"
+                        color: "#ffffff"
+                        font.pointSize: 8
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                onClicked: {
+                    systemInfo.refresh()
+                    raucManager.refresh()
+                }
+            }
+            
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
+                    
+                    Text {
+                        text: "F2"
+                        color: "#ffffff"
+                        font.pointSize: 10
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    
+                    Text {
+                        text: "A Boot"
+                        color: "#ffffff"
+                        font.pointSize: 8
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                onClicked: raucManager.bootSlotA()
+            }
+            
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
+                    
+                    Text {
+                        text: "F3"
+                        color: "#ffffff"
+                        font.pointSize: 10
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    
+                    Text {
+                        text: "B Boot"
+                        color: "#ffffff"
+                        font.pointSize: 8
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                onClicked: raucManager.bootSlotB()
+            }
+            
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
+                    
+                    Text {
+                        text: "F4"
+                        color: "#ffffff"
+                        font.pointSize: 10
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    
+                    Text {
+                        text: "Empty"
+                        color: "#ffffff"
+                        font.pointSize: 8
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                enabled: false
+            }
+            
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
+                    
+                    Text {
+                        text: "F5"
+                        color: "#ffffff"
+                        font.pointSize: 10
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    
+                    Text {
+                        text: "Empty"
+                        color: "#ffffff"
+                        font.pointSize: 8
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                enabled: false
+            }
+            
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
+                    
+                    Text {
+                        text: "F6"
+                        color: "#ffffff"
+                        font.pointSize: 10
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    
+                    Text {
+                        text: "Empty"
+                        color: "#ffffff"
+                        font.pointSize: 8
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                enabled: false
+            }
+            
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
+                    
+                    Text {
+                        text: "F7"
+                        color: "#ffffff"
+                        font.pointSize: 10
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    
+                    Text {
+                        text: "Empty"
+                        color: "#ffffff"
+                        font.pointSize: 8
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                enabled: false
+            }
+            
+            Button {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
+                    
+                    Text {
+                        text: "F8"
+                        color: "#ffffff"
+                        font.pointSize: 10
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    
+                    Text {
+                        text: "Empty"
+                        color: "#ffffff"
+                        font.pointSize: 8
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                enabled: false
             }
         }
     }
