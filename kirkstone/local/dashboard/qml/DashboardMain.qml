@@ -12,6 +12,44 @@ ApplicationWindow {
     height: 768
     visible: true
     color: "#000000"
+    
+    // Keyboard shortcuts
+    Keys.onPressed: function(event) {
+        switch(event.key) {
+            case Qt.Key_F1:
+                f1Button.clicked()
+                event.accepted = true
+                break
+            case Qt.Key_F2:
+                f2Button.clicked()
+                event.accepted = true
+                break
+            case Qt.Key_F3:
+                f3Button.clicked()
+                event.accepted = true
+                break
+            case Qt.Key_F4:
+                // Empty - reserved for future use
+                event.accepted = true
+                break
+            case Qt.Key_F5:
+                // Empty - reserved for future use
+                event.accepted = true
+                break
+            case Qt.Key_F6:
+                // Empty - reserved for future use
+                event.accepted = true
+                break
+            case Qt.Key_F7:
+                // Empty - reserved for future use
+                event.accepted = true
+                break
+            case Qt.Key_F8:
+                f8Button.clicked()
+                event.accepted = true
+                break
+        }
+    }
 
     SystemInfo {
         id: systemInfo
@@ -163,6 +201,7 @@ ApplicationWindow {
             // Row 4: Cards 40-43
             DashboardCard40 {
                 raucManager: raucManager
+                systemInfo: systemInfo
             }
             
             DashboardCard41 {
@@ -196,6 +235,7 @@ ApplicationWindow {
             spacing: 10
             
             Button {
+                id: f1Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 
@@ -231,6 +271,7 @@ ApplicationWindow {
             }
             
             Button {
+                id: f2Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 
@@ -259,10 +300,11 @@ ApplicationWindow {
                     }
                 }
                 
-                onClicked: raucManager.bootSlotA()
+                onClicked: systemInfo.bootToSlotA()
             }
             
             Button {
+                id: f3Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 
@@ -291,10 +333,11 @@ ApplicationWindow {
                     }
                 }
                 
-                onClicked: raucManager.bootSlotB()
+                onClicked: systemInfo.bootToSlotB()
             }
             
             Button {
+                id: f4Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 enabled: false
@@ -326,6 +369,7 @@ ApplicationWindow {
             }
             
             Button {
+                id: f5Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 enabled: false
@@ -357,6 +401,7 @@ ApplicationWindow {
             }
             
             Button {
+                id: f6Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 enabled: false
@@ -388,6 +433,7 @@ ApplicationWindow {
             }
             
             Button {
+                id: f7Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 enabled: false
@@ -419,6 +465,7 @@ ApplicationWindow {
             }
             
             Button {
+                id: f8Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
                 

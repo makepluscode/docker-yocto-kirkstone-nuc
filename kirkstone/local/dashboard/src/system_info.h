@@ -64,6 +64,14 @@ public slots:
     QString formatBytes(qint64 bytes);
     Q_INVOKABLE void rebootSystem();
     Q_INVOKABLE void refresh();
+    Q_INVOKABLE void bootToSlotA();
+    Q_INVOKABLE void bootToSlotB();
+    Q_INVOKABLE QString getCurrentBootSlot();
+    Q_INVOKABLE QString getBootOrder();
+    Q_INVOKABLE bool isSlotAHealthy();
+    Q_INVOKABLE bool isSlotBHealthy();
+    Q_INVOKABLE QString getSlotAStatus();
+    Q_INVOKABLE QString getSlotBStatus();
 
 signals:
     void cpuUsageChanged();

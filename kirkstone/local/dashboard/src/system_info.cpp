@@ -416,4 +416,175 @@ void SystemInfo::rebootSystem() {
 
 void SystemInfo::refresh() {
     updateSystemInfo();
+}
+
+void SystemInfo::bootToSlotA() {
+    qDebug() << "Booting to Slot A...";
+    
+    // Check if slot A is healthy
+    bool slotAHealthy = isSlotAHealthy();
+    QString slotAStatus = getSlotAStatus();
+    
+    qDebug() << "Slot A status:" << slotAStatus << "Healthy:" << slotAHealthy;
+    
+    // Set GRUB environment to boot to slot A first
+    QProcess process;
+    process.start("grub-editenv", QStringList() << "/grubenv/grubenv" << "set" << "ORDER=A B");
+    process.waitForFinished();
+    
+    if (process.exitCode() == 0) {
+        qDebug() << "Successfully set boot order to A B";
+        
+        // Mark slot A as good
+        QProcess markProcess;
+        markProcess.start("grub-editenv", QStringList() << "/grubenv/grubenv" << "set" << "A_OK=1");
+        markProcess.waitForFinished();
+        qDebug() << "Marked slot A as good";
+        
+        // Create a temporary GRUB configuration for slot A
+        QProcess grubProcess;
+        grubProcess.start("sh", QStringList() << "-c" << "echo 'linux /bzImage LABEL=boot root=/dev/sda2 rootwait console=ttyS0,115200 console=tty0' > /tmp/grub-slot-a.cfg");
+        grubProcess.waitForFinished();
+        
+        // Reboot the system
+        QProcess::startDetached("reboot");
+    } else {
+        qDebug() << "Failed to set boot order:" << process.errorString();
+    }
+}
+
+void SystemInfo::bootToSlotB() {
+    qDebug() << "Booting to Slot B...";
+    
+    // Check if slot B is healthy
+    bool slotBHealthy = isSlotBHealthy();
+    QString slotBStatus = getSlotBStatus();
+    
+    qDebug() << "Slot B status:" << slotBStatus << "Healthy:" << slotBHealthy;
+    
+    // Set GRUB environment to boot to slot B first
+    QProcess process;
+    process.start("grub-editenv", QStringList() << "/grubenv/grubenv" << "set" << "ORDER=B A");
+    process.waitForFinished();
+    
+    if (process.exitCode() == 0) {
+        qDebug() << "Successfully set boot order to B A";
+        
+        // Mark slot B as good
+        QProcess markProcess;
+        markProcess.start("grub-editenv", QStringList() << "/grubenv/grubenv" << "set" << "B_OK=1");
+        markProcess.waitForFinished();
+        qDebug() << "Marked slot B as good";
+        
+        // Create a temporary GRUB configuration for slot B
+        QProcess grubProcess;
+        grubProcess.start("sh", QStringList() << "-c" << "echo 'linux /bzImage LABEL=boot root=/dev/sda3 rootwait console=ttyS0,115200 console=tty0' > /tmp/grub-slot-b.cfg");
+        grubProcess.waitForFinished();
+        
+        // Reboot the system
+        QProcess::startDetached("reboot");
+    } else {
+        qDebug() << "Failed to set boot order:" << process.errorString();
+    }
+}
+
+QString SystemInfo::getCurrentBootSlot() {
+    // Check which slot is currently booted by examining the root device
+    QProcess process;
+    process.start("readlink", QStringList() << "-f" << "/dev/root");
+    process.waitForFinished();
+    
+    QString rootDevice = process.readAllStandardOutput().trimmed();
+    qDebug() << "Current root device:" << rootDevice;
+    
+    if (rootDevice.contains("sda2")) {
+        return "A";
+    } else if (rootDevice.contains("sda3")) {
+        return "B";
+    } else {
+        return "Unknown";
+    }
+}
+
+QString SystemInfo::getBootOrder() {
+    QProcess process;
+    process.start("grub-editenv", QStringList() << "/grubenv/grubenv" << "list");
+    process.waitForFinished();
+    
+    QString output = process.readAllStandardOutput();
+    QStringList lines = output.split('\n');
+    
+    for (const QString &line : lines) {
+        if (line.startsWith("ORDER=")) {
+            return line.mid(6); // Remove "ORDER=" prefix
+        }
+    }
+    
+    return "Unknown";
+}
+
+bool SystemInfo::isSlotAHealthy() {
+    QProcess process;
+    process.start("rauc", QStringList() << "status");
+    process.waitForFinished();
+    
+    QString output = process.readAllStandardOutput();
+    return output.contains("bootname: A") && output.contains("boot status: good");
+}
+
+bool SystemInfo::isSlotBHealthy() {
+    QProcess process;
+    process.start("rauc", QStringList() << "status");
+    process.waitForFinished();
+    
+    QString output = process.readAllStandardOutput();
+    return output.contains("bootname: B") && output.contains("boot status: good");
+}
+
+QString SystemInfo::getSlotAStatus() {
+    QProcess process;
+    process.start("rauc", QStringList() << "status");
+    process.waitForFinished();
+    
+    QString output = process.readAllStandardOutput();
+    QStringList lines = output.split('\n');
+    
+    for (const QString &line : lines) {
+        if (line.contains("bootname: A")) {
+            // Find the next line with boot status
+            int index = lines.indexOf(line);
+            if (index + 1 < lines.size()) {
+                QString statusLine = lines[index + 1];
+                if (statusLine.contains("boot status:")) {
+                    return statusLine.split("boot status:").last().trimmed();
+                }
+            }
+        }
+    }
+    
+    return "unknown";
+}
+
+QString SystemInfo::getSlotBStatus() {
+    QProcess process;
+    process.start("rauc", QStringList() << "status");
+    process.waitForFinished();
+    
+    QString output = process.readAllStandardOutput();
+    QStringList lines = output.split('\n');
+    
+    for (const QString &line : lines) {
+        if (line.contains("bootname: B")) {
+            // Find the next line with boot status
+            int index = lines.indexOf(line);
+            if (index + 1 < lines.size()) {
+                QString statusLine = lines[index + 1];
+                if (statusLine.contains("boot status:")) {
+                    return statusLine.split("boot status:").last().trimmed();
+                }
+            }
+        }
+    }
+    
+    return "unknown";
 } 
