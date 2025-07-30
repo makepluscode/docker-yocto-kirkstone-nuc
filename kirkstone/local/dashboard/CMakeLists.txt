@@ -9,13 +9,29 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt5 REQUIRED COMPONENTS Core Quick Network DBus)
+find_package(Qt5 REQUIRED COMPONENTS Core Quick Network DBus Widgets)
 
 set(QML_FILES
-    qml/dashboard_main.qml
-    qml/dashboard_card.qml
-    qml/info_row.qml
-    qml/rauc_card.qml
+    qml/DashboardMain.qml
+    qml/DashboardCard.qml
+    qml/InfoRow.qml
+    qml/RaucCard.qml
+    qml/DashboardCard00.qml
+    qml/DashboardCard01.qml
+    qml/DashboardCard02.qml
+    qml/DashboardCard03.qml
+    qml/DashboardCard10.qml
+    qml/DashboardCard11.qml
+    qml/DashboardCard12.qml
+    qml/DashboardCard13.qml
+    qml/DashboardCard20.qml
+    qml/DashboardCard21.qml
+    qml/DashboardCard22.qml
+    qml/DashboardCard23.qml
+    qml/DashboardCard40.qml
+    qml/DashboardCard41.qml
+    qml/DashboardCard42.qml
+    qml/DashboardCard43.qml
 )
 
 set(CPP_FILES
@@ -24,6 +40,8 @@ set(CPP_FILES
     src/system_info.h
     src/rauc_manager.cpp
     src/rauc_manager.h
+    src/grub_manager.cpp
+    src/grub_manager.h
 )
 
 qt5_add_resources(QT_RESOURCES resources/dashboard_resources.qrc)
@@ -40,6 +58,7 @@ target_link_libraries(dashboard
     Qt5::Quick
     Qt5::Network
     Qt5::DBus
+    Qt5::Widgets
 )
 
 # Add DLT (required)
