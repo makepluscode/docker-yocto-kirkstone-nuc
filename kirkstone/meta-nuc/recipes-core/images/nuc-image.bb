@@ -9,6 +9,7 @@ IMAGE_INSTALL = "\
     ${CORE_IMAGE_EXTRA_INSTALL} \
     intel-nuc-init \
     rauc \
+    grub-efi \
     "
 
 inherit core-image
@@ -27,7 +28,7 @@ IMAGE_BOOT_FILES:append = "\
     microcode.cpio \
     ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ext4;rootfs.img \
     ${@bb.utils.contains('EFI_PROVIDER', 'grub-efi', 'grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi', '', d)} \
-    ${@bb.utils.contains('EFI_PROVIDER', 'grub-efi', '${IMAGE_ROOTFS}/boot/EFI/BOOT/grub.cfg;EFI/BOOT/grub.cfg', '', d)} \
+    ${@bb.utils.contains('EFI_PROVIDER', 'grub-efi', 'grub.cfg;EFI/BOOT/grub.cfg', '', d)} \
 "
 
 do_image_wic[depends] += "${PN}:do_image_ext4"
