@@ -47,9 +47,27 @@ complete_build() {
   return 0
 }
 
-if ! grep -q "meta-nuc" "$CONF"; then
-  echo "🛠 Updating bblayers.conf..."
-  cat <<'EOF' >> "$CONF"
+# Fix bblayers.conf for Docker container environment
+echo "🛠 Fixing bblayers.conf for Docker environment..."
+# Backup existing bblayers.conf
+if [ -f "$CONF" ]; then
+  cp "$CONF" "$CONF.bak.$(date +%Y%m%d%H%M%S)"
+fi
+
+# Create proper bblayers.conf for Docker container
+cat > "$CONF" <<'EOF'
+# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+POKY_BBLAYERS_CONF_VERSION = "2"
+
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+
+BBLAYERS ?= " \
+  ${TOPDIR}/../poky/meta \
+  ${TOPDIR}/../poky/meta-poky \
+  ${TOPDIR}/../poky/meta-yocto-bsp \
+  "
 
 BBLAYERS += " \
   ${TOPDIR}/../meta-openembedded/meta-oe \
@@ -62,7 +80,7 @@ BBLAYERS += " \
   ${TOPDIR}/../meta-apps \
 "
 EOF
-fi
+echo "✅ bblayers.conf updated for Docker environment"
 
 # local.conf 자동 배포/초기화 (Yocto 기본 생성 후 덮어쓰기)
 LOCALCONF="$BUILDDIR/conf/local.conf"
@@ -87,6 +105,32 @@ if [ -f "$LOCALCONF_TEMPLATE" ]; then
   fi
 else
   echo "❌ Template file not found: $LOCALCONF_TEMPLATE"
+fi
+
+# Setup RAUC keys if they don't exist
+echo "🔑 Setting up RAUC keys..."
+if [ ! -f "$BUILDDIR/example-ca/private/development-1.key.pem" ]; then
+  echo "🛠 Generating RAUC keys..."
+  cd "$BUILDDIR/../meta-nuc"
+  ./create-example-keys.sh
+  cd "$BUILDDIR"
+else
+  echo "ℹ️  RAUC keys already exist"
+fi
+
+# Ensure site.conf has RAUC key configuration
+SITECONF="$BUILDDIR/conf/site.conf"
+if [ ! -f "$SITECONF" ] || ! grep -q "RAUC_KEY_FILE" "$SITECONF"; then
+  echo "🛠 Creating site.conf with RAUC key configuration..."
+  cat > "$SITECONF" <<EOF
+# RAUC Key Configuration
+RAUC_KEYRING_FILE="\${TOPDIR}/example-ca/ca.cert.pem"
+RAUC_KEY_FILE="\${TOPDIR}/example-ca/private/development-1.key.pem"
+RAUC_CERT_FILE="\${TOPDIR}/example-ca/development-1.cert.pem"
+EOF
+  echo "✅ site.conf created with RAUC key configuration"
+else
+  echo "ℹ️  site.conf already has RAUC key configuration"
 fi
 
 # 디버깅을 위한 로그 추가
