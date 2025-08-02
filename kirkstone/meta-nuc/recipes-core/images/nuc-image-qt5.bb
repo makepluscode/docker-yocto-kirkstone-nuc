@@ -52,10 +52,3 @@ IMAGE_BOOT_FILES:append = "\
 "
 
 do_image_wic[depends] += "${PN}:do_image_ext4" 
-
-# Add post-install script for RAUC configuration
-SRC_URI += "file://rauc-post-install.sh"
-do_install:append() {
-    install -d ${D}/etc/rauc
-    install -m 755 ${WORKDIR}/rauc-post-install.sh ${D}/etc/rauc/
-} 
