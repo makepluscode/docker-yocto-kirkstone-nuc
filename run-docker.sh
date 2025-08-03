@@ -11,19 +11,21 @@ if [ $# -eq 0 ]; then
     echo "Usage: $0 <mode>"
     echo "  auto   - Automatic build mode: clean, configure, and build nuc-image-qt5"
     echo "  manual - Manual mode: enter container with build environment setup"
+    echo "  bundle - Bundle build mode: clean, configure, and build nuc-image-qt5-bundle"
     echo ""
     echo "Examples:"
     echo "  $0 auto     # Run automatic build and exit"
     echo "  $0 manual   # Enter container for manual operations"
+    echo "  $0 bundle   # Build RAUC bundle for nuc-image-qt5"
     exit 1
 fi
 
 MODE=$1
 
 # Validate mode argument
-if [ "$MODE" != "auto" ] && [ "$MODE" != "manual" ]; then
+if [ "$MODE" != "auto" ] && [ "$MODE" != "manual" ] && [ "$MODE" != "bundle" ]; then
     echo "Error: Invalid mode '$MODE'"
-    echo "Valid modes: auto, manual"
+    echo "Valid modes: auto, manual, bundle"
     exit 1
 fi
 
@@ -42,6 +44,9 @@ if docker ps --format '{{.Names}}' | grep -q "^$CONTAINER\$"; then
   if [ "$MODE" = "auto" ]; then
     # Auto mode: run entrypoint script and exit
     docker exec -it $CONTAINER /home/yocto/entrypoint.sh
+  elif [ "$MODE" = "bundle" ]; then
+    # Bundle mode: run entrypoint script with bundle argument
+    docker exec -it $CONTAINER /home/yocto/entrypoint.sh bundle
   else
     # Manual mode: just enter bash
     docker exec -it $CONTAINER bash
@@ -60,6 +65,12 @@ if docker ps -a --format '{{.Names}}' | grep -q "^$CONTAINER\$"; then
       --name $CONTAINER \
       -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
       $IMAGE /home/yocto/entrypoint.sh
+  elif [ "$MODE" = "bundle" ]; then
+    # Bundle mode: start and run entrypoint script with bundle argument
+    docker run -it \
+      --name $CONTAINER \
+      -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
+      $IMAGE /home/yocto/entrypoint.sh bundle
   else
     # Manual mode: start and enter bash (override entrypoint)
     docker run -it \
@@ -79,6 +90,12 @@ if [ "$MODE" = "auto" ]; then
     --name $CONTAINER \
     -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
     $IMAGE /home/yocto/entrypoint.sh
+elif [ "$MODE" = "bundle" ]; then
+  # Bundle mode: run with entrypoint script with bundle argument
+  docker run -it \
+    --name $CONTAINER \
+    -v "$HOST_YOCTO_DIR":"$CONTAINER_YOCTO_DIR" \
+    $IMAGE /home/yocto/entrypoint.sh bundle
 else
   # Manual mode: run with bash entrypoint
   docker run -it \

@@ -132,6 +132,39 @@ fi
 device=/dev/$TARGET_DEVICE_NAME
 echo "🔍 DEBUG: Target device set to: $device"
 
+# Add safety warning and user confirmation
+echo ""
+echo "\033[31m⚠️  WARNING: DANGEROUS OPERATION ⚠️\033[0m"
+echo "\033[31m================================================================\033[0m"
+echo "\033[31mThis operation will COMPLETELY ERASE the disk $device\033[0m"
+echo "\033[31mALL DATA on $device will be PERMANENTLY LOST!\033[0m"
+echo "\033[31m================================================================\033[0m"
+echo ""
+echo "The following operations will be performed:"
+echo "  • Delete all existing partitions on $device"
+echo "  • Create new partition table (GPT)"
+echo "  • Format all partitions (will destroy existing data)"
+echo "  • Install new Linux system with A/B boot configuration"
+echo ""
+echo "\033[33mPlease ensure you have backed up any important data.\033[0m"
+echo ""
+echo -n "\033[1mDo you want to continue? Type 'Y' or 'y' to proceed: \033[0m"
+read user_confirmation
+
+case "$user_confirmation" in
+    [Yy])
+        echo ""
+        echo "\033[32m✓ Proceeding with installation...\033[0m"
+        echo ""
+        ;;
+    *)
+        echo ""
+        echo "\033[33m❌ Installation cancelled by user.\033[0m"
+        echo ""
+        exit 0
+        ;;
+esac
+
 # Check if target device exists
 if [ ! -b "$device" ]; then
     echo "❌ ERROR: Target device $device does not exist or is not a block device"
