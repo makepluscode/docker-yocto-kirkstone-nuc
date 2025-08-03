@@ -98,3 +98,79 @@ bitbake -c cleansstate dashboard      # Clean dashboard recipe
 ## Docker Environment
 
 The build environment runs in a Ubuntu-based Docker container with all Yocto dependencies pre-installed. The container mounts the `kirkstone` directory for persistent storage of builds, downloads, and source code.
+
+## Dashboard Application Development
+
+### Dashboard Structure
+The dashboard application (`kirkstone/local/dashboard`) is a Qt5/QML system monitoring application with the following key components:
+- **C++ Backend**: `src/` - System info collection, RAUC manager, GRUB manager  
+- **QML Frontend**: `qml/` - Dashboard cards and UI components
+- **Resources**: Qt resource files, systemd services, configuration
+
+### Dashboard Build Commands
+```bash
+# Build dashboard only (from dashboard directory)
+cd kirkstone/local/dashboard
+./build.sh
+
+# Build dashboard only (from project root)
+./build.sh dashboard
+
+# Manual dashboard build
+cd kirkstone/local/dashboard
+unset LD_LIBRARY_PATH
+source /usr/local/oecore-x86_64/environment-setup-corei7-64-oe-linux
+mkdir -p build && cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE="/usr/local/oecore-x86_64/sysroots/x86_64-oesdk-linux/usr/share/cmake/OEToolchainConfig.cmake"
+make -j$(nproc)
+```
+
+### Dashboard Deployment
+```bash
+cd kirkstone/local/dashboard
+
+# Deploy to default target (192.168.1.100)
+./deploy.sh
+
+# Deploy to specific target
+./deploy.sh root@192.168.1.50
+
+# Manual network setup (if needed)
+./connect.sh
+```
+
+### Dashboard Architecture
+- **SystemInfo**: Real-time CPU, memory, network, storage monitoring
+- **RaucManager**: RAUC A/B boot management via D-Bus
+- **GrubManager**: GRUB configuration and boot slot management
+- **Qt5 EGLFS**: Hardware-accelerated graphics pipeline
+
+## Bundle Deployment Workflow
+
+### RAUC Bundle Creation and Deployment
+```bash
+# Build RAUC update bundle
+./build.sh bundle
+
+# Deploy bundle to target
+./send_bundle.sh                    # Default: 192.168.1.100
+./send_bundle.sh 192.168.1.150     # Custom target
+./send_bundle.sh root@192.168.1.100 --skip-network
+
+# Install on target device
+sudo rauc install /data/nuc-image-qt5-bundle-intel-corei7-64.raucb
+```
+
+## Network Configuration
+
+### Development Network Setup
+- **Host Interface**: `enp42s0`
+- **Host IP**: `192.168.1.101`
+- **Target IP**: `192.168.1.100` (default)
+- **Network**: `255.255.255.0`
+
+### Connection Scripts
+```bash
+./connect.sh        # Setup network interface and SSH keys
+./dlt-receive.sh    # Connect to DLT logging on target
+```

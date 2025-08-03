@@ -4,6 +4,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import SystemInfo 1.0
 import Rauc 1.0
+import RaucSystem 1.0
 import Grub 1.0
 
 ApplicationWindow {
@@ -13,6 +14,12 @@ ApplicationWindow {
     visible: true
     color: "#000000"
     
+    // Property to control UI state during SW Update
+    property bool swUpdateInProgress: false
+    property string updateStatus: "Initializing..."
+    property double updateProgress: 0.0
+    property bool updateComplete: false
+
     // Keyboard shortcuts
     Keys.onPressed: function(event) {
         switch(event.key) {
@@ -41,7 +48,7 @@ ApplicationWindow {
                 event.accepted = true
                 break
             case Qt.Key_F7:
-                // Empty - reserved for future use
+                f7Button.clicked()
                 event.accepted = true
                 break
             case Qt.Key_F8:
@@ -59,6 +66,30 @@ ApplicationWindow {
         id: raucManager
     }
 
+    RaucSystemManager {
+        id: raucSystemManager
+        
+        // Connect to update progress signals
+        onUpdateProgress: function(percentage, message) {
+            updateProgress = percentage / 100.0
+            updateStatus = message
+        }
+        
+        onUpdateCompleted: function(success) {
+            updateComplete = true
+            if (success) {
+                updateStatus = "Software update completed successfully!\n\nSystem will reboot automatically."
+                updateProgress = 1.0
+                // Auto-reboot after 5 seconds for successful updates
+                rebootTimer.start()
+            } else {
+                updateStatus = "Software update failed.\n\nPlease check the update bundle and try again."
+                updateProgress = 1.0
+                swUpdateInProgress = false
+            }
+        }
+    }
+
     GrubManager {
         id: grubManager
     }
@@ -67,6 +98,158 @@ ApplicationWindow {
         // Initialize managers on startup
         raucManager.refresh()
         grubManager.refresh()
+    }
+
+    // SW Update Popup
+    Rectangle {
+        id: swUpdatePopup
+        anchors.centerIn: parent
+        width: 500
+        height: 300
+        color: "#2a2a2a"
+        border.color: "#444444"
+        border.width: 2
+        radius: 10
+        visible: false
+        z: 1000
+        
+        Column {
+            anchors.centerIn: parent
+            spacing: 20
+            width: parent.width - 40
+            
+            Text {
+                text: "Software Update"
+                color: "#ffffff"
+                font.pointSize: 16
+                font.bold: true
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+            
+            Text {
+                id: statusText
+                text: updateStatus
+                color: "#ffff44"
+                font.pointSize: 12
+                anchors.horizontalCenter: parent.horizontalCenter
+                horizontalAlignment: Text.AlignHCenter
+                width: parent.width
+                wrapMode: Text.WordWrap
+            }
+            
+            // Progress Bar
+            Rectangle {
+                width: parent.width
+                height: 20
+                color: "#1a1a1a"
+                border.color: "#444444"
+                border.width: 1
+                radius: 5
+                
+                Rectangle {
+                    width: parent.width * updateProgress
+                    height: parent.height - 2
+                    color: updateComplete ? "#44ff44" : "#ffff44"
+                    radius: 4
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.margins: 1
+                    
+                    Behavior on width {
+                        NumberAnimation { duration: 300 }
+                    }
+                }
+            }
+            
+            Text {
+                text: Math.round(updateProgress * 100) + "%"
+                color: "#ffffff"
+                font.pointSize: 10
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+            
+            // Animated dots (only show when not complete)
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 5
+                visible: !updateComplete
+                
+                Rectangle {
+                    width: 8
+                    height: 8
+                    radius: 4
+                    color: "#ffff44"
+                    opacity: swUpdateInProgress ? 1 : 0.3
+                    
+                    SequentialAnimation on opacity {
+                        running: swUpdateInProgress && !updateComplete
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 0.3; duration: 500 }
+                        NumberAnimation { to: 1; duration: 500 }
+                    }
+                }
+                
+                Rectangle {
+                    width: 8
+                    height: 8
+                    radius: 4
+                    color: "#ffff44"
+                    opacity: swUpdateInProgress ? 1 : 0.3
+                    
+                    SequentialAnimation on opacity {
+                        running: swUpdateInProgress && !updateComplete
+                        loops: Animation.Infinite
+                        PauseAnimation { duration: 200 }
+                        NumberAnimation { to: 0.3; duration: 500 }
+                        NumberAnimation { to: 1; duration: 500 }
+                    }
+                }
+                
+                Rectangle {
+                    width: 8
+                    height: 8
+                    radius: 4
+                    color: "#ffff44"
+                    opacity: swUpdateInProgress ? 1 : 0.3
+                    
+                    SequentialAnimation on opacity {
+                        running: swUpdateInProgress && !updateComplete
+                        loops: Animation.Infinite
+                        PauseAnimation { duration: 400 }
+                        NumberAnimation { to: 0.3; duration: 500 }
+                        NumberAnimation { to: 1; duration: 500 }
+                    }
+                }
+            }
+            
+            // Close button (only show when complete)
+            Button {
+                visible: updateComplete
+                text: "Close"
+                anchors.horizontalCenter: parent.horizontalCenter
+                
+                background: Rectangle {
+                    color: parent.pressed ? "#555555" : "#333333"
+                    radius: 5
+                }
+                
+                contentItem: Text {
+                    text: parent.text
+                    color: "#ffffff"
+                    font.pointSize: 12
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                
+                onClicked: {
+                    swUpdateInProgress = false
+                    swUpdatePopup.visible = false
+                    updateComplete = false
+                    updateProgress = 0.0
+                    updateStatus = "Initializing..."
+                }
+            }
+        }
     }
 
     // Status Bar at top
@@ -79,6 +262,7 @@ ApplicationWindow {
         color: "#1a1a1a"
         border.color: "#333333"
         border.width: 1
+        enabled: !swUpdateInProgress
 
         RowLayout {
             anchors.fill: parent
@@ -134,87 +318,98 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.bottom: buttonArea.top
         anchors.margins: 10
+        enabled: !swUpdateInProgress
         
         contentWidth: contentGrid.width
         contentHeight: contentGrid.height
         
         GridLayout {
             id: contentGrid
-            columns: 4
-            rows: 4
-            rowSpacing: 10
-            columnSpacing: 10
+            columns: 6
+            rows: 5
+            rowSpacing: 8
+            columnSpacing: 8
             width: contentArea.width - 20
             height: contentArea.height - 20
             
-            // Row 1: Cards 00-03
-            DashboardCard00 {
+            // Row 1: System Monitoring Cards
+            Card01 {
                 systemInfo: systemInfo
             }
             
-            DashboardCard01 {
+            Card02 {
                 systemInfo: systemInfo
             }
             
-            DashboardCard02 {
+            Card03 {
                 systemInfo: systemInfo
             }
             
-            DashboardCard03 {
+            Card04 {
                 systemInfo: systemInfo
             }
             
-            // Row 2: Cards 10-13
-            DashboardCard10 {
+            Card05 {
                 systemInfo: systemInfo
             }
             
-            DashboardCard11 {
-                // Empty card - no properties needed
+            Card06 {}
+            
+            // Row 2: System Info & Boot Management
+            Card07 {}
+            
+            Card08 {}
+            
+            Card09 {}
+            
+            Card10 {}
+            
+            Card11 {}
+            
+            Card12 {}
+            
+            // Row 3: Empty Cards
+            Card13 {}
+            
+            Card14 {}
+            
+            Card15 {}
+            
+            Card16 {}
+            
+            Card17 {}
+            
+            Card18 {}
+            
+            // Row 4: Empty Cards
+            Card19 {}
+            
+            Card20 {}
+            
+            Card21 {}
+            
+            Card22 {}
+            
+            Card23 {}
+            
+            Card24 {}
+            
+            // Row 5: Empty Cards
+            Card25 {
+                raucSystemManager: raucSystemManager
             }
             
-            DashboardCard12 {
-                // Empty card - no properties needed
+            Card26 {
+                raucSystemManager: raucSystemManager
             }
             
-            DashboardCard13 {
-                // Empty card - no properties needed
-            }
+            Card27 {}
             
-            // Row 3: Cards 20-23
-            DashboardCard20 {
-                // Empty card - no properties needed
-            }
+            Card28 {}
             
-            DashboardCard21 {
-                // Empty card - no properties needed
-            }
+            Card29 {}
             
-            DashboardCard22 {
-                // Empty card - no properties needed
-            }
-            
-            DashboardCard23 {
-                // Empty card - no properties needed
-            }
-            
-            // Row 4: Cards 40-43
-            DashboardCard40 {
-                raucManager: raucManager
-                systemInfo: systemInfo
-            }
-            
-            DashboardCard41 {
-                raucManager: raucManager
-            }
-            
-            DashboardCard42 {
-                grubManager: grubManager
-            }
-            
-            DashboardCard43 {
-                // Empty card - no properties needed
-            }
+            Card30 {}
         }
     }
     
@@ -238,6 +433,7 @@ ApplicationWindow {
                 id: f1Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: !swUpdateInProgress
                 
                 background: Rectangle {
                     color: parent.pressed ? "#555555" : "#333333"
@@ -257,7 +453,7 @@ ApplicationWindow {
                     }
                     
                     Text {
-                        text: "Refresh"
+                        text: "SW Update"
                         color: "#ffffff"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -265,8 +461,14 @@ ApplicationWindow {
                 }
                 
                 onClicked: {
-                    systemInfo.refresh()
-                    raucManager.refresh()
+                    swUpdateInProgress = true
+                    swUpdatePopup.visible = true
+                    updateStatus = "Initializing software update..."
+                    updateProgress = 0.0
+                    updateComplete = false
+                    
+                    // Start the real RAUC update process using RaucSystemManager
+                    raucSystemManager.startSoftwareUpdate()
                 }
             }
             
@@ -274,9 +476,10 @@ ApplicationWindow {
                 id: f2Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: false
                 
                 background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#333333"
+                    color: "#1a1a1a"
                     radius: 5
                 }
                 
@@ -286,30 +489,29 @@ ApplicationWindow {
                     
                     Text {
                         text: "F2"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                     
                     Text {
-                        text: "A Boot"
-                        color: "#ffffff"
+                        text: "Empty"
+                        color: "#666666"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
-                onClicked: systemInfo.bootToSlotA()
             }
             
             Button {
                 id: f3Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: false
                 
                 background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#333333"
+                    color: "#1a1a1a"
                     radius: 5
                 }
                 
@@ -319,21 +521,19 @@ ApplicationWindow {
                     
                     Text {
                         text: "F3"
-                        color: "#ffffff"
+                        color: "#666666"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                     
                     Text {
-                        text: "B Boot"
-                        color: "#ffffff"
+                        text: "Empty"
+                        color: "#666666"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
-                onClicked: systemInfo.bootToSlotB()
             }
             
             Button {
@@ -436,10 +636,10 @@ ApplicationWindow {
                 id: f7Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
-                enabled: false
+                enabled: !swUpdateInProgress
                 
                 background: Rectangle {
-                    color: "#1a1a1a"
+                    color: parent.pressed ? "#555555" : "#333333"
                     radius: 5
                 }
                 
@@ -449,18 +649,22 @@ ApplicationWindow {
                     
                     Text {
                         text: "F7"
-                        color: "#666666"
+                        color: "#ffffff"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                     
                     Text {
-                        text: "Empty"
-                        color: "#666666"
+                        text: "Exit"
+                        color: "#ffffff"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
+                }
+                
+                onClicked: {
+                    systemInfo.exitApplication()
                 }
             }
             
@@ -468,6 +672,7 @@ ApplicationWindow {
                 id: f8Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
+                enabled: !swUpdateInProgress
                 
                 background: Rectangle {
                     color: "#333333"
@@ -495,6 +700,19 @@ ApplicationWindow {
                 }
                 onClicked: systemInfo.rebootSystem()
             }
+        }
+    }
+    
+    // Note: Real RAUC update process is now handled by RaucSystemManager
+    // The old timer-based simulation has been replaced with actual RAUC integration
+    
+    // Auto-reboot timer
+    Timer {
+        id: rebootTimer
+        interval: 5000 // 5 seconds
+        repeat: false
+        onTriggered: {
+            raucSystemManager.rebootSystem()
         }
     }
 } 

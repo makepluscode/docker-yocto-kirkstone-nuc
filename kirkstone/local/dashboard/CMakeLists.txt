@@ -13,25 +13,40 @@ find_package(Qt5 REQUIRED COMPONENTS Core Quick Network DBus Widgets)
 
 set(QML_FILES
     qml/DashboardMain.qml
-    qml/DashboardCard.qml
+    qml/DashboardCardBase.qml
+    qml/CardInfoRow.qml
     qml/InfoRow.qml
     qml/RaucCard.qml
-    qml/DashboardCard00.qml
-    qml/DashboardCard01.qml
-    qml/DashboardCard02.qml
-    qml/DashboardCard03.qml
-    qml/DashboardCard10.qml
-    qml/DashboardCard11.qml
-    qml/DashboardCard12.qml
-    qml/DashboardCard13.qml
-    qml/DashboardCard20.qml
-    qml/DashboardCard21.qml
-    qml/DashboardCard22.qml
-    qml/DashboardCard23.qml
-    qml/DashboardCard40.qml
-    qml/DashboardCard41.qml
-    qml/DashboardCard42.qml
-    qml/DashboardCard43.qml
+    qml/Card01.qml
+    qml/Card02.qml
+    qml/Card03.qml
+    qml/Card04.qml
+    qml/Card05.qml
+    qml/Card06.qml
+    qml/Card07.qml
+    qml/Card08.qml
+    qml/Card09.qml
+    qml/Card10.qml
+    qml/Card11.qml
+    qml/Card12.qml
+    qml/Card13.qml
+    qml/Card14.qml
+    qml/Card15.qml
+    qml/Card16.qml
+    qml/Card17.qml
+    qml/Card18.qml
+    qml/Card19.qml
+    qml/Card20.qml
+    qml/Card21.qml
+    qml/Card22.qml
+    qml/Card23.qml
+    qml/Card24.qml
+    qml/Card25.qml
+    qml/Card26.qml
+    qml/Card27.qml
+    qml/Card28.qml
+    qml/Card29.qml
+    qml/Card30.qml
 )
 
 set(CPP_FILES
@@ -40,6 +55,8 @@ set(CPP_FILES
     src/system_info.h
     src/rauc_manager.cpp
     src/rauc_manager.h
+    src/rauc_system_manager.cpp
+    src/rauc_system_manager.h
     src/grub_manager.cpp
     src/grub_manager.h
 )

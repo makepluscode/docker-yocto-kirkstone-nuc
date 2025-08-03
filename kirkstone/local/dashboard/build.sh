@@ -46,6 +46,12 @@ if [ ! -d "$SDK_PATH" ]; then
     exit 1
 fi
 
+# Unset LD_LIBRARY_PATH if it's set (common issue with Yocto SDK)
+if [ -n "$LD_LIBRARY_PATH" ]; then
+    print_warning "Unsetting LD_LIBRARY_PATH for Yocto SDK compatibility"
+    unset LD_LIBRARY_PATH
+fi
+
 print_status "Setting up Yocto SDK environment..."
 source "$SDK_PATH/environment-setup-corei7-64-oe-linux"
 

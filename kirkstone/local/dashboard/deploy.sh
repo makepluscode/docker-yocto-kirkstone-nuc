@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dashboard Deploy Script (Improved)
-# This script validates the build environment, builds with Yocto toolchain, and deploys to target
+# This script builds the dashboard using build.sh and deploys to target
 # Usage: ./deploy.sh [user@]TARGET_IP
 # Defaults: TARGET_IP=192.168.1.100  USER=root
 
@@ -9,6 +9,15 @@ set -e  # Exit on any error
 
 # Default target
 TARGET=${1:-root@192.168.1.100}
+
+# Network configuration (from connect.sh)
+IFACE="enp42s0"
+HOST_IP="192.168.1.101"
+NETMASK="255.255.255.0"
+
+# Extract target IP from TARGET variable
+TARGET_IP=$(echo "$TARGET" | cut -d@ -f2)
+TARGET_USER=$(echo "$TARGET" | cut -d@ -f1)
 
 # Colors for output
 RED='\033[0;31m'
@@ -43,84 +52,54 @@ if [ ! -f "CMakeLists.txt" ]; then
     exit 1
 fi
 
-# Check if Yocto SDK is installed
-SDK_PATH="/usr/local/oecore-x86_64"
-if [ ! -d "$SDK_PATH" ]; then
-    print_error "Yocto SDK not found at $SDK_PATH"
-    print_error "Please install the Yocto SDK first"
+# Check if build.sh exists
+if [ ! -f "build.sh" ]; then
+    print_error "build.sh not found in current directory"
     exit 1
 fi
 
-print_status "Setting up Yocto SDK environment..."
-source "$SDK_PATH/environment-setup-corei7-64-oe-linux"
-
-# Verify environment setup
-if [ -z "$CC" ] || [ -z "$CXX" ]; then
-    print_error "Failed to set up Yocto SDK environment"
-    exit 1
-fi
-
-# Verify we're using the correct toolchain
-if [[ "$CC" != *"x86_64-oe-linux"* ]]; then
-    print_error "Wrong toolchain detected: $CC"
-    print_error "Expected x86_64-oe-linux toolchain"
-    exit 1
-fi
-
-print_success "Yocto SDK environment configured"
-print_status "Compiler: $CC"
-print_status "C++ Compiler: $CXX"
-print_status "Sysroot: $PKG_CONFIG_SYSROOT_DIR"
-
-# Clean and rebuild
-print_status "Cleaning previous build..."
-rm -rf build
-mkdir -p build
-cd build
-
-# Configure with CMake using Yocto toolchain
-print_status "Configuring with CMake (Yocto toolchain)..."
-cmake .. -DCMAKE_TOOLCHAIN_FILE="$SDK_PATH/sysroots/x86_64-oesdk-linux/usr/share/cmake/OEToolchainConfig.cmake"
-
-if [ $? -ne 0 ]; then
-    print_error "CMake configuration failed"
-    exit 1
-fi
-
-print_success "CMake configuration completed"
-
-# Build the project
-print_status "Building dashboard with Yocto toolchain..."
-make -j$(nproc)
-
-if [ $? -ne 0 ]; then
-    print_error "Build failed"
-    exit 1
-fi
-
-# Verify the binary is built for target
-print_status "Verifying binary compatibility..."
-if ! file dashboard | grep -q "x86-64"; then
-    print_error "Binary architecture verification failed"
-    exit 1
-fi
-
-# Always copy QML files to target
-print_status "Copying QML files to target..."
-ssh "$TARGET" "mkdir -p /usr/share/dashboard/qml"
-scp ../qml/*.qml "$TARGET:/usr/share/dashboard/qml/"
-
-if [ $? -eq 0 ]; then
-    print_success "QML files copied successfully"
+# Build the dashboard using build.sh
+print_status "Building dashboard using build.sh..."
+if ./build.sh; then
+    print_success "Dashboard build completed successfully!"
 else
-    print_warning "Failed to copy QML files, but continuing deployment..."
+    print_error "Dashboard build failed"
+    exit 1
 fi
 
-print_success "Dashboard build completed successfully!"
-print_status "Binary: $(pwd)/dashboard"
+# Verify the binary was created
+if [ ! -f "build/dashboard" ]; then
+    print_error "Dashboard binary not found at build/dashboard"
+    exit 1
+fi
 
-# Go back to dashboard directory
-cd ..
+print_status "Binary: $(pwd)/build/dashboard"
+
+# Network setup (from connect.sh)
+print_status "Setting up network connection..."
+print_status "Setting IP address for $IFACE..."
+sudo ifconfig $IFACE $HOST_IP netmask $NETMASK up
+
+print_status "Fixing SSH known_hosts permission if needed..."
+KNOWN_HOSTS="$HOME/.ssh/known_hosts"
+if [ -e "$KNOWN_HOSTS" ]; then
+    if [ ! -w "$KNOWN_HOSTS" ]; then
+        print_status "Fixing permissions for $KNOWN_HOSTS"
+        sudo chown $USER:$USER "$KNOWN_HOSTS"
+        sudo chmod 600 "$KNOWN_HOSTS"
+    fi
+else
+    mkdir -p "$HOME/.ssh"
+    touch "$KNOWN_HOSTS"
+    chmod 700 "$HOME/.ssh"
+    chmod 600 "$KNOWN_HOSTS"
+fi
+
+print_status "Removing old host key for $TARGET_IP if exists..."
+ssh-keygen -f "$KNOWN_HOSTS" -R "$TARGET_IP" 2>/dev/null || true
+
+print_status "Adding new host key for $TARGET_IP..."
+ssh-keyscan -H "$TARGET_IP" >> "$KNOWN_HOSTS" 2>/dev/null || true
 
 # Check if service file exists
 SERVICE_FILE="services/dashboard-eglfs.service"
@@ -139,7 +118,8 @@ print_status "Deploying to target: $TARGET"
 print_status "Testing SSH connection..."
 if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "$TARGET" exit 2>/dev/null; then
     print_error "Cannot connect to $TARGET via SSH"
-    print_error "Make sure SSH key authentication is set up"
+    print_error "Make sure the target device is powered on and connected to the network"
+    print_error "You may need to run: ./connect.sh first to set up the connection"
     exit 1
 fi
 
@@ -152,6 +132,17 @@ scp "build/dashboard" "$TARGET:/usr/bin/dashboard.new"
 if [ "$DEPLOY_SERVICE" = true ]; then
     print_status "Copying service file..."
     scp "$SERVICE_FILE" "$TARGET:/lib/systemd/system/dashboard-eglfs.service"
+fi
+
+# Always copy QML files to target
+print_status "Copying QML files to target..."
+ssh "$TARGET" "mkdir -p /usr/share/dashboard/qml"
+scp qml/*.qml "$TARGET:/usr/share/dashboard/qml/"
+
+if [ $? -eq 0 ]; then
+    print_success "QML files copied successfully"
+else
+    print_warning "Failed to copy QML files, but continuing deployment..."
 fi
 
 # Execute deployment commands on target
