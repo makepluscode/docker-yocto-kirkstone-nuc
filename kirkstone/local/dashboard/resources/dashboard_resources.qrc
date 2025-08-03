@@ -1,8 +1,39 @@
 <RCC>
     <qresource prefix="/">
         <file>../qml/DashboardMain.qml</file>
-        <file>../qml/DashboardCard.qml</file>
+        <file>../qml/DashboardCardBase.qml</file>
+        <file>../qml/CardInfoRow.qml</file>
         <file>../qml/InfoRow.qml</file>
         <file>../qml/RaucCard.qml</file>
+        <file>../qml/Card01.qml</file>
+        <file>../qml/Card02.qml</file>
+        <file>../qml/Card03.qml</file>
+        <file>../qml/Card04.qml</file>
+        <file>../qml/Card05.qml</file>
+        <file>../qml/Card06.qml</file>
+        <file>../qml/Card07.qml</file>
+        <file>../qml/Card08.qml</file>
+        <file>../qml/Card09.qml</file>
+        <file>../qml/Card10.qml</file>
+        <file>../qml/Card11.qml</file>
+        <file>../qml/Card12.qml</file>
+        <file>../qml/Card13.qml</file>
+        <file>../qml/Card14.qml</file>
+        <file>../qml/Card15.qml</file>
+        <file>../qml/Card16.qml</file>
+        <file>../qml/Card17.qml</file>
+        <file>../qml/Card18.qml</file>
+        <file>../qml/Card19.qml</file>
+        <file>../qml/Card20.qml</file>
+        <file>../qml/Card21.qml</file>
+        <file>../qml/Card22.qml</file>
+        <file>../qml/Card23.qml</file>
+        <file>../qml/Card24.qml</file>
+        <file>../qml/Card25.qml</file>
+        <file>../qml/Card26.qml</file>
+        <file>../qml/Card27.qml</file>
+        <file>../qml/Card28.qml</file>
+        <file>../qml/Card29.qml</file>
+        <file>../qml/Card30.qml</file>
     </qresource>
 </RCC> 

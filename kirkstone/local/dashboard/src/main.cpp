@@ -5,6 +5,7 @@
 #include <QDir>
 #include "system_info.h"
 #include "rauc_manager.h"
+#include "rauc_system_manager.h"
 #include "grub_manager.h"
 #include <dlt/dlt.h>
 
@@ -26,6 +27,7 @@ int main(int argc, char *argv[])
     // Register QML types
     qmlRegisterType<SystemInfo>("SystemInfo", 1, 0, "SystemInfo");
     qmlRegisterType<RaucManager>("Rauc", 1, 0, "RaucManager");
+    qmlRegisterType<RaucSystemManager>("RaucSystem", 1, 0, "RaucSystemManager");
     qmlRegisterType<GrubManager>("Grub", 1, 0, "GrubManager");
 
     QQmlApplicationEngine engine;
