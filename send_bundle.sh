@@ -46,7 +46,7 @@ NETMASK="255.255.255.0"
 TARGET_IP="${1:-192.168.1.100}"
 TARGET_USER="${2:-root}"
 BUNDLE_PATH="kirkstone/build/tmp-glibc/deploy/images/intel-corei7-64/nuc-image-qt5-bundle-intel-corei7-64.raucb"
-TARGET_DIR="/tmp"
+TARGET_DIR="/data"
 BUNDLE_NAME="nuc-image-qt5-bundle-intel-corei7-64.raucb"
 
 # Colors for output
