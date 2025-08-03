@@ -30,6 +30,13 @@ IMAGE_INSTALL = "\
     ttf-dejavu-common \
     ttf-dejavu-sans \
     ttf-dejavu-serif \
+    fastdds \
+    fastdds-tools \
+    fastdds-python \
+    fast-cdr \
+    foonathan-memory \
+    tinyxml2 \
+    python3 \
     "
 
 inherit core-image
