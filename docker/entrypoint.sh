@@ -47,6 +47,30 @@ complete_build() {
   return 0
 }
 
+complete_bundle_build() {
+  echo "🧹 Cleaning sstate for dashboard, rauc, and bundles ..."
+  for r in dashboard rauc nuc-image-qt5-bundle; do
+    if bitbake-layers show-recipes "$r" | grep -q "^$r"; then
+      bitbake -c cleansstate "$r" || true
+    else
+      echo "ℹ️  Recipe $r not found (layer missing?) – skipping cleansstate"
+    fi
+  done
+
+  echo "📦 Building nuc-image-qt5-bundle ..."
+  if ! bitbake nuc-image-qt5-bundle; then
+    echo "❌ Bundle build failed"; exec bash; fi
+  echo "✅ Bundle build completed successfully"
+  
+  # Show bundle location
+  BUNDLE_PATH="$(find "$BUILDDIR/tmp-glibc/deploy/images/intel-corei7-64/" -name "*nuc-image-qt5-bundle*.raucb" 2>/dev/null | head -1)"
+  if [ -n "$BUNDLE_PATH" ]; then
+    echo "📍 Bundle created at: $BUNDLE_PATH"
+    echo "📏 Bundle size: $(du -h "$BUNDLE_PATH" | cut -f1)"
+  fi
+  return 0
+}
+
 # Fix bblayers.conf for Docker container environment
 echo "🛠 Fixing bblayers.conf for Docker environment..."
 # Backup existing bblayers.conf
@@ -145,11 +169,18 @@ if [ $# -eq 0 ] || [[ "$@" == *"manual"* ]]; then
   echo "🔧 Manual mode: Build environment setup complete"
   echo "   You can now run manual commands like:"
   echo "   - bitbake nuc-image-qt5"
-  echo "   - bitbake nuc-bundle"
+  echo "   - bitbake nuc-image-qt5-bundle"
   echo "   - bitbake -c menuconfig virtual/kernel"
   echo ""
   echo "🔍 DEBUG: Manual mode detected, executing bash"
   exec bash
+elif [[ "$@" == *"bundle"* ]]; then
+  # Bundle mode: run complete bundle build
+  echo "📦 Bundle mode: Starting automatic bundle build..."
+  if complete_bundle_build; then
+    echo "🏁 Exiting container after successful bundle build"
+    exit 0
+  fi
 else
   # Auto mode: run complete build
   echo "🚀 Auto mode: Starting automatic build..."
