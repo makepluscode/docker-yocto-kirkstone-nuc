@@ -13,7 +13,7 @@
 - **IP Address**: `192.168.1.100`
 - **SSH Port**: `22`
 - **Username**: `root`
-- **Password**: `bgbgbg`
+- **Password**: `[Contact system administrator]`
 
 ### Host System
 - **IP Address**: `192.168.1.101`
@@ -40,16 +40,16 @@ ssh root@192.168.1.100
 ### 3. Using RAUC Updater Tool
 ```bash
 # Test connection
-python -m rauc_updater.cli test --host 192.168.1.100 --user root --password bgbgbg
+python -m rauc_updater.cli test --host 192.168.1.100 --user root --password [PASSWORD]
 
 # Check RAUC status
-python -m rauc_updater.cli status --host 192.168.1.100 --user root --password bgbgbg
+python -m rauc_updater.cli status --host 192.168.1.100 --user root --password [PASSWORD]
 
 # Update with bundle
-python -m rauc_updater.cli update bundle.raucb --host 192.168.1.100 --user root --password bgbgbg
+python -m rauc_updater.cli update bundle.raucb --host 192.168.1.100 --user root --password [PASSWORD]
 
 # Cleanup temporary files
-python -m rauc_updater.cli cleanup --host 192.168.1.100 --user root --password bgbgbg
+python -m rauc_updater.cli cleanup --host 192.168.1.100 --user root --password [PASSWORD]
 ```
 
 ## RAUC System Status
@@ -133,10 +133,25 @@ ssh root@192.168.1.100 "rpm -qa | grep rauc"
 
 ## Security Notes
 
-- Default password should be changed in production
-- Consider using SSH keys instead of password authentication
+⚠️ **IMPORTANT**: For security reasons, password authentication is not recommended.
+
+### Recommended Authentication Methods:
+1. **SSH Key Authentication** (Recommended)
+   - Generate SSH key pair
+   - Copy public key to target system
+   - Use key-based authentication for all connections
+
+2. **Password Authentication** (Development only)
+   - Use only in development/testing environments
+   - Change default password immediately
+   - Never commit passwords to version control
+
+### Security Best Practices:
+- Use SSH keys instead of password authentication
 - Ensure network is properly secured
 - Regular security updates should be applied
+- Restrict SSH access to specific IP addresses
+- Use non-standard SSH port in production
 
 ## Development Notes
 
