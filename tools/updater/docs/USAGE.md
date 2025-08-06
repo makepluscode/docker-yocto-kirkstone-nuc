@@ -4,10 +4,15 @@
 
 The RAUC Updater Tool (Step 1 - Headless CLI Version) provides a command-line interface for deploying RAUC bundles to target devices over SSH/SCP.
 
+**Important**: All commands in this guide assume you are working from the `tools/updater` directory. Make sure to navigate to this directory before running any commands.
+
 ## Installation
 
 ```bash
-cd rauc-updater
+# Navigate to the updater directory
+cd tools/updater
+
+# Install dependencies
 uv sync
 ```
 

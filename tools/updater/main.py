@@ -1,6 +1,4 @@
-def main():
-    print("Hello from rauc-updater!")
-
+from src.cli import main
 
 if __name__ == "__main__":
     main()
