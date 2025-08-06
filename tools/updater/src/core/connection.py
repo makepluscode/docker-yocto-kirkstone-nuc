@@ -178,15 +178,78 @@ class SSHConnection:
         self.disconnect()
 
 
-def copy_ssh_key(host: str, username: str = "root", port: int = 22, password: str = "root") -> bool:
-    """Copy SSH public key to target device using ssh-copy-id with password."""
+def test_ssh_connection(host: str, username: str = "root", port: int = 22, timeout: int = 5) -> bool:
+    """Test if SSH connection works without password (key-based auth)."""
     try:
-        console.print(f"[blue]Copying SSH key to {username}@{host}:{port}...[/blue]")
+        cmd = [
+            "ssh", 
+            "-o", "StrictHostKeyChecking=no",
+            "-o", "PasswordAuthentication=no",
+            "-o", f"ConnectTimeout={timeout}",
+            "-p", str(port),
+            f"{username}@{host}",
+            "echo", "test"
+        ]
         
-        # Use ssh-copy-id with sshpass to provide password automatically
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout+2)
+        return result.returncode == 0
+        
+    except (subprocess.TimeoutExpired, Exception):
+        return False
+
+
+def copy_ssh_key(host: str, username: str = "root", port: int = 22, password: str = "root") -> bool:
+    """Copy SSH public key to target device with multiple fallback methods."""
+    
+    # First check if SSH key authentication already works
+    console.print(f"[blue]Checking SSH key authentication for {username}@{host}:{port}...[/blue]")
+    if test_ssh_connection(host, username, port):
+        console.print("[green]✓ SSH key authentication already working[/green]")
+        return True
+    
+    console.print(f"[blue]Setting up SSH key authentication for {username}@{host}:{port}...[/blue]")
+    
+    # Method 1: Try ssh-copy-id with sshpass
+    try:
+        if subprocess.run(["which", "sshpass"], capture_output=True).returncode == 0:
+            console.print("[cyan]Method 1: Using sshpass + ssh-copy-id[/cyan]")
+            
+            cmd = [
+                "sshpass", "-p", password,
+                "ssh-copy-id", "-o", "StrictHostKeyChecking=no",
+                "-p", str(port),
+                f"{username}@{host}"
+            ]
+            
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console
+            ) as progress:
+                task = progress.add_task("Copying SSH key (method 1)...", total=None)
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                progress.update(task, completed=True)
+            
+            if result.returncode == 0:
+                console.print("[green]✓ SSH key copied successfully (method 1)[/green]")
+                return True
+            elif "already exist" in result.stderr.lower():
+                console.print("[green]✓ SSH key already exists on target[/green]")
+                return True
+            else:
+                console.print(f"[yellow]⚠ Method 1 failed: {result.stderr.strip()}[/yellow]")
+        else:
+            console.print("[yellow]⚠ sshpass not available, skipping method 1[/yellow]")
+            
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+        console.print(f"[yellow]⚠ Method 1 error: {e}[/yellow]")
+    
+    # Method 2: Try forced ssh-copy-id
+    try:
+        console.print("[cyan]Method 2: Forced ssh-copy-id with sshpass[/cyan]")
         cmd = [
             "sshpass", "-p", password,
-            "ssh-copy-id", "-o", "StrictHostKeyChecking=no",
+            "ssh-copy-id", "-f", "-o", "StrictHostKeyChecking=no",
             "-p", str(port),
             f"{username}@{host}"
         ]
@@ -196,26 +259,83 @@ def copy_ssh_key(host: str, username: str = "root", port: int = 22, password: st
             TextColumn("[progress.description]{task.description}"),
             console=console
         ) as progress:
-            task = progress.add_task("Copying SSH key...", total=None)
+            task = progress.add_task("Copying SSH key (method 2)...", total=None)
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             progress.update(task, completed=True)
         
         if result.returncode == 0:
-            console.print("[green]✓ SSH key copied successfully[/green]")
+            console.print("[green]✓ SSH key copied successfully (method 2)[/green]")
             return True
         else:
-            console.print(f"[red]✗ SSH key copy failed: {result.stderr.strip()}[/red]")
-            return False
+            console.print(f"[yellow]⚠ Method 2 failed: {result.stderr.strip()}[/yellow]")
             
-    except subprocess.TimeoutExpired:
-        console.print("[red]✗ SSH key copy timed out[/red]")
-        return False
-    except FileNotFoundError:
-        console.print("[red]✗ sshpass not found. Please install sshpass[/red]")
-        return False
+    except (subprocess.TimeoutExpired, Exception) as e:
+        console.print(f"[yellow]⚠ Method 2 error: {e}[/yellow]")
+    
+    # Method 3: Manual key copying using SSH and echo
+    try:
+        console.print("[cyan]Method 3: Manual public key copying[/cyan]")
+        
+        # Find SSH public key
+        ssh_dir = Path.home() / ".ssh"
+        public_key_content = None
+        
+        for key_type in ["id_ed25519.pub", "id_ecdsa.pub", "id_rsa.pub"]:
+            pub_key_path = ssh_dir / key_type
+            if pub_key_path.exists():
+                public_key_content = pub_key_path.read_text().strip()
+                console.print(f"[blue]Found public key: {key_type}[/blue]")
+                break
+        
+        if not public_key_content:
+            console.print("[yellow]⚠ No SSH public key found[/yellow]")
+        else:
+            # Create authorized_keys directory and add key
+            setup_cmd = f"""
+                mkdir -p ~/.ssh && 
+                chmod 700 ~/.ssh && 
+                echo '{public_key_content}' >> ~/.ssh/authorized_keys && 
+                chmod 600 ~/.ssh/authorized_keys && 
+                sort ~/.ssh/authorized_keys | uniq > ~/.ssh/authorized_keys.tmp && 
+                mv ~/.ssh/authorized_keys.tmp ~/.ssh/authorized_keys
+            """
+            
+            cmd = [
+                "sshpass", "-p", password,
+                "ssh", "-o", "StrictHostKeyChecking=no",
+                "-p", str(port),
+                f"{username}@{host}",
+                setup_cmd
+            ]
+            
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console
+            ) as progress:
+                task = progress.add_task("Copying SSH key (method 3)...", total=None)
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                progress.update(task, completed=True)
+            
+            if result.returncode == 0:
+                console.print("[green]✓ SSH key copied successfully (method 3)[/green]")
+                return True
+            else:
+                console.print(f"[yellow]⚠ Method 3 failed: {result.stderr.strip()}[/yellow]")
+                
     except Exception as e:
-        console.print(f"[red]✗ SSH key copy error: {e}[/red]")
-        return False
+        console.print(f"[yellow]⚠ Method 3 error: {e}[/yellow]")
+    
+    # Final verification test
+    console.print("[cyan]Final verification: Testing SSH key authentication...[/cyan]")
+    if test_ssh_connection(host, username, port):
+        console.print("[green]✓ SSH key authentication now working![/green]")
+        return True
+    
+    # All methods failed
+    console.print("[red]✗ All SSH key setup methods failed[/red]")
+    console.print("[yellow]You may need to manually setup SSH keys or check network connectivity[/yellow]")
+    return False
 
 
 def test_connection(host: str = "192.168.1.100", username: str = "root", port: int = 22) -> bool:
