@@ -13,6 +13,7 @@ This tool provides a user-friendly interface for deploying RAUC bundles to targe
 ## Current Features (Step 1)
 
 - ✅ SSH connection to target devices
+- ✅ Automatic SSH key setup with password authentication
 - ✅ SCP file transfer with progress tracking
 - ✅ Remote RAUC installation execution
 - ✅ Rich CLI output with status indicators
@@ -26,6 +27,7 @@ This tool provides a user-friendly interface for deploying RAUC bundles to targe
 - uv package manager
 - Target device with RAUC installed
 - SSH access to target device
+- sshpass (for automatic SSH key setup)
 
 ### Installation
 
@@ -37,8 +39,14 @@ uv sync
 ### Usage
 
 ```bash
+# Setup SSH keys first (one-time setup)
+uv run rauc-updater setup-ssh
+
 # Basic usage with default target (192.168.1.100)
 uv run rauc-updater update /path/to/bundle.raucb
+
+# Quick update with automatic SSH key setup
+uv run rauc-updater update /path/to/bundle.raucb --copy-ssh-key
 
 # Specify custom target
 uv run rauc-updater update /path/to/bundle.raucb --host 192.168.1.150
@@ -63,9 +71,11 @@ The tool uses connection parameters from the project's `connect.sh` as defaults:
 
 ```
 rauc-updater/
-├── src/rauc_updater/
+├── src/
+│   ├── cli.py          # CLI interface and commands
+│   ├── utils.py        # Utility functions
 │   ├── core/           # Step 1: Core functionality
-│   │   ├── connection.py    # SSH connection management
+│   │   ├── connection.py    # SSH connection and key management
 │   │   ├── transfer.py      # File transfer with progress
 │   │   └── installer.py     # RAUC installation
 │   ├── gui/            # Step 2: GUI components (future)

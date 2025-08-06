@@ -42,7 +42,7 @@ PACKAGECONFIG:remove:pn-libpcre = "tests"
 
 # User Account Configuration
 EXTRA_USERS_PARAMS = "\
-    useradd -p '' root; \
+    useradd -p '$(openssl passwd -1 root)' root; \
     usermod -s /bin/bash root; \
     useradd -p '$(openssl passwd -1 nuc123)' -G wheel,audio,video nuc; \
     usermod -s /bin/bash nuc; \

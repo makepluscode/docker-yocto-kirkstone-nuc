@@ -8,7 +8,7 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
-from .core.connection import ConnectionConfig, SSHConnection, test_connection
+from .core.connection import ConnectionConfig, SSHConnection, test_connection, copy_ssh_key
 from .core.installer import InstallConfig, InstallProgress, install_rauc_bundle
 from .core.transfer import TransferConfig, upload_bundle
 
@@ -40,6 +40,7 @@ def cli():
 @click.option('--mark-good', is_flag=True, help='Mark slot as good after installation')
 @click.option('--verbose', '-v', is_flag=True, help='Verbose output')
 @click.option('--cleanup', is_flag=True, default=True, help='Remove bundle after installation')
+@click.option('--copy-ssh-key', is_flag=True, help='Copy SSH key using default password "root"')
 def update(
     bundle_path: Path,
     host: str,
@@ -52,7 +53,8 @@ def update(
     ignore_compatible: bool,
     mark_good: bool,
     verbose: bool,
-    cleanup: bool
+    cleanup: bool,
+    copy_ssh_key: bool
 ):
     """Update target device with RAUC bundle."""
     
@@ -81,6 +83,16 @@ def update(
     )
     
     try:
+        # Step 0: Copy SSH key if requested or using password authentication
+        if copy_ssh_key or (password and not key_file):
+            console.print("[bold blue]Step 0: Setting up SSH key authentication...[/bold blue]")
+            ssh_password = password if password else "root"
+            if not copy_ssh_key(host, user, port, ssh_password):
+                console.print("[red]✗ Failed to copy SSH key, continuing with password auth[/red]")
+            else:
+                # Update config to not use password after key is copied
+                conn_config.password = None
+        
         with SSHConnection(conn_config) as ssh_conn:
             # Test RAUC availability
             if not ssh_conn.test_rauc_availability():
@@ -241,6 +253,34 @@ def status(
                 
     except Exception as e:
         console.print(f"[red]✗ Failed to get status: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option('--host', '-h', default='192.168.1.100', help='Target host IP address')
+@click.option('--user', '-u', default='root', help='SSH username')
+@click.option('--port', '-p', default=22, help='SSH port')
+@click.option('--password', default='root', help='SSH password for key copying')
+def setup_ssh(
+    host: str,
+    user: str,
+    port: int,
+    password: str
+):
+    """Copy SSH public key to target device for passwordless authentication."""
+    
+    console.print(f"[bold blue]Setting up SSH key authentication for {user}@{host}:{port}[/bold blue]")
+    
+    try:
+        if copy_ssh_key(host, user, port, password):
+            console.print("[bold green]✓ SSH key setup completed successfully![/bold green]")
+            console.print("You can now connect without a password.")
+        else:
+            console.print("[red]✗ SSH key setup failed[/red]")
+            sys.exit(1)
+            
+    except Exception as e:
+        console.print(f"[red]✗ SSH key setup error: {e}[/red]")
         sys.exit(1)
 
 

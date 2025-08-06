@@ -18,9 +18,27 @@ uv sync
 
 ## Basic Usage
 
+### Setup SSH Key Authentication
+
+Before deploying bundles, set up passwordless SSH authentication:
+
+```bash
+# Setup SSH keys with default configuration (192.168.1.100, password: root)
+uv run rauc-updater setup-ssh
+
+# Setup SSH keys for custom host
+uv run rauc-updater setup-ssh --host 192.168.1.150
+
+# Setup SSH keys with custom password
+uv run rauc-updater setup-ssh --host 192.168.1.100 --password mypassword
+
+# Setup SSH keys with custom user and port
+uv run rauc-updater setup-ssh --host 192.168.1.100 --user admin --port 2222 --password adminpass
+```
+
 ### Test Connection
 
-Before deploying bundles, test the connection to your target device:
+After setting up SSH keys, test the connection to your target device:
 
 ```bash
 # Test with default configuration (192.168.1.100)
@@ -41,11 +59,17 @@ uv run rauc-updater test --key-file ~/.ssh/my_key
 Deploy a RAUC bundle to your target device:
 
 ```bash
-# Basic deployment
+# Basic deployment (automatically copies SSH key if using password)
 uv run rauc-updater update /path/to/bundle.raucb
 
 # Deploy to custom target
 uv run rauc-updater update /path/to/bundle.raucb --host 192.168.1.150
+
+# Deploy with explicit SSH key copying (uses default password "root")
+uv run rauc-updater update /path/to/bundle.raucb --copy-ssh-key
+
+# Deploy with password authentication (automatically copies SSH key)
+uv run rauc-updater update /path/to/bundle.raucb --password root
 
 # Deploy with verbose output
 uv run rauc-updater update /path/to/bundle.raucb --verbose
@@ -60,6 +84,7 @@ uv run rauc-updater update /path/to/bundle.raucb \\
     --remote-path /data \\
     --timeout 900 \\
     --ignore-compatible \\
+    --copy-ssh-key \\
     --verbose
 ```
 
@@ -96,8 +121,9 @@ uv run rauc-updater cleanup --host 192.168.1.150
 | `--host` | 192.168.1.100 | Target device IP address |
 | `--user` | root | SSH username |
 | `--port` | 22 | SSH port |
-| `--password` | None | SSH password (not recommended) |
+| `--password` | None | SSH password (triggers automatic SSH key copying) |
 | `--key-file` | Auto-detect | SSH private key file |
+| `--copy-ssh-key` | False | Copy SSH key using default password "root" |
 
 ### Transfer Settings
 
@@ -118,7 +144,25 @@ uv run rauc-updater cleanup --host 192.168.1.150
 
 The tool supports multiple authentication methods:
 
-### 1. SSH Key Authentication (Recommended)
+### 1. Automatic SSH Key Setup (Recommended)
+
+The tool can automatically copy SSH keys to enable passwordless authentication:
+
+```bash
+# Setup SSH keys with default password "root"
+uv run rauc-updater setup-ssh
+
+# Setup SSH keys with custom password
+uv run rauc-updater setup-ssh --password mypassword
+
+# Automatic key copying during update (when using password)
+uv run rauc-updater update bundle.raucb --password root
+
+# Explicit key copying during update
+uv run rauc-updater update bundle.raucb --copy-ssh-key
+```
+
+### 2. SSH Key Authentication (Manual Setup)
 
 ```bash
 # Use specific key file
@@ -128,36 +172,41 @@ uv run rauc-updater test --key-file ~/.ssh/target_device_key
 uv run rauc-updater test
 ```
 
-### 2. Password Authentication
+### 3. Password Authentication
 
 ```bash
 # Interactive password prompt
 uv run rauc-updater test --password
 
-# Password from command line (not recommended)
+# Password from command line (automatically copies SSH key)
 uv run rauc-updater test --password "your_password"
 ```
 
+**Note**: When using password authentication, the tool automatically attempts to copy SSH keys for future passwordless access.
+
 ## Examples
 
-### Example 1: Basic Update
+### Example 1: First-time Setup and Update
 
 ```bash
-# 1. Test connection
+# 1. Setup SSH keys (first time only)
+uv run rauc-updater setup-ssh
+
+# 2. Test connection
 uv run rauc-updater test
 
-# 2. Deploy bundle
+# 3. Deploy bundle
 uv run rauc-updater update /data/nuc-image-qt5-bundle-intel-corei7-64.raucb
 
-# 3. Check status
+# 4. Check status
 uv run rauc-updater status
 ```
 
-### Example 2: Update with Verification
+### Example 2: Quick Update with Auto SSH Setup
 
 ```bash
-# Deploy bundle and mark as good
-uv run rauc-updater update /data/bundle.raucb --mark-good --verbose
+# Deploy bundle with automatic SSH key setup
+uv run rauc-updater update /data/bundle.raucb --copy-ssh-key --mark-good --verbose
 ```
 
 ### Example 3: Custom Target
@@ -173,7 +222,7 @@ uv run rauc-updater update /data/bundle.raucb \\
     --verbose
 ```
 
-### Example 4: Batch Operations
+### Example 4: Batch Operations with SSH Setup
 
 ```bash
 #!/bin/bash
@@ -184,6 +233,9 @@ DEVICES=("192.168.1.100" "192.168.1.101" "192.168.1.102")
 
 for device in "${DEVICES[@]}"; do
     echo "Updating device: $device"
+    
+    # Setup SSH keys (first time only)
+    uv run rauc-updater setup-ssh --host "$device"
     
     # Test connection
     if uv run rauc-updater test --host "$device"; then
@@ -210,6 +262,10 @@ Deploy RAUC bundles over SSH/SCP
 Starting RAUC Update Process
 Bundle: /data/nuc-image-qt5-bundle-intel-corei7-64.raucb
 Target: root@192.168.1.100:22
+
+Step 0: Setting up SSH key authentication...
+Copying SSH key to root@192.168.1.100:22...
+✓ SSH key copied successfully
 
 Connecting to root@192.168.1.100:22...
 ✓ Connected successfully
@@ -309,7 +365,13 @@ ping 192.168.1.100
 
 ### SSH Key Setup
 
+The tool provides automatic SSH key setup, but you can also set up keys manually:
+
 ```bash
+# Automatic setup (recommended)
+uv run rauc-updater setup-ssh --host 192.168.1.100 --password root
+
+# Manual setup (if needed)
 # Generate SSH key if needed
 ssh-keygen -t ed25519 -f ~/.ssh/target_device
 
@@ -318,6 +380,19 @@ ssh-copy-id -i ~/.ssh/target_device.pub root@192.168.1.100
 
 # Test connection
 ssh -i ~/.ssh/target_device root@192.168.1.100
+```
+
+### Dependencies
+
+Make sure required tools are installed:
+
+```bash
+# Install sshpass for automatic SSH key copying
+sudo apt-get install sshpass
+
+# Or on other systems:
+# brew install hudochenkov/sshpass/sshpass  # macOS
+# yum install sshpass                       # RHEL/CentOS
 ```
 
 ### Debug Information

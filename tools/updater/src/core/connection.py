@@ -1,5 +1,6 @@
 """SSH connection management for RAUC updater."""
 
+import subprocess
 import time
 from pathlib import Path
 from typing import Optional, Tuple
@@ -175,6 +176,46 @@ class SSHConnection:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.disconnect()
+
+
+def copy_ssh_key(host: str, username: str = "root", port: int = 22, password: str = "root") -> bool:
+    """Copy SSH public key to target device using ssh-copy-id with password."""
+    try:
+        console.print(f"[blue]Copying SSH key to {username}@{host}:{port}...[/blue]")
+        
+        # Use ssh-copy-id with sshpass to provide password automatically
+        cmd = [
+            "sshpass", "-p", password,
+            "ssh-copy-id", "-o", "StrictHostKeyChecking=no",
+            "-p", str(port),
+            f"{username}@{host}"
+        ]
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console
+        ) as progress:
+            task = progress.add_task("Copying SSH key...", total=None)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            progress.update(task, completed=True)
+        
+        if result.returncode == 0:
+            console.print("[green]✓ SSH key copied successfully[/green]")
+            return True
+        else:
+            console.print(f"[red]✗ SSH key copy failed: {result.stderr.strip()}[/red]")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        console.print("[red]✗ SSH key copy timed out[/red]")
+        return False
+    except FileNotFoundError:
+        console.print("[red]✗ sshpass not found. Please install sshpass[/red]")
+        return False
+    except Exception as e:
+        console.print(f"[red]✗ SSH key copy error: {e}[/red]")
+        return False
 
 
 def test_connection(host: str = "192.168.1.100", username: str = "root", port: int = 22) -> bool:
