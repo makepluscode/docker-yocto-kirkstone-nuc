@@ -1,4 +1,5 @@
 # Use local CMake source instead of downloading
+FILESEXTRAPATHS:prepend := "${THISDIR}:"
 SRC_URI = "file://rauc-cmake-1.13"
 S = "${WORKDIR}/rauc-cmake-1.13"
 

@@ -99,7 +99,7 @@ BBLAYERS += " \
   ${TOPDIR}/../meta-openembedded/meta-networking \
   ${TOPDIR}/../meta-intel \
   ${TOPDIR}/../meta-nuc \
-  ${TOPDIR}/../meta-rauc \
+  ${TOPDIR}/../meta-rauc-cmake \
   ${TOPDIR}/../meta-qt5 \
   ${TOPDIR}/../meta-apps \
 "
