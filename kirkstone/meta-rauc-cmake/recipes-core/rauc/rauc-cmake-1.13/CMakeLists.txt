@@ -113,13 +113,16 @@ include_directories(
 add_compile_definitions(HAVE_CONFIG_H)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -include ${CMAKE_CURRENT_BINARY_DIR}/config.h")
 
-# Compiler flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections -fno-strict-aliasing")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DG_LOG_DOMAIN=\\\"rauc\\\"")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGLIB_VERSION_MAX_ALLOWED=G_ENCODE_VERSION\\(2,56\\)")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGLIB_VERSION_MIN_REQUIRED=G_ENCODE_VERSION\\(2,56\\)")
+# Compiler flags - append to existing flags instead of overriding
+set(RAUC_C_FLAGS "-Wall -Wextra")
+set(RAUC_C_FLAGS "${RAUC_C_FLAGS} -fdata-sections -ffunction-sections -fno-strict-aliasing")
+set(RAUC_C_FLAGS "${RAUC_C_FLAGS} -DG_LOG_DOMAIN=\\\"rauc\\\"")
+set(RAUC_C_FLAGS "${RAUC_C_FLAGS} -D_GNU_SOURCE")
+set(RAUC_C_FLAGS "${RAUC_C_FLAGS} -DGLIB_VERSION_MAX_ALLOWED=G_ENCODE_VERSION\\(2,56\\)")
+set(RAUC_C_FLAGS "${RAUC_C_FLAGS} -DGLIB_VERSION_MIN_REQUIRED=G_ENCODE_VERSION\\(2,56\\)")
+
+# Append our flags to the existing CMAKE_C_FLAGS
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${RAUC_C_FLAGS}")
 
 # Additional warning flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Walloca -Warray-bounds -Wcast-align")
@@ -147,10 +150,11 @@ if(ENABLE_SERVICE AND DBUS_FOUND)
                 --interface-prefix de.pengutronix.rauc.
                 --c-namespace R
                 --generate-c-code rauc-installer-generated
+                --c-generate-autocleanup all
                 ${DBUS_INTERFACE_XML}
             DEPENDS ${DBUS_INTERFACE_XML}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            COMMENT "Generating D-Bus interface code"
+            COMMENT "Generating D-Bus interface code with autocleanup"
         )
         
         set(DBUS_SOURCES ${DBUS_GENERATED_H} ${DBUS_GENERATED_C})
@@ -201,16 +205,12 @@ if(ENABLE_GPT AND FDISK_FOUND)
     list(APPEND RAUC_SOURCES src/gpt.c)
 endif()
 
-# Create static library (only add DBUS_SOURCES if they exist)
-# Always create dummy dbus sources if not available
-if(NOT DBUS_SOURCES)
-    set(DBUS_SOURCES 
-        ${CMAKE_CURRENT_BINARY_DIR}/rauc-installer-generated.h
-        ${CMAKE_CURRENT_BINARY_DIR}/rauc-installer-generated.c
-    )
+# Create static library
+if(ENABLE_SERVICE AND DBUS_FOUND AND DBUS_SOURCES)
+    add_library(rauc_lib STATIC ${RAUC_SOURCES} ${DBUS_SOURCES})
+else()
+    add_library(rauc_lib STATIC ${RAUC_SOURCES})
 endif()
-
-add_library(rauc_lib STATIC ${RAUC_SOURCES} ${DBUS_SOURCES})
 
 # Link libraries for static lib
 target_link_libraries(rauc_lib
@@ -269,7 +269,7 @@ if(ENABLE_STREAMING AND LIBNL_GENL_FOUND)
 endif()
 
 # Create executable
-add_executable(rauc src/main.c ${DBUS_SOURCES})
+add_executable(rauc src/main.c)
 target_link_libraries(rauc rauc_lib)
 
 # Include directories for the executable
@@ -305,6 +305,39 @@ install(TARGETS rauc DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES rauc.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
 if(ENABLE_SERVICE)
+    # Install D-Bus interface
     install(FILES src/de.pengutronix.rauc.Installer.xml 
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/dbus-1/interfaces)
+    
+    # Install D-Bus system configuration
+    install(FILES data/de.pengutronix.rauc.conf
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/dbus-1/system.d)
+    
+    # Configure and install systemd service file
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/data/rauc.service.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/rauc.service"
+        @ONLY
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rauc.service
+            DESTINATION lib/systemd/system)
+    
+    # Configure and install D-Bus service file
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/data/de.pengutronix.rauc.service.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/de.pengutronix.rauc.service"
+        @ONLY
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/de.pengutronix.rauc.service
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/dbus-1/system-services)
+    
+    # Configure and install service helper script
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/data/rauc-service.sh.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/rauc-service.sh"
+        @ONLY
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rauc-service.sh
+            DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif()

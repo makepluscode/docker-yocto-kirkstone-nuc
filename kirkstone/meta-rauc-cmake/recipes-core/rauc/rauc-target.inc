@@ -8,10 +8,13 @@ SRC_URI:append = " \
   ${RAUC_KEYRING_URI} \
   file://rauc-mark-good.service \
   file://rauc-mark-good.init \
+  file://de.pengutronix.rauc-remote.conf \
+  file://dbus-rauc-remote.service \
   "
 
-SYSTEMD_PACKAGES += "${PN}-mark-good"
+SYSTEMD_PACKAGES += "${PN}-mark-good ${PN}-remote"
 SYSTEMD_SERVICE:${PN}-mark-good = "rauc-mark-good.service"
+SYSTEMD_SERVICE:${PN}-remote = "dbus-rauc-remote.service"
 
 INITSCRIPT_PACKAGES = "${PN}-mark-good"
 INITSCRIPT_NAME:${PN}-mark-good = "rauc-mark-good"
@@ -39,13 +42,42 @@ do_install () {
 
         install -d ${D}${systemd_unitdir}/system/
         install -m 0644 ${WORKDIR}/rauc-mark-good.service ${D}${systemd_unitdir}/system/
+        install -m 0644 ${WORKDIR}/dbus-rauc-remote.service ${D}${systemd_unitdir}/system/
+        
+        # Install rauc.service if it was built by CMake (when service is enabled)
+        if [ -f ${D}${prefix}/lib/systemd/system/rauc.service ]; then
+            install -m 0644 ${D}${prefix}/lib/systemd/system/rauc.service ${D}${systemd_unitdir}/system/
+            # Remove the CMake-installed version to avoid packaging conflicts
+            rm -rf ${D}${prefix}/lib/systemd
+            # Remove empty lib directory if it exists
+            rmdir ${D}${prefix}/lib 2>/dev/null || true
+        fi
+        
         sed -i -e 's!@BINDIR@!${bindir}!g' ${D}${systemd_unitdir}/system/*.service
 
         install -d "${D}${sysconfdir}/init.d"
         install -m 755 "${WORKDIR}/rauc-mark-good.init" "${D}${sysconfdir}/init.d/rauc-mark-good"
+        
+        # Install D-Bus remote configuration
+        install -d ${D}${datadir}/dbus-1/system.d/
+        install -m 0644 ${WORKDIR}/de.pengutronix.rauc-remote.conf ${D}${datadir}/dbus-1/system.d/
+        
+        # Install D-Bus system service and config files if built by CMake
+        if [ -f ${D}${prefix}${datadir}/dbus-1/system-services/de.pengutronix.rauc.service ]; then
+            install -d ${D}${datadir}/dbus-1/system-services/
+            install -m 0644 ${D}${prefix}${datadir}/dbus-1/system-services/de.pengutronix.rauc.service ${D}${datadir}/dbus-1/system-services/
+            # Remove CMake-installed version
+            rm -f ${D}${prefix}${datadir}/dbus-1/system-services/de.pengutronix.rauc.service
+        fi
+        
+        if [ -f ${D}${prefix}${datadir}/dbus-1/system.d/de.pengutronix.rauc.conf ]; then
+            install -m 0644 ${D}${prefix}${datadir}/dbus-1/system.d/de.pengutronix.rauc.conf ${D}${datadir}/dbus-1/system.d/
+            # Remove CMake-installed version  
+            rm -f ${D}${prefix}${datadir}/dbus-1/system.d/de.pengutronix.rauc.conf
+        fi
 }
 
-PACKAGES =+ "${PN}-mark-good"
+PACKAGES =+ "${PN}-mark-good ${PN}-remote"
 
 # some magic to get the tool to interact with bootloader storage
 python __anonymous () {
@@ -69,6 +101,7 @@ python __anonymous () {
 RRECOMMENDS:${PN}:append = " ${PN}-mark-good"
 
 FILES:${PN}-mark-good = "${systemd_unitdir}/system/rauc-mark-good.service ${sysconfdir}/init.d/rauc-mark-good"
+FILES:${PN}-remote = "${systemd_unitdir}/system/dbus-rauc-remote.service ${datadir}/dbus-1/system.d/de.pengutronix.rauc-remote.conf"
 
 PACKAGES =+ "${PN}-service"
 SYSTEMD_SERVICE:${PN}-service = "${@bb.utils.contains('PACKAGECONFIG', 'service', 'rauc.service', '', d)}"
@@ -82,4 +115,4 @@ FILES:${PN}-service = "\
   ${nonarch_libdir}/systemd/catalog \
   "
 
-PACKAGECONFIG ??= "service network streaming json nocreate gpt"
+PACKAGECONFIG ??= "service network streaming json gpt"
