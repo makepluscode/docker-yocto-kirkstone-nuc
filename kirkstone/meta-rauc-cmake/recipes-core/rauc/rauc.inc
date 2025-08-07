@@ -3,10 +3,11 @@ HOMEPAGE = "https://github.com/rauc/rauc"
 LICENSE = "LGPL-2.1-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=4fbd65380cdd255951079008b364516c"
 DEPENDS = "openssl glib-2.0 dbus util-linux curl"
+DEPENDS += "glib-2.0-native"
 
 inherit cmake pkgconfig gettext
 
-# CMake configuration options
+# CMake configuration options - enable D-Bus service for remote control
 EXTRA_OECMAKE += "\
         -DENABLE_SERVICE=ON \
         -DENABLE_CREATE=ON \
@@ -15,6 +16,11 @@ EXTRA_OECMAKE += "\
         -DENABLE_JSON=OFF \
         -DENABLE_STREAMING=OFF \
         -DBUILD_TESTS=OFF \
+        "
+
+# Add compiler flags to handle deprecated functions
+EXTRA_OECMAKE += "\
+        -DCMAKE_C_FLAGS=\"${CFLAGS} -Wno-error=deprecated-declarations\" \
         "
 
 PACKAGECONFIG[nocreate]  = "-DENABLE_CREATE=OFF,-DENABLE_CREATE=ON,"
