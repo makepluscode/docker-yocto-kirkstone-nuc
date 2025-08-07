@@ -1,0 +1,11 @@
+[Unit]
+Description=RAUC Update Service
+Documentation=https://rauc.readthedocs.io
+After=dbus.service
+
+[Service]
+Type=dbus
+BusName=de.pengutronix.rauc
+ExecStart=@bindir@/rauc --mount=/run/rauc/mnt service
+RuntimeDirectory=rauc/mnt
+MountFlags=slave

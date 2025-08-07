@@ -1,0 +1,1484 @@
+Release 1.13 (released Jan 22, 2025)
+------------------------------------
+
+.. rubric:: Enhancements
+
+* Add support for :ref:`artifact repositories <sec-basic-artifact-repositories>`
+  as a preview.
+
+  Bundles can now contain *artifacts* (containers, VM images, large data files,
+  firmware images for other systems and micro-controllers, and other add-on
+  binaries).
+  Artifacts are installed into *repositories*, which are directories on a
+  partition shared between all slots.
+  Artifact updates provide flexibility by allowing repositories
+  :ref:`configured <sec-repository-config>` in the ``system.conf`` to contain
+  multiple artifacts.
+
+  Multiple :ref:`types of repositories <sec-repository-types>` are available for
+  different use cases, such as files or directory trees, and the type determines
+  how artifact are installed and managed.
+
+  We expect that additional types will be added as needed to support adaptive
+  updates for artifacts and deduplicated storage (e.g. using `composefs
+  <https://github.com/containers/composefs>`_) in the future.
+
+  .. note::
+
+    Artifact updates are currently available at a preview level.
+
+    This means that we want to allow users to try out this new feature and report
+    their experiences, but also that your use case (such as parent slot classes
+    for artifacts) may not be fully supported yet.
+    Depending on the feedback, we may need to change behaviour in ways that are
+    not backwards compatible.
+    So, try it out and report back `using GitHub discussions
+    <https://github.com/rauc/rauc/discussions/categories/artifact-updates>`_ or
+    in the `Matrix/IRC chat channel <https://matrix.to/#/#rauc:matrix.org>`_, but
+    don't rely on it for products yet.
+    We intend to stabilize this feature as soon as we have confidence that the
+    common use cases work well.
+
+* Expose manifest meta-data to handlers and the ``install-check`` hook as
+  environment variables.
+  This uses the same variable names (and implementation) as ``rauc info
+  --output-format=shell``.
+* Allow local symlinks in the bundle again.
+* Support locating ``system.conf`` in ``/usr/lib/rauc`` and ``/run/rauc``
+  according to the `UAPI Group's "Configuration Files Specification"
+  <https://uapi-group.org/specifications/specs/configuration_files_specification/>`_.
+  (by Ahmad Fatoum)
+* Add support for adding and overriding system config options from the command
+  line using ``-C``/``--confopt``. (by Christian Aurich)
+* Expose the ``RAUC_SYSTEM_VARIANT`` for handlers as well. (by Ahmad Fatoum)
+* Print bootname in addition to the slot name in "checking slot" progress
+  messages. (by Richard Alpe)
+* Allow ``tftp://`` URLs for bundle download (but not for streaming). (by
+  Joachim Wiberg)
+* Log how much of the bundle was downloaded when streaming.
+  This is useful to evaluate the effectiveness of adaptive update.
+* Log stats even if the NBD server exits with an error.
+* Added a simple shell-based update service as an example in
+  ``contrib/rauc-client/``. (by Angelo Compagnucci)
+* Reject slots with both ``install`` and ``pre-install`` (or ``post-install``)
+  hooks set during creation, as only the ``install`` hook would be used.
+* Add more pre-condition checks to the eMMC boot partition support.
+
+.. rubric:: Bug fixes
+
+* Fix handling of failed installations in combination with
+  ``install-same=false``. (by Samer Kenawy)
+* Fix double file descriptor close when creating adaptive bundles.
+  This bug resulted in an abort when using glib since version 2.75.0.
+* Require at least one recipient certificate when encrypting bundles. (by
+  Florian Otte)
+* Fix error handling when using URLs with disabled network/streaming support.
+  (by Ahmad Fatoum)
+* Fix CMS debug output with ``G_MESSAGES_DEBUG=all``. (by Tamara Schmitz)
+* Add missing Qt D-Bus type annotation. (by Richard Hozák)
+* Fix casync archive generation when running under ``pseudo`` by avoiding
+  ``fakeroot`` in that case.
+
+.. rubric:: Testing
+
+* Add helper scripts to save and clear coverage data when running under
+  ``qemu-test``.
+* Fix service shutdown to improve coverage reporting.
+* Update codecov CI integration to fix coverage reports and use different flags
+  for with/without D-Bus service builds.
+* Improve test coverage for:
+
+  * decryption via PKCS#11
+  * detailed status output in all formats
+  * ``rauc write-slot``
+  * boot slot detection via ``PARTLABEL``, ``PARTUUID`` and ``UUID``
+  * eMMC boot partitions by using emulation in QEMU
+  * boot/slot status changes
+
+  We now have `almost 85% coverage
+  <https://app.codecov.io/gh/rauc/rauc?trend=12%20months>`_ and mainly
+  hard-to-test syscall error handling code remains.
+* Use pytest ``tmp_path`` fixture to improve test case isolation.
+* Avoid pulling in X11 dependencies via dbus-launch and use dbus-daemon instead.
+* Fix startup of ``qemu-test`` in cases where the host has a
+  ``/etc/resolv.conf`` symlink.
+* Fix upload of ``scan-build`` reports in CI.
+* Fix testing of encrypted bundle extraction.
+* Enable tests with disabled GPT support in CI.
+* Refactor fixtures for more flexible system context setup and config
+  generation.
+  This made some fixed config files obsolete, which were removed.
+
+.. rubric:: Code
+
+* Simplify control flow in eMMC boot partition code.
+* Simplify control flow in slot marking code.
+* Fix a typo in the bootchooser code. (by Gaël PORTAY).
+
+.. rubric:: Documentation
+
+* Extend documentation about slot and system status files.
+* Improve some FAQ entries. (by Ulrich Ölmann)
+* Improve documentation about ``qemu-test``.
+* Fix link to ``bundle.bbclass``. (by Emmanuel Ferdman)
+* Improve consistency for shell and console sections.
+* Add warning about EXT_CSD kernel regression to eMMC boot switch section.
+
+Contributions from: Ahmad Fatoum, Angelo Compagnucci, Christian Aurich,
+Emmanuel Ferdman, Enrico Jörns, Florian Otte, Gaël PORTAY, Jan Lübbe, Joachim
+Wiberg, Richard Alpe, Richard Hozák, Samer Kenawy, Tamara Schmitz, Ulrich
+Ölmann
+
+Release 1.12 (released Aug 9, 2024)
+-----------------------------------
+
+.. rubric:: Enhancements
+
+* Add a ``min-bundle-version`` using SemVer format in ``system.conf``.
+  This causes RAUC to reject bundles with an older version. (by Johannes
+  Schneider)
+* Avoid modifying the input directory during ``rauc bundle`` by using a
+  hard-linked copy.
+  For simplicity, we abort on anything in the input directory which is not a
+  regular file.
+  If someone relies on the old (undocumented) behavior of including directories
+  and symlinks in the bundle, please contact us.
+* Allow configuration of additional mkfs options per slot using
+  ``extra-mkfs-opts=<options>`` in ``system.conf``. (by David Robertson)
+* Improve messages printed when aborting ``rauc install`` with Ctrl+C.
+* Add the manifest build value to the hook execution environment. (by Heiko
+  Thiery)
+* Add the bundle format to the ``rauc info`` shell and JSON formatters. (by
+  Peter Korsgaard)
+* Add a systemd `journald message catalog
+  <https://www.freedesktop.org/wiki/Software/systemd/catalog/>`_.
+* Allow plain bundles on ntfs3 mounts.
+* Add contrib script to demonstrate how to get the CMS data from a bundle.
+* Warn when using slower HTTP/1 instead of HTTP/2 for streaming.
+* Improve messages and errors printed for hash index generation and make some
+  more visible.
+
+.. rubric:: Bug fixes
+
+* Fix handling of slot installation skipping with global slot status and add a
+  test case.
+* Fix PKCS11 URI handling in ``system.conf``. (by David Hollister)
+* Fix block-hash-index cache by not cleaning and properly re-using the slot's
+  data directory during installation.
+  This avoids redundant slot scans to find reusable blocks during installation.
+* Fix out-of-bounds reads in bootchooser backends.
+* Fix some memory leaks in the NBD helper, D-Bus service, CLI and tests.
+* Fix logging of the BUNDLE_HASH and SLOT_BOOTNAME values in the booted event.
+* Fix double close of output file descriptor when using UBI volumes with
+  casync. (by Tim van der Staaij)
+* Add missing "PRIORITY" field in event log messages.
+* Improve NBD helper shutdown error handling.
+* Fix inconsistent default D-Bus policy installation directory.
+
+.. rubric:: Testing
+
+* Replace sharness with pytest.
+  This will make it easier to write and maintain complex test cases.
+* Execute tests for ARMv5/7/8 and i386 using QEMU and multi-arch containers.
+* Enable address sanitizer for all remaining tests.
+* Enable undefined behavior sanitizer in CI.
+* Run faketime tests only if it works. (by Uwe Kleine-König)
+* Fix faketime when running under qemu-test.
+* Update GitHub Actions to current versions.
+* Fix coverage collection from the NBD helper in qemu-test.
+* Update the kernel used in qemu-test to 6.6.36.
+
+.. rubric:: Code
+
+* Refactor manifest checks.
+  This makes it easier to reject invalid configurations during bundle creation.
+* Add logging of build configuration at debug level.
+  This should help when analyzing bug reports.
+* Ignore SIGPIPE to handle broken pipes explicitly.
+* Add a helper to simplify GBytes access from OpenSSL.
+* Refactor shell formatting for ``rauc status`` and ``rauc info`` to prepare
+  for consolidation with hook/handler environment setup.
+* Allow declarations after statements.
+
+.. rubric:: Documentation
+
+* Improve reference sections for ``system.conf`` and the manifest by indicating
+  default values and fixing inconsistencies.
+* Add missing reference documentation for image variants.
+* Extend reference documentation for adaptive method 'block-hash-index'.
+* Fix some typos. (by Gaël PORTAY and Michael B. Sumulong)
+
+Contributions from: David Hollister, David Robertson, Enrico Jörns, Gaël
+PORTAY, Heiko Thiery, Jan Lübbe, Johannes Schneider, Michael B. Sumulong, Peter
+Korsgaard, Tim van der Staaij, Uwe Kleine-König
+
+Release 1.11.3 (released Mar 15, 2024)
+--------------------------------------
+
+.. rubric:: Bug fixes
+
+* Fix service startup when using symlinks in ``system.conf`` and ``root=`` in
+  the kernel commandline.
+  Systems using ``rauc.slot=<bootname>`` or ``bootchooser.active=<bootname>``
+  are not affected.
+
+Contributions from: Enrico Jörns
+
+Release 1.11.2 (released Feb 28, 2024)
+--------------------------------------
+
+.. rubric:: Bug fixes
+
+* Fix 'rauc info' when used with streaming.
+* Fix streaming helper shutdown when used with 'rauc info'.
+  This avoids a 'nbd server failed' message.
+* Fix handling of streaming request retries.
+* Remove a redundant event log message when trying to install an encrypted
+  bundle with an unencrypted manifest.
+
+Contributions from: Enrico Jörns
+
+Release 1.11.1 (released Jan 15, 2024)
+--------------------------------------
+
+.. rubric:: Bug fixes
+
+* Ensure that only bootable slots can be marked with ``rauc status mark-*``.
+* Fix boot detection when using the ``rauc.external`` kernel command-line flag.
+* Fix compatibility with OpenSSL 3.2 when using the ``codesign`` certificate
+  purpose.
+* Fix a double free when trying to install two bundles using casync without a
+  service restart. (by Arseniy Lartsev)
+
+.. rubric:: Testing
+
+* Run service tests only when running as root.
+
+.. rubric:: Documentation
+
+* Improve description of current pre-install hook implementation.
+
+Contributions from: Arseniy Lartsev, Enrico Jörns, Jan Lübbe
+
+Release 1.11 (released Dec 20, 2023)
+------------------------------------
+
+.. rubric:: Enhancements
+
+* Send :ref:`additional information as HTTP headers
+  <sec-additional-http-headers>` to the server on the first streaming request
+  (if enabled in the config).
+* Add persistent system status information to detect reboots using the kernel's
+  ``boot_id``.
+* Add an ``--ignore-image=<slotclass>`` option to keep images as they are when
+  using ``rauc convert``.
+  This can be used to exclude some images (such as bootloaders) from the casync
+  conversion.
+* Create :ref:`links for active slot devices <sec-run-links>` in
+  ``/run/rauc/slots/active``.
+  This should avoid the need for parsing 'rauc status' output in some cases.
+* Expose transaction ID to hooks during installation. (by Zygmunt Krynicki)
+* Add support for ``get-current`` to the custom bootloader backend. (by Angelo
+  Compagnucci)
+* Implement ``resign`` and ``replace-signature`` for encrypted bundles.
+* Explicit ``rauc status`` output when no slot is activated (instead of
+  printing ``null``).
+* Detect runtime config file change and warn in the service log.
+* Improve various warning and error messages to better guide users. (by
+  Angelo Compagnucci and others)
+* Remove autotools build system.
+  Support for meson was added in 1.9 and supported in parallel to autotools
+  until 1.10.1.
+* Add log events for slot update, start/end of an installation, good/bad/active
+  marking and boot/service restart.
+  For an overview over the event logging framework in RAUC and its purpose, have
+  a look at :ref:`sec-advanced-event-log`.
+
+.. note::
+   We don't consider the details of the new log events fixed yet, so please use
+   them as a preview and for testing.
+   In a future release, they will be documented in a `journald message catalog
+   <https://www.freedesktop.org/wiki/Software/systemd/catalog/>`_.
+
+.. rubric:: Bug fixes
+
+* Fix invalidation of slot status information during installation.
+* Fix ``--no-verify`` for ``rauc resign``, to allow omitting the keyring.
+* Fix installation of manual page when using meson.
+
+.. rubric:: Testing
+
+* Improve coverage for sanitizer builds.
+* Add support for fuzzing. (initial setup by René Fischer)
+* Integrate RAUC into OSS-Fuzz.
+* Add `asan` option to the ``qemu-test`` script to allow running with address
+  sanitizer.
+* Optimize ``qemu-test`` startup.
+
+.. rubric:: Code
+
+* Introduce structured event logging.
+* Introduce an internal API for using the existing status file for global
+  information (system status).
+* Fix minor memory leaks.
+
+.. rubric:: Documentation
+
+* Improve introductory and image type sections.
+* Document ``CONFIG_DM_CRYPT`` as a required kernel config option for encrypted
+  bundles. (by Angelo Compagnucci)
+* Allow installing HTML user documentation (``-Dhtmldocs=true``) (by Emil
+  Velikov)
+* Explicitly mention LGPL as the license for the project in the README.rst. (by
+  Roland Hieber)
+* Update sphinx and dependencies.
+
+Contributions from: Angelo Compagnucci, Emil Velikov, Enrico Jörns, Jan Lübbe,
+René Fischer, Roland Hieber, Thomas Kilian, Uwe Kleine-König, Zygmunt Krynicki
+
+Release 1.10.1 (released Aug 3, 2023)
+-------------------------------------
+
+.. rubric:: Bug fixes
+
+* Fix variant configuration via the system config.
+  In 1.10, only variants set via the system info handler worked correctly.
+  (by Hans Christian Lonstad)
+* Fix compatibility with efibootmgr version 18. (by David Runge)
+* Fix the help text of the ``--with-streaming_user`` configure option.
+* Fix some minor memory leaks discovered with address sanitizer.
+* Fix D-Bus default directories when using meson.
+* Fix build against OpenSSL installed in non-standard locations when using
+  autotools.
+
+.. rubric:: Testing
+
+* Enable address sanitizer for install tests.
+
+.. rubric:: Documentation
+
+* Improve understandability, fix typos and missing words. (by Roland Hieber)
+* Document an alternative to ``meson compile -C build`` for old meson versions.
+* Document possible filesystem incompatibility with ext4 in the FAQ.
+
+Contributions from: David Runge, Enrico Jörns, Hans Christian Lonstad, Jan
+Lübbe, Roland Hieber, Stephan Wurm, Ulrich Ölmann
+
+Release 1.10 (released Jun 23, 2023)
+------------------------------------
+
+.. rubric:: Enhancements
+
+* Print sizes in ``rauc info`` also in human-readable form.
+* Add FTPS support for bundle download (only for use with casync, not for
+  streaming). (by Christian Meusel)
+* Improve progress granularity to provide more realistic weighting of substeps.
+* Add fine-grained progress updates during image copying and archive
+  extraction. (based on work by Lars Poeschel)
+* Return manifest meta data in ``rauc info`` and via the InspectBundle D-Bus
+  method.
+* Add new 'json-2' output format for ``rauc info`` that matches the
+  InspectBundle D-Bus method structure.
+* Improve error message for failed boot slot detection.
+* Allow exFAT as a local filesystem for plain bundles. (by Stefan Wahren)
+* Add optional pre-check for verity bundles.
+  This is useful if the same bundle needs to be transferred and installed to
+  multiple systems in sync. (by Christian Hitz)
+* Add support for custom variables in the system-info handler and pass them to
+  other handlers.
+* Show a warning during bundle creation if no format is specified in the
+  manifest.
+  This should hopefully encourage migration to the verity format.
+* Introduce an installation transaction UUID, which is stored in the slot
+  status.
+  This can be used to infer which slots have been updated by the same
+  transaction.
+  In a future release, this will be useful to correlate log messages.
+* Use a shorter connect timeout for streaming to avoid waiting for 25 minutes.
+
+.. rubric:: Bug fixes
+
+* Fix some issues in the meson build support:
+
+  * missing man page installation
+  * missing dependency for tests on D-Bus header generation
+  * missing executable bit for D-Bus wrapper ``rauc-service.sh``
+* Fix external mount point detection which could have caused a number of mounts
+  to be not detected properly.
+* Fix double-initialization of context.
+* Fix memory leaks (mainly in the test suite).
+* Fix a confusing error message when using ``rauc extract`` with an existing
+  output directory.
+* Fix building with musl by not using ``off64_t`` with
+  ``_FILE_OFFSET_BITS=64``. (by Christian Hohnstaedt)
+* Fix unintentional forwarding of full custom handler args (defined in
+  the manifest) to the ``system.conf``-defined handlers.
+* Re-add missing ``--key`` argument (used to set the decryption key) to help
+  and man page.
+
+.. rubric:: Testing
+
+* Add Debian 'buster', 'bullseye' and 'testing' to test stable test matrix.
+* Add test run with address sanitizer.
+  This currently uses a large part of the existing test suite.
+
+.. rubric:: Code
+
+* Refactor installation handling with the introduction of installation plans.
+  This also allows testing for invalid image/slot combinations earlier.
+* Add a helper for atomic symlink updates.
+* Refactor slot state determination and split from mount point updates.
+  Let slot state determination happen earlier and only once.
+* Require at least glib 2.56.0 for ``g_ptr_array_find`` and ``g_autolist``.
+  Debian buster, Ubuntu bionic and Yocto dunfell have newer versions already.
+* Refactor boot slot marking.
+* Consistently initialize variables to avoid static checker warning. (by
+  b4yuan)
+
+.. rubric:: Documentation
+
+* Document some Linux distributions which provide RAUC packages.
+* Document deprecation of the ``statusfile`` option. (by Ulrich Ölmann)
+* Extend and fix documentation for the full custom handler.
+
+Contributions from: Christian Hitz, Christian Hohnstaedt, Christian Meusel,
+Enrico Jörns, Jan Lübbe, Lars Poeschel, René Fischer, Stefan Wahren, Ulrich
+Ölmann, b4yuan
+
+Release 1.9 (released Mar 3, 2023)
+----------------------------------
+
+.. rubric:: Enhancements
+
+* Add new InspectBundle D-Bus method, which takes the same bundle access options
+  as the existing InstallBundle method.
+  This makes it possible to inspect bundles stored on HTTP servers which need
+  authentication.
+  It returns information from the manifest as a nested dictionary (for now,
+  this is only ``compatible``, ``version``, ``description`` and ``build``), but
+  can be extended as needed.
+  (by Stefan Ursella)
+* Add support for loading and storing metadata entries in the manifest.
+  They are not yet exposed to the user.
+* Add a manifest hash value and expose it via ``rauc info`` and ``rauc status``.
+  This can be used to identify a specific bundle.
+* Support configurable boot attempt counters for barebox (using
+  ``boot-attempts`` in the ``system.conf``).
+* Add meson as an alternative build system.
+  We intend to drop autotools in 1.10, unless there are good reasons to keep it
+  for longer.
+  As the tar archive generated by meson does not contain a configure script,
+  you may need to run autogen.sh to generate it.
+  To simplify the migration, we also provide a ``-autotools`` archive variant
+  which is generated using autotool's ``make dist`` (and does not contain the
+  meson build support).
+* Abort earlier if the image is too large for the target slot.
+* Add warnings for some configuration issues when using adaptive updates.
+
+.. rubric:: Bug fixes
+
+* Fix a NULL dereference error caused by images larger than the target slot. (by
+  Kevin Hsieh)
+* Fix compatibility with libcurl when built without proxy support. (by Christian
+  Meusel)
+* Do not invoke any target-related context setup steps if no config is required.
+  This avoids unnecessary checks and removes the misleading messages about
+  unresolved paths.
+* Fix number format for bootchooser when using U-Boot. (by Christian Meusel)
+* Fix handling of partitioned loop devices, which caused incorrect aborts
+  during installation.
+* Fix error handling when attempting to encrypt plain bundles.
+
+.. rubric:: Testing
+
+* Improve robustness of dm-verity/-crypt test setup.
+* Enable scan-build for tests in GitHub Actions.
+* Handle floating point comparisons in tests better.
+* Add a GitHub Actions workflow for CodeQL scanning as a replacement for LGTM.
+* Run the cross architecture tests on Debian bullseye instead of buster.
+
+.. rubric:: Code
+
+* Move the ``-intermediate`` option to the subcommand level and update the
+  manual page.
+* Improve error handling for invalid ``boot-attempts`` configuration.
+* Fix some minor memory leaks.
+
+.. rubric:: Documentation
+
+* Document our :ref:`approach to bundle compatibility <sec-compatibility>`.
+* Add links to public example integrations of RAUC into different build systems
+  and boards.
+* Add an issue template and a SUPPORT.rst file.
+* Improve the documentation on slot skipping with regard to streaming.
+* Update README.rst with new features.
+
+
+Contributions from: Christian Meusel, Enrico Jörns, Jan Lübbe, Kevin Hsieh,
+Stefan Ursella, Ulrich Ölmann, Uwe Kleine-König
+
+Release 1.8 (released Sep 30, 2022)
+-----------------------------------
+
+.. rubric:: Enhancements
+
+* Implement adaptive image updates based on block hash indices.
+  This works by adding an index file containing the hashes of each 4kiB image
+  block in the image to the bundle and then using this to check whether a block
+  is available locally during installation.
+  If that's the case, RAUC doesn't need to download this block.
+  Together with streaming, this means that only a small part of the bundle needs
+  to be downloaded as long as the changes are localized.
+  See the :ref:`documentation for details <sec-adaptive-updates>`.
+* Add a slot type which provides atomic bootloader updates for SoCs (like the
+  Rockchip RK3568) which search for a valid image at multiple fixed offsets. (by
+  Matthias Fend)
+  See the :ref:`documentation for details <sec-raw-partition-fallback>`.
+* Add a configuration option for additional arguments to pass to ``casync
+  extract``. (by Ludovico de Nittis)
+* Add initial support for desync (an alternative casync implementation). (by
+  Ludovico de Nittis)
+* Add support for a RAUC data-directory on a shared partition.
+  Unless otherwise configured, this is also used to store the central slot
+  status data.
+  See the :ref:`documentation for details <data-directory>`.
+* Allow setting a passphrase for encrypted PEM files via the environment
+  (``RAUC_KEY_PASSPHRASE``). (by Marc Kleine-Budde)
+* Ignore ``meta.<label>`` sections in the manifest.
+  The ``meta.<label>`` sections are intended to provide a forwards-compatible
+  way to add data to the manifest which is not interpreted by RAUC in any way.
+  Currently, they are just ignored when reading a manifest. In future releases,
+  they will be accessible via ``rauc info``, the D-Bus API and in
+  hooks/handlers.
+
+.. rubric:: Bug fixes
+
+* Avoid retrying on HTTP 404 errors during streaming.
+* Improve error handling during loop device block size configuration. (by Ahmad
+  Fatoum)
+* Fix handling of empty partitions for ``boot-mbr-switch`` slots.
+* Do not attempt to take ownership of plain bundles if running as non-root.
+* Unmount seed slots if casync fails during installation. (by Jonas Licht)
+* Add missing test files to the dist .tar.xz. (by Uwe Kleine-König)
+
+.. rubric:: Testing
+
+* Refactor the statistics code to make it useful for testing as well.
+* Replace Ubuntu 21.10 test container with 22.04
+* Add more tests for casync conversion and installation.
+
+.. rubric:: Code
+
+* Log error messages from CURL for failed streaming requests.
+* Add doctype to D-Bus XML specification. (by Morgan Bengtsson)
+* Improve error messages related to bootloader communication.
+* Improve error reporting for directory creation failures.
+
+.. rubric:: Documentation
+
+* Document that the required kernel features can be configured as modules as
+  well.
+* Document how to load and store the GRUB environment from a shared partition.
+* Document some best practices regarding storage partitioning.
+* Explain differences between casync and streaming & adaptive updates.
+
+Contributions from: Ahmad Fatoum, Enrico Jörns, Jan Lübbe, Jonas Licht,
+Ludovico de Nittis, Marc Kleine-Budde, Marcus Hoffmann, Matthias Fend, Morgan
+Bengtsson, Ulrich Ölmann, Uwe Kleine-König
+
+Release 1.7 (released Jun 3, 2022)
+----------------------------------
+
+.. rubric:: Enhancements
+
+* Add support for streaming installation from a HTTP(S) server for bundles in
+  ``verity`` and ``crypt`` formats.
+  This avoids the need for a temporary bundle storage location and prepares for
+  more efficient *adaptive* (originally *incremental*) updates.
+  See the :ref:`documentation for details <http-streaming>`.
+* Add support for bundle encryption (``crypt`` format).
+  This is useful when bundles contain confidential data and are not otherwise
+  protected during transport (for example, via HTTP, unauthenticated HTTPS or
+  USB storage).
+  See the :ref:`documentation for details <sec-encryption>`.
+* Optionally allow verification with partial chains.
+  If enabled, RAUC will also treat intermediate certificates in the keyring as
+  trust-anchors, in addition to self-signed root CA certificates. This makes it
+  possible to trust only one (or more) sub-tree(s) in a larger PKI.
+  See the :ref:`documentation for details <allow-partial-chain>`.
+* Divert log messages to stderr, which is useful for machine readable output
+  (``rauc status --output-format=json``).
+  This is only enabled when built with glib 2.68 or newer.
+  (by Ludovico de Nittis)
+* Only allow the root step to report 100% progress. (by Steven Rau)
+* Add the ``--trust-environment`` option to ``rauc extract`` and ``rauc
+  extract-signature``.
+* Improve the error message printed on compatible mismatch.
+
+.. rubric:: Bug fixes
+
+* Don't enforce bundle exclusivity if the environment is trusted. (by Ludovico
+  de Nittis)
+* Clean up error handling for 'rauc status'.
+* Fix some memory leaks. (by Zygmunt Krynicki)
+* Fix unintentional removal of existing bundles on error.
+* Fix build error when PRIu64 is not defined. (by Fabrice Fontaine)
+
+.. rubric:: Testing
+
+* Make some tests conditional on the existence of the openssl binary.
+* Access rauc.io instead of example.com.
+* Explicitly use Python 3 in coverity checks. (by Thorsten Scherer)
+* Add build tests on Ubuntu 21.10.
+
+.. rubric:: Code
+
+* Add some missing files to the dist tar.gz. (by Uwe Kleine-König)
+* Change minimum glib version from 2.49.3 to 2.50, allowing use of g_autoptr
+  with the auto-generated DBus code.
+* Use g_autofree/g_autoptr in more places.
+* Use more specific error codes for device mapper error reporting.
+* Prepare for incremental methods by adding an optional per-image manifest
+  option.
+
+.. note::
+  Since the release of 1.7, it turned out that the name 'incremental' for this
+  functionality is confusing.
+  Accordingly, we decided to rename it to 'adaptive' for 1.8 and accept the
+  downside of not being able to benefit from compatibility with 1.7.
+
+.. rubric:: Documentation
+
+* Fix some broken internal links. (by Thorsten Scherer)
+* Mention Buildroot support for RAUC. (by Thomas Petazzoni)
+* Fix some typos. (by Bastian Krause and Michael Riesch)
+* Clean up some inconsistencies between README and main documentation.
+* Fix misleading rescue slot example. (by Sean Nyekjaer)
+* Fix broken links to external pages. (by Bastian Krause)
+
+Contributions from: Bastian Krause, Fabrice Fontaine, Ludovico de Nittis,
+Michael Riesch, Sean Nyekjaer, Steven Rau, Thomas Petazzoni, Thorsten Scherer,
+Uwe Kleine-König, Zygmunt Krynicki
+
+Release 1.6 (released Feb 9, 2022)
+----------------------------------
+
+.. rubric:: Enhancements
+
+* Added support for NOR flash devices. (by Ladislav Michl)
+* Added support for configuring the number of boot attempts for U-Boot. (by
+  Daniel Mack)
+* Implemented passing the image size to hooks as ``RAUC_IMAGE_SIZE``. (by Marcel
+  Hellwig)
+* Added support to use ``systemd.verity_root_data=`` to find the booted slot.
+  (by Arnaud Rebillout)
+* Implemented passing additional information to hooks for the ``boot-*`` slot types.
+  (by Bastian Krause)
+* Added support for extracting and replacing the bundle signature, which is
+  useful for scenarios with strict limitations on how HSMs can be used. (by
+  Jean-Pierre Geslin)
+* Implemented a ``rauc mount`` command to allow inspection of bundles without
+  extraction.
+* Allowed omitting the image filename when using the ``install`` slot hook.
+* Implemented support for extracting tar archives to jffs2 slots. (by Holger Assmann)
+* Added option for the ``resign`` and ``info`` commands to ignore expired
+  certificates (``--no-check-time``). (by Michael Heimpold)
+* Added option for the ``convert`` command to disable the concurrent access
+  checks for plain bundles (``--trust-environment``).
+* Simplified usage of compressed SquashFS images with extensions as created by
+  OpenEmbedded. (by Omer Akram)
+* Improved checks of the manifest contents to avoid common misconfigurations.
+* Improved handling of ``system.conf`` loading according to the use-cases of
+  the different commands.
+
+.. rubric:: Bug fixes
+
+* Fixed installing plain bundles from ZFS partitions. (by Daniel Mack)
+* Fixed the order of pre-/post-install hooks for the ``boot-*`` slot types. (by Bastian Krause)
+* Fixed generation of VFAT filesystem labels which were rejected by newer
+  ``mkfs.vfat``.
+* Added checking of slot types configured in ``system.conf``.
+* Fixed installing plain bundles from ramfs. (by Ian Abbott)
+* Fixed curl download size limit handling. (by Christoph Steiger)
+* Fixed missing file descriptor closing in some error cases. (by Christian Hitz)
+* Fixed an issue with slot boot status determination that could accidentally
+  detect 'good' slots as 'bad'.
+* Fixed inconsistent slot status reporting via the D-Bus API.
+
+.. rubric:: Testing
+
+* Updated kernel used for qemu testing.
+* Introduced an interactive mode for qemu-test.
+* Moved testing container building to GitHub Actions.
+* Updated testing container to Debian bullseye. (by Ludovico de Nitti)
+* Added a scan-build workflow.
+
+.. rubric:: Code
+
+* Removed some code left over after the removal of the deprecated file support.
+* Refactored bundle opening as preparation for HTTP streaming.
+* Added infrastructure for HTTP streaming tests.
+* Completed D-Bus interface definitions. (by Taras Zaporozhets)
+
+.. rubric:: Documentation
+
+* Improved documentation of the ``boot-mbr/gpt-switch`` slot types.
+* Fixed and improved documentation and comments in several places. (by Alexander
+  Dahl)
+* Documented a common approach to handle UBIFS device names via udev.
+* Added a FAQ entry covering the use of dm-crypt partitions. (by Fabian
+  Büttner)
+
+Contributions from: Ahmad Fatoum, Alexander Dahl, Arnaud Rebillout, Bastian
+Krause, Christian Hitz, Christoph Steiger, Daniel Mack, Enrico Jörns, Fabian
+Büttner, Holger Assmann, Ian Abbott, Jan Lübbe, Jean-Pierre Geslin, Ladislav
+Michl, Livio Bieri, Ludovico de Nittis, Marcel Hellwig, Michael Heimpold,
+Michael Tretter, Omer Akram, Pascal Huerst, Richard Forro, Roland Hieber,
+Rouven Czerwinski, Sijmen Huizenga, Taras Zaporozhets, Vivien Didelot,
+Vyacheslav Yurkov
+
+Release 1.5.1 (released Jan 22, 2021)
+-------------------------------------
+
+.. rubric:: Bug fixes
+
+* Fix building with kernel headers < 4.14. (by Fabrice Fontaine)
+* Fix manifest generation for casync bundles.
+* Fix too strict payload size check which triggered on casync bundles generated
+  by versions up to 1.4.
+* Restore compatibility with glib 2.50.
+
+.. rubric:: Testing
+
+* Switch from Travis-CI to GitHub actions.
+* Add test builds on Ubuntu 16.04, 18.04 and 20.04 to catch build problems with
+  older environments.
+
+Contributions from: Enrico Jörns, Fabrice Fontaine, Jan Lübbe
+
+Release 1.5 (released Dec 14, 2020)
+-----------------------------------
+
+.. note::
+
+  This version introduces the new ``verity`` bundle format (the old format is
+  now called ``plain``).
+  The ``verity`` format was added to prepare for future use cases (such as
+  network streaming and encryption), for better parallelization of installation
+  with hash verification and to detect modification of the bundle during
+  installation (CVE-2020-25860).
+  The bundle format is detected when reading a bundle and checked against the set
+  of allowed formats configured in the system.conf (see :ref:`sec_ref_formats`).
+
+  As the old ``plain`` format does not offer protection against modification
+  during the installation process, RAUC now takes ownership of the bundle file,
+  removes write permissions and checks for existing open file descriptors.
+  This is intended as a mitigation to protect against a compromised update
+  service running as a non-root user, which would otherwise be able to modify
+  the bundle between signature check and actual bundle installation.
+
+  See :ref:`sec_int_migration` for more details on how to switch to the
+  ``verity`` format.
+
+.. rubric:: Enhancements
+
+* Add support for the ``verity`` bundle format. See the :ref:`reference for
+  details <sec_ref_format_verity>`.
+* Support resolving the `root=PARTLABEL=xxx` kernel command line option. (by
+  Gaël PORTAY)
+* Disable the unnecessary SMIMECapabilities information in the bundle
+  signature, saving ~100 bytes.
+* Remove redundant checksum verification for source images during installation.
+  The RAUC bundle is already verified at this point, so there is no need to
+  verify the checksum of each file individually. (by Bastian Krause)
+
+.. rubric:: Security
+
+* Take ownership of bundle files if they are not owned by root and remove write
+  permissions. Then check that no writable file descriptors are open for the
+  bundle file (using the ``F_SETLEASE`` fcntl). This fixes CVE-2020-25860. See
+  the advisory for more details:
+  https://github.com/rauc/rauc/security/advisories/GHSA-cgf3-h62j-w9vv
+
+.. note::
+
+  The https://github.com/rauc/rauc-1.5-integration repository contains examples
+  to simplify integrating the RAUC update into existing projects.
+  You can subscribe to https://github.com/rauc/rauc-1.5-integration/issues/1 to
+  receive notifications of important updates to this repository and of
+  integration into the upstream build systems.
+
+.. rubric:: Bug fixes
+
+* Fix install handler selection for *.img files for boot-* slots when used with
+  casync. (by Martin Schwan)
+* Fix checking for unknown keys in the slot configuration.
+* Fix some corner cases related to stopping the D-Bus daemon.
+* Propagate error if unable to save manifest. (by Stefan Wahren)
+* Apply `--handler-args` only during installation (and not during bundle
+  creation).
+
+.. rubric:: Testing
+
+* Ship `test/minimal-test.conf` to fix testing when running as root. (by Uwe
+  Kleine-König)
+* Increase usage of g_autofree/g_autoptr in the test suite.
+
+.. rubric:: Code
+
+* Remove unused code for signed manifests (outside of a bundle).
+* Add G_GNUC_WARN_UNUSED_RESULT to many functions.
+
+.. rubric:: Documentation
+
+* Fix multiple smaller errors. (by Christoph Steiger, Christopher Obbard and
+  Michael Heimpold)
+* Improve documentation related to u-boot scripting and environment storage.
+
+Contributions from: Bastian Krause, Christoph Steiger, Christopher Obbard,
+Enrico Jörns, Gaël PORTAY, Jan Lübbe, Martin Schwan, Michael Heimpold, Stefan
+Wahren, Uwe Kleine-König
+
+Release 1.4 (released Jul 20, 2020)
+-----------------------------------
+
+.. note::
+
+  Slots with both a ``parent=`` and a ``bootname=`` entry are now rejected when
+  parsing the system configuration.
+  While the intention was to have either a bootname or a parent link, this was
+  not enforced in previous versions.
+  Move the bootname to the parent slot when updating to RAUC 1.4.
+
+  It is now recommended to explicitly select either per-slot or global
+  configuration file in the system config using ``statusfile=<path>/per-slot``.
+  If a central storage location is available, global status file should be
+  preferred.
+
+.. rubric:: Enhancements
+
+* Added support for custom boot selection scripts/binaries.
+  This allows handling special cases where none of the standard bootloaders
+  is available for switching the redundant slots. (by Christian Bräuner
+  Sørensen, :ref:`docs <sec-custom-bootloader-backend>` by Andreas Schmidt)
+* Changed ext4 filesystem creation options to always use 256 byte inodes.
+  Without it, mkfs.ext4 will default to 128 byte inodes on filesystems smaller
+  than 512MiB.
+  This avoids the "ext4 filesystem being mounted at /foo supports timestamps
+  until 2038" message on newer kernels.
+* Added new slot type ``boot-gpt-switch`` to support atomic updating of boot
+  partitions in the GPT.
+  This is useful if the firmware does not support atomic bootloader updates by
+  itself.
+  See :ref:`here <sec-gpt-partition>` for details.
+
+.. rubric:: Bug fixes
+
+* Improve parent and bootname consistency checks when loading the system
+  config. (by Dan Callaghan)
+* Fix and improve installation log output for the --disable-service
+  configuration.
+* Clean up incomplete bundles on creation errors consistently for extract/resign/convert
+  and doesn't remove pre-existing files anymore.
+* Fix minor memory leaks.
+
+.. rubric:: Testing
+
+* Added tests for UBIFS and NAND slot types via nandsim in qemu.
+* Added CI testing of the --disable-service configure option.
+* Added test cases for some CLI subcommands.
+
+.. rubric:: Code
+
+* Clarified licensing of the D-Bus API file. (by Michael Heimpold)
+
+.. rubric:: Documentation
+
+* Manual pages have been updated with new options. (by Michael Heimpold)
+* Improved documentation around central and per-slot status files.
+* Improved images and various text sections.
+
+Contributions from: Andreas Schmidt, Bastian Krause, Christian Bräuner
+Sørensen, Dan Callaghan, Enrico Jörns, Jan Lübbe, Michael Heimpold, Tobias
+Junghans, Uwe Kleine-König
+
+Release 1.3 (released Apr 23, 2020)
+-----------------------------------
+
+.. rubric:: Enhancements
+
+* Added a new D-Bus method (InstallBundle) which supports optional parameters
+  ("ignore-compatible" for now).
+* Added support for X.509 key usage attributes (code signing and others).
+* Added a ``check-crl`` configuration option to require Certificate Revocation
+  List (CRL) checking during installation.
+  If the keyring already contains a CRL, but checking is not enabled, a warning
+  will be printed.
+* Support updating of already mounted slots via a custom install hook when
+  enabled with "allow-mounted=true" in the system configuration.
+  This can be useful for updating bootloaders in a boot partition (for example
+  on the Raspberry Pi or BeagleBone). (by Martin Hundebøll and Rasmus Villemoes)
+* Added the ``--mksquashfs-args`` option for bundle creation. This can be used to
+  configure the details of the squashfs compression. (by Louis des Landes)
+* Added the ``--casync-args`` option for the ``rauc convert`` command. This can
+  be used to configure the details of the casync conversion. (by Christopher
+  Obbard)
+* Added support for installing UBIFS images via casync (depends on the casync PR
+  https://github.com/systemd/casync/pull/227). (by Ulrich Ölmann)
+* Enabled usage of ``--no-verify`` with ``rauc resign``.
+  This can be useful for resigning of bundles signed with expired certificates.
+* Exposed the ``RAUC_BUNDLE_MOUNT_POINT`` environment variable to hook scripts.
+  This also deprecates the old name ``RAUC_UPDATE_SOURCE`` for this value in
+  handler scripts. (by Rasmus Villemoes)
+* Reduced size of the installed ``rauc`` binary. This was done by using
+  ``--gc-sections`` and adding a configure switch to disable the ``bundle``,
+  ``resign`` and ``convert`` commands. (by Rasmus Villemoes)
+* Added support for explicitly telling RAUC that all slots are inactive on the
+  kernel command line (``rauc.external``).
+  This is useful for using RAUC in a factory installer. (by Marco Felsch)
+* Improved layout of the ``rauc status`` output.
+
+.. rubric:: Bug fixes
+
+* Fixed SD/eMMC detection when using /dev/disk/by-path/ symlinks. (by Marco Felsch)
+* Fixed handling of HTTP Content-Encoding: gzip. (by Jan Kundrát)
+* Fixed reporting of errors during bundle verification. This solves a
+  ``rauc-ERROR **: Not enough substeps: check_bundle`` abort. (by Rouven
+  Czerwinski)
+* Fixed handling of surrounding whitespace in the system variant by removing
+  it. A warning is printed in this case.
+* Fixed the RAUC D-Bus interface introspection file name to be consistent with
+  the interface name. (by Michael Tretter)
+
+.. rubric:: Testing
+
+* Switched testing environment from user-mode-linux (UML) to QEMU. This allows
+  us to use our own kernel configuration and avoids the (unusual) dependency.
+* Re-enabled support for coverity, as they have added support for GCC 8.
+* Added some more tests in several areas.
+
+.. rubric:: Code
+
+* Removed support for OpenSSL versions < 1.1.1.
+  OpenSSL versions 1.0.2 and 1.1.0 are no longer supported by the OpenSSL
+  project: https://www.openssl.org/policies/releasestrat.html
+* Improved support for large bundles on 32 bit systems, but some work remains
+  to be done.
+* Disabled automatic ``-Werror`` and ``-O0`` when building from a git
+  repository.
+  This caused confusion in several cases.
+* Updated uncrustify and enabled some additional formatting rules.
+* Reduced redundant prefixes in error messages.
+* Removed unused verification functions left over from the old network mode.
+* Removed minor memory leaks.
+
+.. rubric:: Documentation
+
+* Clarified documentation about hooks and handlers (and the available
+  environment variables).
+* Fixed minor typos and inconsistencies.
+
+Contributions from: Arnaud Rebillout, Christopher Obbard, Enrico Jörns, Jan
+Kundrát, Jan Lübbe, Louis des Landes, Marco Felsch, Martin Hundebøll, Michael
+Heimpold, Michael Tretter, Rasmus Villemoes, Rouven Czerwinski, Trent Piepho,
+Ulrich Ölmann
+
+Release 1.2 (released Oct 27, 2019)
+-----------------------------------
+
+.. rubric:: Enhancements
+
+* Added ``--signing-keyring`` argument to specify a distinct keyring for
+  post-signing verification. This allows for example to use ``rauc resign``
+  with certs not verifying against the original keyring.
+* Output of 'rauc status' is now grouped by slot groups to make it easier to
+  identify the redundancy setup.
+  Previously, the present slots were printed in a random order which was
+  confusing, especially when having more than three or four slots.
+* Use pkg-config to obtain valid D-Bus install directories and clean up D-Bus
+  directory handling.
+  This adds libdbus-1-dev as new build dependency. (by Michael Heimpold)
+* Moved various checks that could be performed before actually starting the
+  installation out of the atomic update region.
+  This allows RAUC to fail earlier without leaving behind a disabled slot group
+  with incomplete contents.
+* Added optional ``--progress`` argument to ``rauc install`` that enables a
+  basic text progress bar instead of the default line-by-line log.
+* Added ``tmppath`` to casync system config options to allow setting TMPDIR for
+  casync. (by Gaël PORTAY)
+* Slot skipping was deactivated by default as it turned out to be unexpected
+  behaviour for many users.
+  The corresponding setting was renamed to 'install-same='
+  ('force-install-same' will remain valid, too).
+  The means skipping writing for slots whose current and intended slot hashes
+  are equal must now be enabled explicitly.
+  This optimization is mainly useful for use-cases with a read-only rootfs.
+* Added new slot type ``boot-mbr-switch`` to support atomic updating of boot
+  partitions in the MBR. (by Thomas Hämmerle)
+  See :ref:`here <sec-mbr-partition>` for details.
+
+.. rubric:: Bug fixes
+
+* Fixed detection of whether the bundle path is located in input directory for a
+  corner case.
+* Fixed off-by-one error in printing the remaining attempts counter in the
+  uboot.sh contrib script (by Ellie Reeves)
+* Fixed detection of mount points disappearing during the service's runtime.
+* Added missing entry of 'service' subcommand to RAUC help text (if compiled
+  with service support).
+* Fixed inappropriate resetting of BOOT_ACK flag in eMMC extCSD register
+  handling which could have prevented proper booting on some SoCs. (by Stephan
+  Michaelsen)
+* Fixed leaking GDataInputStreams in boot selection and install handling that
+  led to steadily increasing number of open file descriptors in some scenarios
+  until exceeding system limits and leading to 'Too many open files' errors.
+  This was only problematic when installing many times without rebooting.
+* Fixed 'uninitialized local' bugs in update_handler and config_file module.
+  (by Gaël PORTAY)
+* PKCS#11 handling now does not silently accept missing (empty) PINs anymore,
+  but allows interactive prompt for entering it.
+* Fixed bundle detection on big endian systems.
+* Fixed size mismatches in printf formatter and struct packing on ARM32.
+
+.. rubric:: Testing
+
+* Fix checks that depended on implicit assumptions regarding the GHashTable
+  behaviour that are not valid anymore for newer glib versions.
+* Added notes on required tools for unit testing and added check for
+  grub-editenv being present.
+* Travis now also runs cross-compilation tests for platforms armhf, i386,
+  arm64, armel to allow early detection of cross-compilation issues with
+  endianness, 32 vs. 64 bit, etc.
+
+.. rubric:: Code
+
+* Reworked subprocess call logging for debugging and added remaining missing
+  log output to users of r_subprocess_new().
+* Refactored slot handling code in new 'slot.c' module to be used for both
+  install and status information handling.
+* Added qdbusxml2cpp annotations to rauc-installer.xml for interface class
+  generation. (by Tobias Junghans)
+* Removed the deprecated 'network mode'.
+  Note that this does not affect RAUC's bundle network capabilities (casync,
+  etc.).
+* Fixed clang compilation warnings (unused variable, printf formatter,
+  non-obvious invert statements).
+* Various code cleanups, structural simplifications
+
+.. rubric:: Documentation
+
+* Added hints for creating ``/dev/data`` symlink to mount the right data
+  partition in dual data partition setups. (by Fabian Knapp)
+* Extended manpage to cover 'rauc status' subcommands. (by Michael Heimpold)
+* Fixed various typos.
+
+Contributions from: Bastian Krause, Ellie Reeves, Enrico Jörns, Fabian Knapp,
+Gaël PORTAY, Jan Lübbe, Leif Middelschulte, Michael Heimpold , Stephan
+Michaelsen , Thomas Hämmerle, Thorsten Scherer, Tobias Junghans, Uwe
+Kleine-König
+
+Release 1.1 (released Jun 5, 2019)
+----------------------------------
+
+.. rubric:: Enhancements
+
+* Check that we do not generate a bundle inside a source directory
+* Added full GRUB2 support, including status and primary slot readback (by
+  Vitaly Ogoltsov and Beralt Meppelink)
+* Allow passing a slot's name via commandline instead of it's bootname
+* Show each slot's name in ``Booted from`` line of ``rauc status`` to simplify
+  identification
+* Add ``resize`` option for ext4 slots to let RAUC run resize2fs on an ext4
+  slot after copying the image.
+* Allow dumping the signer certificate (``--dump-cert``) without verification
+* Allow specifying a keyring directory with multiple files to support
+  non-conflicting installations of certificates from different packages (by
+  Evan Edstrom)
+* Add a bootloader option ``efi-use-bootnext`` (only valid when bootloader is
+  'efi') to disable usage of BootNext for marking slots primary.
+* Support setting a system variant in the ``system-info`` handler via
+  ``RAUC_SYSTEM_VARIANT``
+* D-Bus "mountpoint" property now also exports external mount point
+* Made slot state, compatible and variant available as environment variables
+  for slot hooks
+* Made system variant variable available as an environment variable for bundle
+  hooks
+
+.. rubric:: Bug fixes
+
+* Fix memory leaks in D-Bus notification callbacks (by Michael Heimpold)
+* Fix memory leaks in resolve_bundle_path (by Michael Heimpold)
+* Do not print misleading status dump when calling ``mark-*`` subcommands
+* Avoid mmap'ing potentially huge files (by Rasmus Villemoes)
+* Fix and cleanup checksum verification and handling (by Rasmus Villemoes)
+* Avoid assertion error caused by unconditional slot status hash table freeing
+* Make a-month-from-now validity check in signature verification more robust
+  (by Rasmus Villemoes)
+
+.. rubric:: Testing
+
+* Enable lgtm analysis for tests
+* Restructure signature tests with set_up and tear_down (by Evan Edstrom)
+* Move from gcc-6 to gcc-7
+* Build environment fixes and workarounds
+
+.. rubric:: Code
+
+* A failure in calling barebox_state bootchooser implementation should be
+  propagated
+* Update to latest ``git-version-gen`` upstream version
+* Tail-call real rauc suprocess in ``rauc-service.sh`` (by Angus Lees)
+* Consistently return newly-allocated objects in ``resolve_path()``
+* Enforce space between ``if`` and ``(`` via uncrustify
+
+.. rubric:: Documentation
+
+* Added an initial version of a man page (by Michael Heimpold)
+* Extended D-Bus API documentation
+* Improve description of how RAUC detects the booted slot
+* Added lgtm badge
+* Add hints on library dependencies
+* Clarifications on how to build and install RAUC
+* Add note on basic RAUC buildroot support
+* Clarification on usage of RAUC on host and target side
+* Clarified documentation of 'use-bundle-signing-time' option (by Michael Heimpold)
+* Typos fixed
+
+Contributions from: Angus Lees, Arnaud Rebillout, Beralt Meppelink, Enrico
+Jörns, Evan Edstrom, Ian Abbott, Jan Lübbe, Michael Heimpold, Rasmus Villemoes,
+Ulrich Ölmann, Vitaly Ogoltsov
+
+Release 1.0 (released Dec 20, 2018)
+-----------------------------------
+
+.. rubric:: Enhancements
+
+* Support OpenSSL 1.1
+* Use OPENSSL_config() instead of OPENSSL_no_config()
+* Handle curl_global_init() return code
+
+.. rubric:: Bug fixes
+
+* Fix error handling when resolving the backing file for a loop device
+* Fix error reporting when no primary slot is found with u-boot (by Matthias Bolte)
+* Fix memory leaks when parsing handler output
+* Fix compiler error when building with --disable-network
+* Handle fatal errors during curl or openssl initialization
+* Fix boot selection handling for asymmetric update setups
+* Fix default variant string in case of failure when obtaining
+* Fix return codes when giving excess arguments to CLI functions
+* Let 'rauc service' return exit code != 0 in case of failure
+* Print 'rauc service' user error output with g_printerr()
+* Fix showing primary slot (obtained via D-Bus) in 'rauc status'
+* Fix showing inverted boot-status (obtained via D-Bus) in 'rauc status'
+* Minor output and error handling fixes and enhancements
+
+.. rubric:: Testing
+
+* Fake entropy in uml tests to fix and speed up testing
+* Fix creating and submitting coverity report data
+* Migrate to using Docker images for testing
+* Changed coverage service from coveralls to codecov.io
+* Switch to uncrustify 0.68.1
+
+.. rubric:: Documentation
+
+* Provided slot configuration :ref:`examples <sec-example-slot-configs>` for
+  common scenarios
+* Fixes and enhancements of README.rst to match current state
+* Add sphinx DTS lexer for fixing and improving dts example code parsing
+
+Contributions from: Ahmad Fatoum, Enrico Jörns, Jan Lübbe, Matthias Bolte
+
+Release 1.0-rc1 (released Oct 12, 2018)
+---------------------------------------
+
+.. rubric:: Enhancements
+
+* Bundle creation
+
+  * Add support for passing Keys/Certificates stored on PKCS#11 tokens (e.g. for using a smart card or HSM).
+    See :ref:`pkcs11-support` for details.
+  * Print a warning during signing if a certificate in the chain will expire within one month
+  * If keyring is given during bundle creation, automatically verify bundle signature and trust chain
+
+* Configuration
+  (see the reference for the :ref:`[system] <system-section>`, :ref:`[keyring] <keyring-section>` and :ref:`[slot.*.*] <slot.slot-class.idx-section>` sections for details)
+
+  * Add ``extra-mount-opts`` argument to slot config to allow passing custom options
+    to ``mount`` calls (such as user_xattr or seclabel)
+  * Implement support for ``readonly`` slots that are part of the slot description but
+    should never be written by RAUC
+  * Add option ``use-bundle-signing-time`` to use signing time for verification instead
+    of the current time
+  * Introduce ``max-bundle-download-size`` config setting (by Michael Heimpold)
+  * Rename confusing ``ignore-checksum`` flag to ``force-install-same`` (old remains
+    valid of course) (by Jan Remmet)
+  * Add strict parsing of config files as we do for manifests already.
+    This will reject configs with invalid keys, groups, etc. to prevent unintentional behavior
+
+* Installation
+
+  * Remove strict requirement of using ``.raucb`` file extension, although it is still recommended
+  * Export RAUC slot type to handlers and hooks (by Rasmus Villemoes)
+  * Add ``*.squashfs`` to ``raw`` slot handling (by Emmanuel Roullit)
+  * Add checking of RAUC bundle identifier (squashfs identifier)
+  * ``*.img`` files can now be installed to ``ext4``, ``ubifs`` or ``vfat`` slots (by Michael Heimpold)
+  * Warn if downloaded bundle could not be deleted
+
+* Expose system information (variant, compatible, booted slot) over D-Bus (by Jan Remmet)
+* The ``rauc status`` command line call now only uses the D-Bus API (when enabled) to obtain
+  status information instead of loading configuration and performing operations itself.
+  This finalizes the clear separations between client and service and also allows calling
+  the command line client without requiring any configuration.
+* Add debug log domain ``rauc-subprocess`` for printing RAUC subprocess invocations.
+  This can be activated by setting the environment variable ``G_MESSAGES_DEBUG=rauc-subprocess``.
+  See :ref:`debugging` for details.
+* Enhancement of many debug and error messages to be more precise and helpful
+* Let U-Boot boot selection handler remove slot from ``BOOT_ORDER`` when marking it bad
+* Implemented obtaining state and primary information for U-Boot boot selection interface (by Timothy Lee)
+* Also show certificate validity times when the certificate chain is displayed
+* Added a simple CGI as an example on how to code against the D-Bus API in RAUC contrib/ folder. (by Bastian Stender)
+
+.. rubric:: Bug fixes
+
+* Bootchooser EFI handler error messages and segfault fixed (by Arnaud Rebillout)
+* Fix preserving of primary errors while printing follow-up errors in update_handlers (by Rasmus Villemoes)
+* Make not finding (all) appropriate target slots a fatal error again
+* Prevent non-installation operations from touching the installation progress information (by Bastian Stender)
+* Call ``fsync()`` when writing raw images to assure content is fully written to disk before exiting (by Jim Brennan)
+* Fix casync store initialization for extraction without seeds (by Arnaud Rebillout)
+* Fix slot status path generation for external mounts (by Vyacheslav Yurkov)
+* Do not try to mount already mounted slots when loading slot status information from per-slot file
+* Fix invalid return value in case of failed ``mark_active()``
+* Fix bootname detection for missing ``root=`` command line parameter
+* Fix passing intermediate certificates via command line which got broken by a faulty input check (by Marcel Hamer)
+* Preserve original uid/gid during extraction to be independent of the running system.
+  This was only problematic if the name to ID mapping changed with an update.
+  Note that this requires to enable ``CONFIG_FEATURE_TAR_LONG_OPTIONS`` when using busybox tar.
+* Block device paths are now opened with ``O_EXCL`` to ensure exclusive access
+* Fix handling for ``file://`` URIs
+* Build-fix workaround for ancient (< 3.4) kernels (by Yann E. MORIN)
+* Various internal error handling fixes (by Ulrich Ölmann, Bastian Stender)
+* Several memory leak fixes
+
+.. rubric:: Testing
+
+* Abort on ``g_critical()`` to detect issues early
+* Extended and restructured testing for barebox and u-boot boot selection handling
+* Basic ``rauc convert`` (casync) testing
+* Switch to Travis xenial environment
+* Make diffs created by uncrustify fatal to enforce coding style
+* Fix hanging rauc.t in case of failed tests for fixing sharness cleanup function handling
+* Run sharness (rauc.t) tests with verbose output
+* Show make-check log on error
+
+.. rubric:: Code
+
+* Add GError handling to download functions
+* Prepare support for tracing log level
+* Start more detailed annotation of function parameter direction and transfer
+* Simplified return handling as result of cleanup helper rework
+* Treewide introduction of Glib automatic cleanup helpers. Increases minimum required GLib version to 2.45.8 (by Philipp Zabel)
+* Prepare deprecation of RAUC ancient non-bundle 'network mode'
+
+.. rubric:: Documentation
+
+* Add a :ref:`debugging` chapter on how to debug RAUC
+* Add a :ref:`bootloader-interaction` section describing the boot selection layer and the special handling for the supported bootloaders
+* Add hint on how to run RAUC without D-Bus to FAQ
+* Document :ref:`sec_ref_host_tools` and :ref:`sec_ref_target_tools`
+* Tons of typo fixes, minor enhancements, clarifications, example fixes, etc.
+
+Contributions from: Alexander Dahl, Arnaud Rebillout, Bastian Stender, Emmanuel Roullit, Enrico Jörns, Jan Lübbe, Jan Remmet, Jim Brennan, Marcel Hamer, Michael Heimpold, Philip Downer, Philipp Zabel, Rasmus Villemoes, Thomas Petazzoni, Timothy Lee, Ulrich Ölmann, Vyacheslav Yurkov, Yann E. MORIN
+
+Release 0.4 (released Apr 9, 2018)
+----------------------------------
+
+.. rubric:: Enhancements
+
+* Add ``barebox-statename`` key to ``[system]`` section of system.conf in order
+  to allow using non-default names for barebox state
+* Support atomic bootloader updates for eMMCs.
+  The newly introduced slot type ``boot-emmc`` will tell RAUC to handle
+  bootloader updates on eMMC by using the ``mmcblkXboot0/-boot1`` partitions
+  and the EXT_CSD registers for alternating updates.
+* Support writing ``*.vfat`` images to vfat slots
+* Add basic support for streaming bundles using casync tool.
+  Using the casync tool allows streaming bundle updates chunk-wise over
+  http/https/sftp etc.
+  By using the source slot as a seed for the reproducible casync chunking
+  algorithm, the actual chunks to download get reduced to only those that
+  differ from the original system.
+
+  * Add ``rauc convert`` command to convert conventional bundles to casync
+    bundle and chunk store
+  * Extend update handler to handle ``.caibx`` and ``.caidx`` suffix image types in
+    bundle
+* Added ``--detailed`` argument to ``rauc status`` to obtain newly added slot
+  status information
+* Added D-Bus Methods ``GetSlotStatus`` to obtain collected status of all slots
+* Extended information stored in slot status files (installed bundle info,
+  installation and activation timestamps and counters)
+* Optionally use a central status file located in a storage location not
+  touched during RAUC updates instead of per-slot files (enabled by setting
+  ``statusfile`` key in ``[system]`` section of ``system.conf``).
+* Add ``write-slot`` command to write images directly to defined slots (for use
+  during development)
+
+.. rubric:: Bug fixes
+
+* Fix documentation out-of-tree builds
+* Fixed packaging for dbus wrapper script rauc-service.sh
+* Some double-free and error handling fixes
+
+.. rubric:: Testing
+
+* Create uncrustify report during Travis run
+
+.. rubric:: Code
+
+* Unified hash table iteration and variable usage
+* Add uncrustify code style configuration checker script to gain consistent
+  coding style. Committed changes revealed by initial run.
+
+.. rubric:: Documentation
+
+* Updated and extended D-Bus interface documentation
+* Added documentation for newly added features (casync, central slot status,
+  etc.)
+* Fixed and extended Yocto (meta-rauc) integration documentation
+* Add link to IRC/Matrix channel
+* Some minor spelling errors fixed
+
+Release 0.3 (released Feb 1, 2018)
+----------------------------------
+
+.. rubric:: Enhancements
+
+* Added support for intermediate certificates, improved bundle resigning and
+  certificate information for hooks.
+  This makes it easier to use a multi-level PKI with separate intermediate
+  certificates for development and releases.
+  See :ref:`sec-resign` for details.
+* Added support for image variants, which allow creating a single bundle which
+  supports multiple hardware variants by selecting the matching image from a
+  set contained in the bundle.
+  See :ref:`sec-variants` for details.
+* Added support for redundant booting by using EFI boot entries directly.
+  See :ref:`sec-efi` for details.
+* Added boot information to ``rauc status``
+* Added ``rauc extract`` command to extract bundles
+* Support detection of the booted slot by using the ``UUID=`` and ``PARTUUID=``
+  kernel options.
+* Improved the status and error output
+* Improved internal error cause propagation
+
+.. rubric:: Bug fixes
+
+* Fixed boot slot detection for ``root=<symlink>`` boot parameters (such as
+  ``root=/dev/disk/by-path/pci-0000:00:17.0-ata-1-part1``)
+* Removed redundant image checksum verification during installation.
+
+.. rubric:: Testing
+
+* Improve robustness and test coverage
+* Use gcc-7 for testing
+
+.. rubric:: Documentation
+
+* Added documentation for
+
+  - intermediate certificates
+  - re-signing bundles
+  - image variants
+  - UEFI support
+
+* Minor fixes and clarifications
+
+Release 0.2 (released Nov 7, 2017)
+----------------------------------
+
+.. rubric:: Enhancements
+
+* Added ``--override-boot-slot`` argument to force booted slot
+* Display installation progress and error cause in CLI
+* Allow installing uncompressed tar balls
+* Error reporting for network handling and fail on HTTP errors
+* Added ``--keyring`` command line argument
+* Added ``activate-installed`` key and handling for ``system.conf`` that allows
+  installing updates without immediately switching boot partitions.
+* Extended ``rauc status mark-{good,bad}`` with an optional slot identifier
+  argument
+* Added subcommand ``rauc status mark-active`` to explicitly activate slots
+* New D-Bus method ``mark`` introduced that allows slot activation via D-Bus
+* Added ``tar`` archive update handler for ``vfat`` slots
+* Introduced ``rauc resign`` command that allows to exchange RAUC signature
+  without modifying bundle content
+* Display signature verification trust chain in output of ``rauc info``.
+  Also generate and display SPKI hash for each certificate
+* Added ``--dump-cert`` argument to ``rauc info`` to allow displaying signer
+  certificate info
+
+.. rubric:: Documentation
+
+* Added docs/, CHANGES and README to tarball
+* Added and reworked a bunch of documentation chapters
+* Help text for ``rauc bundle`` fixed
+* Added short summary for command help
+
+.. rubric:: Bug fixes
+
+* Flush D-Bus interface to not drop property updates
+* Set proper PATH when starting service on non-systemd systems
+* Include config.h on top of each file to fix largefile support and more
+* Let CLI properly fail on excess arguments provided
+* Do not disable bundle checking for ``rauc info --no-verify``
+* Properly clean up mount points after failures
+* Abort on inconsistent slot parent configuration
+* Misc memory leak fixes
+* Fixes in error handling and debug printout
+* Some code cleanups
+
+.. rubric:: Testing
+
+* Miscellaneous cleanups, fixes and refactoring
+* Add tests for installation via D-Bus
+* Let Travis build documentation with treating warnings as errors
+* Allow skipping sharness tests requiring service enabled
+* Explicitly install dbus-x11 package to fix Travis builds
+* Fix coveralls builds by using ``--upgrade`` during
+  ``pip install cpp-coveralls``
+* Use gcc-6 for testing
+
+Release 0.1.1 (released May 11, 2017)
+-------------------------------------
+
+.. rubric:: Enhancements
+
+* systemd service: allow systemd to manage and cleanup RAUCs mount directory
+
+.. rubric:: Documentation
+
+* Added contribution guideline
+* Added CHANGES file
+* Converted README.md to README.rst
+* Added RAUC logo
+* Several typos fixed
+* Updated documentation for mainline PTXdist recipes
+
+.. rubric:: Bug fixes
+
+* Fix signature verification with OpenSSL 1.1.x by adding missing binary flag
+* Fix typo in json status output formatter ("mountpint" -> "mountpoint")
+* Fixed packaging of systemd service files by removing generated service files
+  from distribution
+* src/context: initialize datainstream to NULL
+* Added missing git-version-gen script to automake distribution which made
+  autoreconf runs on release packages fail
+* Fixed D-Bus activation of RAUC service for non-systemd systems
+
+Release 0.1 (released Feb 24, 2017)
+-----------------------------------
+
+This is the initial release of RAUC.
