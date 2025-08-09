@@ -193,13 +193,31 @@ get_initial_state() {
     fi
     log_debug "Host $TARGET_HOST is reachable"
     
-    # Get RAUC status
+    # Get RAUC status with retry logic
     local rauc_status
-    if ! rauc_status=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
-        "$TARGET_USER@$TARGET_HOST" "rauc status" 2>/dev/null); then
-        log_error "Could not get RAUC status from $TARGET_HOST"
-        return 1
-    fi
+    local retry_count=0
+    local max_retries=3
+    
+    while [ $retry_count -lt $max_retries ]; do
+        log_debug "Attempting to get RAUC status (attempt $((retry_count + 1))/$max_retries)"
+        
+        if rauc_status=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
+            -o PasswordAuthentication=no -o PubkeyAuthentication=yes \
+            "$TARGET_USER@$TARGET_HOST" "rauc status" 2>/dev/null); then
+            log_debug "Successfully retrieved RAUC status"
+            break
+        else
+            retry_count=$((retry_count + 1))
+            if [ $retry_count -lt $max_retries ]; then
+                log_debug "SSH connection failed, retrying in 5 seconds..."
+                sleep 5
+            else
+                log_error "Could not get RAUC status from $TARGET_HOST after $max_retries attempts"
+                return 1
+            fi
+        fi
+    done
     
     # Parse current slot
     if echo "$rauc_status" | grep -q "rootfs.0.*booted"; then

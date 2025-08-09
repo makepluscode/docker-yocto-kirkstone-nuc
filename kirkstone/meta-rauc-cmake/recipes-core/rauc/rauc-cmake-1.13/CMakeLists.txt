@@ -314,6 +314,7 @@ if(ENABLE_SERVICE)
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/dbus-1/system.d)
     
     # Configure and install systemd service file
+    set(bindir ${CMAKE_INSTALL_FULL_BINDIR})
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/data/rauc.service.in"
         "${CMAKE_CURRENT_BINARY_DIR}/rauc.service"
@@ -323,6 +324,7 @@ if(ENABLE_SERVICE)
             DESTINATION lib/systemd/system)
     
     # Configure and install D-Bus service file
+    set(libexecdir ${CMAKE_INSTALL_FULL_LIBEXECDIR})
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/data/de.pengutronix.rauc.service.in"
         "${CMAKE_CURRENT_BINARY_DIR}/de.pengutronix.rauc.service"
