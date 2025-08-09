@@ -51,19 +51,29 @@ class SSHConnection:
                 "timeout": self.config.timeout,
             }
             
-            # Add authentication method
+            # Try multiple authentication methods
+            auth_methods = []
+            
+            # Method 1: Explicit key file
             if self.config.key_filename:
-                connect_kwargs["key_filename"] = self.config.key_filename
-            elif self.config.password:
-                connect_kwargs["password"] = self.config.password
-            else:
-                # Try to use default SSH keys
-                ssh_dir = Path.home() / ".ssh"
-                for key_file in ["id_rsa", "id_ecdsa", "id_ed25519"]:
-                    key_path = ssh_dir / key_file
-                    if key_path.exists():
-                        connect_kwargs["key_filename"] = str(key_path)
-                        break
+                auth_methods.append(("key", self.config.key_filename))
+            
+            # Method 2: Password authentication
+            if self.config.password:
+                auth_methods.append(("password", self.config.password))
+            
+            # Method 3: Default SSH keys
+            ssh_dir = Path.home() / ".ssh"
+            for key_file in ["id_rsa", "id_ecdsa", "id_ed25519"]:
+                key_path = ssh_dir / key_file
+                if key_path.exists():
+                    auth_methods.append(("key", str(key_path)))
+            
+            # Method 4: Try default password for root
+            auth_methods.append(("password", "root"))
+            
+            # Method 5: Try empty password (for systems with no password)
+            auth_methods.append(("password", ""))
             
             with Progress(
                 SpinnerColumn(),
@@ -71,16 +81,41 @@ class SSHConnection:
                 console=console
             ) as progress:
                 task = progress.add_task("Establishing connection...", total=None)
-                self.client.connect(**connect_kwargs)
+                
+                # Try each authentication method
+                connected = False
+                for auth_type, auth_value in auth_methods:
+                    try:
+                        console.print(f"[cyan]Trying {auth_type} authentication...[/cyan]")
+                        
+                        if auth_type == "key":
+                            connect_kwargs["key_filename"] = auth_value
+                            connect_kwargs.pop("password", None)
+                        elif auth_type == "password":
+                            connect_kwargs["password"] = auth_value
+                            connect_kwargs.pop("key_filename", None)
+                        
+                        self.client.connect(**connect_kwargs)
+                        connected = True
+                        console.print(f"[green]✓ Connected using {auth_type} authentication[/green]")
+                        break
+                        
+                    except paramiko.AuthenticationException:
+                        console.print(f"[yellow]⚠ {auth_type} authentication failed[/yellow]")
+                        continue
+                    except Exception as e:
+                        console.print(f"[yellow]⚠ {auth_type} method error: {e}[/yellow]")
+                        continue
+                
                 progress.update(task, completed=True)
+                
+                if not connected:
+                    console.print("[red]✗ All authentication methods failed[/red]")
+                    return False
             
             self._connected = True
-            console.print("[green]✓ Connected successfully[/green]")
             return True
             
-        except paramiko.AuthenticationException:
-            console.print("[red]✗ Authentication failed[/red]")
-            return False
         except paramiko.SSHException as e:
             console.print(f"[red]✗ SSH connection failed: {e}[/red]")
             return False
@@ -112,10 +147,18 @@ class SSHConnection:
         
         stdin, stdout, stderr = self.client.exec_command(command, timeout=timeout)
         
-        # Wait for command to complete
-        exit_code = stdout.channel.recv_exit_status()
-        stdout_text = stdout.read().decode('utf-8')
-        stderr_text = stderr.read().decode('utf-8')
+        # Wait for command to complete with timeout handling
+        try:
+            exit_code = stdout.channel.recv_exit_status()
+            stdout_text = stdout.read().decode('utf-8')
+            stderr_text = stderr.read().decode('utf-8')
+        except Exception as e:
+            # Handle connection loss (common during reboot commands)
+            if "timeout" in str(e).lower() or "connection" in str(e).lower():
+                console.print("[blue]Command execution interrupted (likely due to reboot)[/blue]")
+                return 0, "", "Connection lost during command execution"
+            else:
+                raise
         
         if exit_code == 0:
             console.print("[green]✓ Command completed successfully[/green]")

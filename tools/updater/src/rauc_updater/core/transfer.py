@@ -18,7 +18,7 @@ from rich.progress import (
     TransferSpeedColumn,
 )
 
-from .connection import SSHConnection
+from rauc_updater.core.connection import SSHConnection
 
 console = Console()
 

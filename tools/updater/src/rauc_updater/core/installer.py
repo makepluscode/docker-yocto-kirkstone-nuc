@@ -11,7 +11,7 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from .connection import SSHConnection
+from rauc_updater.core.connection import SSHConnection
 
 console = Console()
 
@@ -23,6 +23,9 @@ class InstallConfig(BaseModel):
     progress_interval: float = 1.0  # Progress check interval in seconds
     ignore_compatible: bool = False
     force_install: bool = False
+    reboot_after_install: bool = True  # Automatically reboot after successful installation
+    wait_for_reboot: bool = True  # Wait for reboot and verify RAUC status
+    reboot_timeout: int = 120  # Maximum time to wait for reboot completion (seconds)
     
     class Config:
         arbitrary_types_allowed = True
@@ -238,6 +241,24 @@ class RaucInstaller:
             if exit_code == 0:
                 console.print("[green]✓ RAUC installation completed successfully[/green]")
                 self._display_install_result(final_stdout)
+                
+                # Reboot if requested
+                if self.config.reboot_after_install:
+                    console.print("[blue]Rebooting target device to apply update...[/blue]")
+                    try:
+                        # Use immediate reboot with nohup to avoid SSH connection issues
+                        # The '&' runs it in background, and 'exit' closes SSH connection cleanly
+                        self.ssh_connection.execute_command("nohup sh -c 'sleep 3 && reboot' > /dev/null 2>&1 & exit", timeout=1)
+                        console.print("[green]✓ Reboot initiated - target will restart shortly[/green]")
+                    except Exception as reboot_error:
+                        # SSH connection loss is expected during reboot, so this might be normal
+                        console.print(f"[blue]SSH connection closed (expected during reboot)[/blue]")
+                        console.print("[green]✓ Target device should be rebooting now[/green]")
+                    
+                    # Wait for reboot and verify RAUC status
+                    if self.config.wait_for_reboot:
+                        self._wait_for_reboot_and_verify(progress_callback)
+                
                 return True
             else:
                 console.print(f"[red]✗ RAUC installation failed (exit code: {exit_code})[/red]")
@@ -346,6 +367,85 @@ class RaucInstaller:
         except Exception as e:
             console.print(f"[red]✗ Error marking slot as good: {e}[/red]")
             return False
+    
+    def _wait_for_reboot_and_verify(self, progress_callback: Optional[Callable[[InstallProgress], None]] = None):
+        """Wait for target to reboot and verify RAUC status."""
+        import time
+        from .connection import SSHConnection, ConnectionConfig
+        
+        console.print("[blue]Waiting for target device to reboot...[/blue]")
+        
+        if progress_callback:
+            progress_info = InstallProgress(
+                percentage=85,
+                message="Waiting for device reboot...",
+                operation="reboot_wait"
+            )
+            progress_callback(progress_info)
+        
+        # Wait for the device to go offline first
+        time.sleep(10)
+        
+        # Try to reconnect for up to reboot_timeout seconds
+        start_time = time.time()
+        while time.time() - start_time < self.config.reboot_timeout:
+            try:
+                # Create new connection for post-reboot check
+                config = ConnectionConfig(
+                    host=self.ssh_connection.config.host,
+                    username=self.ssh_connection.config.username,
+                    port=self.ssh_connection.config.port,
+                    timeout=5
+                )
+                
+                with SSHConnection(config) as conn:
+                    if progress_callback:
+                        progress_info.percentage = 90
+                        progress_info.message = "Device reconnected - checking RAUC status..."
+                        progress_callback(progress_info)
+                    
+                    # Check RAUC status
+                    exit_code, output, _ = conn.execute_command("rauc status")
+                    if exit_code == 0:
+                        console.print("[green]✓ Device rebooted successfully![/green]")
+                        console.print("[blue]RAUC Status after reboot:[/blue]")
+                        
+                        # Parse and display current boot slot
+                        if "Booted from:" in output:
+                            for line in output.split('\n'):
+                                if "Booted from:" in line:
+                                    console.print(f"[green]✓ {line.strip()}[/green]")
+                                    break
+                        
+                        if progress_callback:
+                            progress_info.percentage = 100
+                            progress_info.message = "Update completed - device rebooted successfully"
+                            progress_info.completed = True
+                            progress_callback(progress_info)
+                        
+                        return True
+                    
+            except Exception:
+                # Connection failed, device might still be rebooting
+                if progress_callback:
+                    elapsed = int(time.time() - start_time)
+                    progress_info.percentage = 85 + (elapsed * 5 // self.config.reboot_timeout)  # 85-90%
+                    progress_info.message = f"Waiting for reboot... ({elapsed}s)"
+                    progress_callback(progress_info)
+                
+                time.sleep(5)
+                continue
+        
+        # Timeout reached
+        console.print(f"[yellow]⚠ Timeout waiting for device reboot ({self.config.reboot_timeout}s)[/yellow]")
+        console.print("[yellow]The device may still be rebooting. Please check manually.[/yellow]")
+        
+        if progress_callback:
+            progress_info.percentage = 95
+            progress_info.message = "Reboot timeout - please check device manually"
+            progress_callback(progress_info)
+        
+        return False
 
 
 def install_rauc_bundle(

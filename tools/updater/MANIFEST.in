@@ -1,0 +1,12 @@
+# Include additional files in the package
+include README.md
+include LICENSE
+include pyproject.toml
+include uv.lock
+recursive-include src/gui/qml *.qml
+recursive-include debian *
+recursive-include docs *.md
+exclude build-deb.sh
+exclude *.pyc
+exclude .git*
+exclude .python-version

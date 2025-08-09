@@ -8,9 +8,9 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
-from .core.connection import ConnectionConfig, SSHConnection, test_connection, copy_ssh_key
-from .core.installer import InstallConfig, InstallProgress, install_rauc_bundle
-from .core.transfer import TransferConfig, upload_bundle
+from rauc_updater.core.connection import ConnectionConfig, SSHConnection, test_connection, copy_ssh_key
+from rauc_updater.core.installer import InstallConfig, InstallProgress, install_rauc_bundle
+from rauc_updater.core.transfer import TransferConfig, upload_bundle
 
 console = Console()
 

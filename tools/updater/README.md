@@ -1,16 +1,18 @@
-# RAUC Updater Tool
+# ARCRO - Advanced RAUC Control & Rollout Operations
 
 A progressive RAUC (Robust Auto-Update Client) update tool with CLI and GUI interfaces for embedded Linux devices.
 
 ## Overview
 
-This tool provides a user-friendly interface for deploying RAUC bundles to target devices over SSH/SCP. It's designed with a three-step development approach:
+ARCRO provides a user-friendly interface for deploying RAUC bundles to target devices over SSH/SCP. It's designed with a three-step development approach:
 
 1. **Step 1**: Headless CLI updater (Current)
-2. **Step 2**: Basic Qt6 QML GUI 
+2. **Step 2**: Basic Qt6 QML GUI (✅ Completed)
 3. **Step 3**: Advanced GUI with multi-device support
 
-## Current Features (Step 1)
+## Current Features (Step 1 & 2)
+
+### CLI Features
 
 - ✅ SSH connection to target devices
 - ✅ Automatic SSH key setup with password authentication
@@ -18,6 +20,16 @@ This tool provides a user-friendly interface for deploying RAUC bundles to targe
 - ✅ Remote RAUC installation execution
 - ✅ Rich CLI output with status indicators
 - ✅ Comprehensive error handling and logging
+
+### GUI Features (Step 2)
+
+- ✅ Modern Qt6 QML interface with dark/light theme
+- ✅ Connection management with real-time status
+- ✅ Bundle file selection dialog
+- ✅ Visual progress tracking with animations
+- ✅ Real-time log viewer with auto-scroll
+- ✅ Threaded operations (non-blocking UI)
+- ✅ Ubuntu .deb package for easy installation
 
 ## Quick Start
 
@@ -31,22 +43,44 @@ This tool provides a user-friendly interface for deploying RAUC bundles to targe
 
 ### Installation
 
+#### Option 1: Ubuntu Package (Recommended)
+
+```bash
+cd rauc-updater
+./build-deb.sh
+sudo dpkg -i ../rauc-updater_*.deb
+sudo apt-get install -f  # Fix any missing dependencies
+```
+
+#### Option 2: Development Installation
+
 ```bash
 cd rauc-updater
 uv sync
+# or: ./install.sh
 ```
 
 ### Usage
 
+#### GUI Application
+
+```bash
+# Launch graphical interface
+rauc-updater-gui
+# or: uv run rauc-updater-gui
+```
+
+#### CLI Application
+
 ```bash
 # Setup SSH keys first (one-time setup)
-uv run rauc-updater setup-ssh
+rauc-updater setup-ssh
 
 # Basic usage with default target (192.168.1.100)
-uv run rauc-updater update /path/to/bundle.raucb
+rauc-updater update /path/to/bundle.raucb
 
 # Quick update with automatic SSH key setup
-uv run rauc-updater update /path/to/bundle.raucb --copy-ssh-key
+rauc-updater update /path/to/bundle.raucb --copy-ssh-key
 
 # Specify custom target
 uv run rauc-updater update /path/to/bundle.raucb --host 192.168.1.150

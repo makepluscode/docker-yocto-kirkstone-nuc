@@ -1,0 +1,32 @@
+Source: arcro
+Section: utils
+Priority: optional
+Maintainer: RAUC Team <support@example.com>
+Build-Depends: debhelper (>= 12), python3-all, python3-setuptools, dh-python
+Standards-Version: 4.5.0
+Homepage: https://github.com/rauc/arcro
+Vcs-Git: https://github.com/rauc/arcro.git
+Vcs-Browser: https://github.com/rauc/arcro
+
+Package: arcro
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends},
+         python3-paramiko (>= 3.0.0),
+         python3-click (>= 8.0.0),
+         python3-rich (>= 13.0.0),
+         python3-pydantic (>= 2.0.0)
+Recommends: python3-pyqt6 (>= 6.5.0)
+Description: ARCRO - Advanced RAUC Control & Rollout Operations
+ ARCRO is a comprehensive tool for deploying RAUC bundles to target
+ devices. It provides both command-line and graphical user interfaces for
+ managing over-the-air updates on embedded Linux systems.
+ .
+ Features include:
+  - SSH-based connection management
+  - Secure bundle transfer via SCP
+  - Real-time progress monitoring
+  - GUI interface with Qt6 QML (optional)
+  - Comprehensive logging and error handling
+ .
+ This package provides the core CLI functionality. Install python3-pyqt6
+ for the graphical interface.
