@@ -8,6 +8,14 @@ LOCAL ?= "/home/yocto/kirkstone/local"
 EXTERNALSRC:pn-dashboard = "${LOCAL}/dashboard"
 EXTERNALSRC_BUILD:pn-dashboard = "${WORKDIR}/build"
 
+# External source configuration for service-app
+EXTERNALSRC:pn-service-app = "${LOCAL}/service_app"
+EXTERNALSRC_BUILD:pn-service-app = "${WORKDIR}/build"
+
+# External source configuration for update-app
+EXTERNALSRC:pn-update-app = "${LOCAL}/update_app"
+EXTERNALSRC_BUILD:pn-update-app = "${WORKDIR}/build"
+
 # Target Device Configuration (SATA SSD)
 ROOT_BLOCK_DEVICE_NAME = "sda"
 
