@@ -61,7 +61,7 @@ bitbake -c cleansstate dashboard      # Clean dashboard recipe
 
 ### Container Management
 ```bash
-./run-docker.sh manual  # Enter existing container
+./docker.sh manual  # Enter existing container
 ./clean.sh              # Remove container and clean build configs
 ```
 

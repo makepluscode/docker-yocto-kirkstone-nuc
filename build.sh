@@ -8,7 +8,7 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 # Check if manual mode is requested
 if [ "$1" = "manual" ]; then
     echo "🔧 Manual build mode requested"
-    exec "$SCRIPT_DIR/run-docker.sh" manual
+    exec "$SCRIPT_DIR/docker.sh" manual
 elif [ "$1" = "bundle" ]; then
     echo "🔄 Running clean.sh ..."
     if "$SCRIPT_DIR/clean.sh"; then
@@ -18,7 +18,7 @@ elif [ "$1" = "bundle" ]; then
         exit 1
     fi
     echo "📦 Bundle build mode"
-    exec "$SCRIPT_DIR/run-docker.sh" bundle
+    exec "$SCRIPT_DIR/docker.sh" bundle
 elif [ "$1" = "auto" ] || [ $# -eq 0 ]; then
     echo "🔄 Running clean.sh ..."
     if "$SCRIPT_DIR/clean.sh"; then
@@ -28,7 +28,7 @@ elif [ "$1" = "auto" ] || [ $# -eq 0 ]; then
         exit 1
     fi
     echo "🚀 Auto build mode (default)"
-    exec "$SCRIPT_DIR/run-docker.sh" auto
+    exec "$SCRIPT_DIR/docker.sh" auto
 else
     echo "Usage: $0 [auto|manual|bundle]"
     echo "  (no args) - Auto build mode: clean, configure, and build nuc-image-qt5"

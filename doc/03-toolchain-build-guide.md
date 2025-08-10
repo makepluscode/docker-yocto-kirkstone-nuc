@@ -182,7 +182,7 @@ make -j$(nproc)
 
 ### Primary Scripts
 - **`./entrypoint.sh`** - Enter Docker container with build environment setup
-- **`./run-docker.sh`** - Direct Docker container control
+- **`./docker.sh`** - Direct Docker container control
 
 ### Script Usage
 ```bash
@@ -190,10 +190,10 @@ make -j$(nproc)
 ./entrypoint.sh
 
 # Direct Docker control
-./run-docker.sh manual   # Manual mode
+./docker.sh manual   # Manual mode
 
 # Help
-./run-docker.sh          # Shows usage
+./docker.sh          # Shows usage
 ```
 
 ## Build Targets
@@ -373,13 +373,13 @@ kirkstone/local/dashboard/build/dashboard
 | Mode | Command | Behavior |
 |------|---------|----------|
 | **Manual** | `./entrypoint.sh` | Enter container for manual toolchain build |
-| **Direct** | `./run-docker.sh manual` | Direct manual mode |
+| **Direct** | `./docker.sh manual` | Direct manual mode |
 
 ## Troubleshooting
 
 ### Manual Mode Issues
 If manual mode still runs automatic build:
-1. Check that `run-docker.sh` has been updated with the latest changes
+1. Check that `docker.sh` has been updated with the latest changes
 2. Ensure containers are properly cleaned with `./clean.sh`
 3. Verify that `entrypoint.sh` debugging logs appear when expected
 
@@ -391,7 +391,7 @@ The `entrypoint.sh` script includes debugging information:
 
 ### Container Management
 - **Clean environment**: `./clean.sh` removes all containers and images
-- **Manual container control**: Use `./run-docker.sh` for direct Docker operations
+- **Manual container control**: Use `./docker.sh` for direct Docker operations
 - **Container inspection**: Use `docker ps -a` to check container status
 
 ## Useful Commands

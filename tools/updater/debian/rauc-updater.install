@@ -1,4 +1,0 @@
-# Installation files for rauc-updater package
-usr/bin/rauc-updater
-usr/bin/rauc-updater-gui
-usr/lib/python3*/dist-packages/rauc_updater/*

@@ -44,8 +44,8 @@ This step:
 
 #### Option C: Direct Docker Control
 ```bash
-./run-docker.sh auto     # Automatic build and exit
-./run-docker.sh manual   # Manual mode
+./docker.sh auto     # Automatic build and exit
+./docker.sh manual   # Manual mode
 ```
 
 ### Step 4: Automatic Build Environment Setup
@@ -129,7 +129,7 @@ bitbake -c cleansstate rauc
 
 ### Primary Scripts
 - **`./build.sh`** - Main build script (defaults to auto mode)
-- **`./run-docker.sh`** - Direct Docker container control
+- **`./docker.sh`** - Direct Docker container control
 - **`./download.sh`** - Download Yocto layers
 - **`./clean.sh`** - Clean Docker environment
 
@@ -145,11 +145,11 @@ bitbake -c cleansstate rauc
 ./build.sh manual
 
 # Direct Docker control
-./run-docker.sh auto     # Automatic build
-./run-docker.sh manual   # Manual mode
+./docker.sh auto     # Automatic build
+./docker.sh manual   # Manual mode
 
 # Help
-./run-docker.sh          # Shows usage
+./docker.sh          # Shows usage
 ```
 
 ## Build Targets
@@ -186,7 +186,7 @@ docker-yocto-kirkstone-nuc/
 │   ├── Dockerfile          # Docker image definition
 │   └── entrypoint.sh       # Automatic build setup script (with debugging)
 ├── build.sh               # Main build script (auto/manual modes)
-├── run-docker.sh          # Docker container execution script
+├── docker.sh          # Docker container execution script
 ├── download.sh            # Yocto layer download script
 ├── clean.sh              # Docker environment cleanup script
 └── flash.sh              # USB flashing script
@@ -203,7 +203,7 @@ docker-yocto-kirkstone-nuc/
 ./build.sh auto            # Explicit automatic build
 
 # Or using direct Docker control
-./run-docker.sh auto       # Automatic build and exit
+./docker.sh auto       # Automatic build and exit
 ```
 
 ### Manual Development Sequence:
@@ -279,14 +279,14 @@ bitbake nuc-bundle
 | **Auto (default)** | `./build.sh` | Automatic build and exit |
 | **Auto (explicit)** | `./build.sh auto` | Explicit automatic build |
 | **Manual** | `./build.sh manual` | Enter container for manual operations |
-| **Direct Auto** | `./run-docker.sh auto` | Direct automatic build |
-| **Direct Manual** | `./run-docker.sh manual` | Direct manual mode |
+| **Direct Auto** | `./docker.sh auto` | Direct automatic build |
+| **Direct Manual** | `./docker.sh manual` | Direct manual mode |
 
 ## Troubleshooting
 
 ### Manual Mode Issues
 If manual mode still runs automatic build:
-1. Check that `run-docker.sh` has been updated with the latest changes
+1. Check that `docker.sh` has been updated with the latest changes
 2. Ensure containers are properly cleaned with `./clean.sh`
 3. Verify that `entrypoint.sh` debugging logs appear when expected
 
@@ -298,5 +298,5 @@ The `entrypoint.sh` script includes debugging information:
 
 ### Container Management
 - **Clean environment**: `./clean.sh` removes all containers and images
-- **Manual container control**: Use `./run-docker.sh` for direct Docker operations
+- **Manual container control**: Use `./docker.sh` for direct Docker operations
 - **Container inspection**: Use `docker ps -a` to check container status
