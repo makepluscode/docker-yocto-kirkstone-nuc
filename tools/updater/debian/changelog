@@ -1,0 +1,10 @@
+rauc-updater (0.1.0-1) unstable; urgency=medium
+
+  * Initial release
+  * Core CLI functionality for RAUC bundle deployment
+  * PyQt6 QML GUI interface
+  * SSH-based secure connection management
+  * Real-time progress monitoring and logging
+  * Ubuntu packaging support
+
+ -- RAUC Team <support@example.com>  Sat, 09 Aug 2025 13:20:00 +0000

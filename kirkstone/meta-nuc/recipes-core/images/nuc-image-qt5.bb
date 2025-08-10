@@ -20,6 +20,8 @@ IMAGE_INSTALL = "\
     qtquickcontrols2 \
     qtgraphicaleffects \
     dashboard \
+    service-app \
+    update-app \
     libdrm \
     libgbm \
     mesa \

@@ -19,3 +19,6 @@ kirkstone/meta-intel/
 kirkstone/meta-rauc/
 # Do NOT ignore meta-nuc, ensure it is tracked
 !kirkstone/meta-nuc/
+
+# RAUC bundle files
+*.raucb

@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=de.pengutronix.rauc
+Exec=@libexecdir@/rauc-service.sh
+User=root
+SystemdService=rauc.service

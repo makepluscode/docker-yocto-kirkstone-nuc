@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=RAUC Updater
+Comment=RAUC Update Tool with Qt6 QML GUI
+Exec=rauc-updater-gui
+Icon=rauc-updater
+Terminal=false
+Categories=System;Network;
+Keywords=rauc;update;embedded;ota;
+StartupNotify=true
+MimeType=application/x-rauc-bundle;

@@ -1,0 +1,14 @@
+[Unit]
+Description=Update Application
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/update_app
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target
