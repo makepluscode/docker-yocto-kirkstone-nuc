@@ -22,3 +22,19 @@ kirkstone/meta-rauc/
 
 # RAUC bundle files
 *.raucb
+
+# CMake artifacts
+**/build/
+**/CMakeCache.txt
+**/CMakeFiles/
+**/cmake_install.cmake
+**/Makefile
+**/*.cmake
+!CMakeLists.txt
+!**/*.cmake
+
+# Core dumps and debug files
+core
+core.*
+*.core
+*.dmp

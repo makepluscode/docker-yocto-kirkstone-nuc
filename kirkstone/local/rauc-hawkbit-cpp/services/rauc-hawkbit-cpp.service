@@ -1,0 +1,14 @@
+[Unit]
+Description=RAUC Hawkbit C++ Client
+After=network.target rauc.service
+Wants=network.target rauc.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/rauc-hawkbit-cpp
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target 

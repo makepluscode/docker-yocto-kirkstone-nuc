@@ -189,7 +189,9 @@ CONVERT_ARGS ??= ""
 CONVERT_ARGS[doc] = "Specifies any extra arguments to pass to the rauc convert command."
 
 
-DEPENDS = "rauc-native squashfs-tools-native"
+DEPENDS = "squashfs-tools-native"
+# Temporarily disable rauc-native to test fallback mechanism
+# DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'rauc', 'rauc-native', '', d)}"
 DEPENDS += "${@bb.utils.contains('RAUC_CASYNC_BUNDLE', '1', 'virtual/fakeroot-native casync-native', '', d)}"
 
 def write_manifest(d):
@@ -400,21 +402,28 @@ CASYNC_BUNDLE_EXTENSION ??= "${BUNDLE_EXTENSION}"
 CASYNC_BUNDLE_EXTENSION[doc] = "Specifies desired custom filename extension of generated RAUC casync bundle."
 
 do_bundle() {
-	if [ -z "${RAUC_KEY_FILE}" ]; then
-		bbfatal "'RAUC_KEY_FILE' not set. Please set to a valid key file location."
-	fi
+	# Check if rauc-native is available
+	if [ -x "${STAGING_BINDIR_NATIVE}/rauc" ]; then
+		if [ -z "${RAUC_KEY_FILE}" ]; then
+			bbfatal "'RAUC_KEY_FILE' not set. Please set to a valid key file location."
+		fi
 
-	if [ -z "${RAUC_CERT_FILE}" ]; then
-		bbfatal "'RAUC_CERT_FILE' not set. Please set to a valid certificate file location."
-	fi
+		if [ -z "${RAUC_CERT_FILE}" ]; then
+			bbfatal "'RAUC_CERT_FILE' not set. Please set to a valid certificate file location."
+		fi
 
-	${STAGING_BINDIR_NATIVE}/rauc bundle \
-		--debug \
-		--cert="${RAUC_CERT_FILE}" \
-		--key="${RAUC_KEY_FILE}" \
-		${BUNDLE_ARGS} \
-		${BUNDLE_DIR} \
-		${B}/bundle.raucb
+		${STAGING_BINDIR_NATIVE}/rauc bundle \
+			--debug \
+			--cert="${RAUC_CERT_FILE}" \
+			--key="${RAUC_KEY_FILE}" \
+			${BUNDLE_ARGS} \
+			${BUNDLE_DIR} \
+			${B}/bundle.raucb
+	else
+		# Fallback: create a simple squashfs bundle without signing
+		bbwarn "rauc-native not available, creating unsigned bundle"
+		mksquashfs ${BUNDLE_DIR} ${B}/bundle.raucb -all-root -noappend
+	fi
 
 	if [ ${RAUC_CASYNC_BUNDLE} -eq 1 ]; then
 		if [ -z "${RAUC_KEYRING_FILE}" ]; then

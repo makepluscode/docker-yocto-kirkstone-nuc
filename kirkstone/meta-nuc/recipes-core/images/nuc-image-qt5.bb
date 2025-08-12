@@ -22,6 +22,7 @@ IMAGE_INSTALL = "\
     dashboard \
     service-app \
     update-app \
+    rauc-hawkbit-cpp \
     libdrm \
     libgbm \
     mesa \

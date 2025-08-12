@@ -16,6 +16,10 @@ EXTERNALSRC_BUILD:pn-service-app = "${WORKDIR}/build"
 EXTERNALSRC:pn-update-app = "${LOCAL}/update_app"
 EXTERNALSRC_BUILD:pn-update-app = "${WORKDIR}/build"
 
+# External source configuration for rauc-hawkbit-cpp
+EXTERNALSRC:pn-rauc-hawkbit-cpp = "${LOCAL}/rauc-hawkbit-cpp"
+EXTERNALSRC_BUILD:pn-rauc-hawkbit-cpp = "${WORKDIR}/build"
+
 # Target Device Configuration (SATA SSD)
 ROOT_BLOCK_DEVICE_NAME = "sda"
 
