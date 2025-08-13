@@ -100,6 +100,9 @@ bool HawkbitClient::pollForUpdates() {
 
 bool HawkbitClient::parseUpdateResponse(const std::string& response, UpdateInfo& update_info) {
     DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Parsing update response"));
+    DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Response length: "), DLT_INT(response.length()));
+    DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Response content: "), DLT_STRING(response.c_str()));
+    
     update_info.is_available = false;
     
     if (response.empty()) {
@@ -193,9 +196,15 @@ bool HawkbitClient::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo&
 bool HawkbitClient::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info) {
     DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Parsing artifact info"));
     
-    // Get download URL
-    json_object* links_obj;
+    // Get download URL - try both "_links" and "links" field names
+    json_object* links_obj = nullptr;
     if (json_object_object_get_ex(artifact_obj, "_links", &links_obj)) {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found _links field"));
+    } else if (json_object_object_get_ex(artifact_obj, "links", &links_obj)) {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found links field"));
+    }
+    
+    if (links_obj) {
         json_object* download_obj;
         if (json_object_object_get_ex(links_obj, "download-http", &download_obj)) {
             json_object* href_obj;
@@ -204,6 +213,8 @@ bool HawkbitClient::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& upd
                 DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found download URL: "), DLT_STRING(update_info.download_url.c_str()));
             }
         }
+    } else {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("No links field found in artifact"));
     }
 
     // Get description
