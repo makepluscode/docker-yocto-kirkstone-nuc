@@ -25,12 +25,14 @@ SystemInfo::SystemInfo(QObject *parent)
     , m_rootPartitionUsagePercent(0.0)
     , m_buildTime("")
     , m_yoctoVersion("")
+    , m_rootDevice("")
     , m_lastCpuTotal(0)
     , m_lastCpuIdle(0)
 {
     // Initialize system details that don't change frequently
     updateSystemDetails();
     updateBuildInfo();
+    updateRootDeviceInfo();
     
     // Setup timers
     m_updateTimer = new QTimer(this);
@@ -353,6 +355,41 @@ QString SystemInfo::readFileContent(const QString &filePath)
     
     QTextStream stream(&file);
     return stream.readAll();
+}
+
+void SystemInfo::updateRootDeviceInfo()
+{
+    // Read root device from /proc/mounts
+    QString mountsContent = readFileContent("/proc/mounts");
+    QString newRootDevice = "Unknown";
+    
+    if (!mountsContent.isEmpty()) {
+        QStringList lines = mountsContent.split('\n');
+        for (const QString &line : lines) {
+            QStringList parts = line.split(' ');
+            if (parts.size() >= 2 && parts[1] == "/") {
+                QString device = parts[0];
+                // Extract base device name (e.g., /dev/sda2 -> /dev/sda)
+                if (device.startsWith("/dev/")) {
+                    // Remove partition number to get base device
+                    QRegExp rx("(.*[a-z])\\d+$");  // Match letters followed by digits at end
+                    if (rx.indexIn(device) != -1) {
+                        newRootDevice = rx.cap(1);  // Get the base device without partition number
+                    } else {
+                        newRootDevice = device;  // Use as-is if no partition number found
+                    }
+                } else {
+                    newRootDevice = device;
+                }
+                break;
+            }
+        }
+    }
+    
+    if (m_rootDevice != newRootDevice) {
+        m_rootDevice = newRootDevice;
+        emit rootDeviceChanged();
+    }
 }
 
 void SystemInfo::updateBuildInfo()

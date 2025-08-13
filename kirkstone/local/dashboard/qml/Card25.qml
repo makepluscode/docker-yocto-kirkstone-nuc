@@ -1,9 +1,11 @@
 import QtQuick 2.15
 import RaucSystem 1.0
+import SystemInfo 1.0
 
 DashboardCardBase {
     title: "Boot Info"
     property RaucSystemManager raucSystemManager: null
+    property SystemInfo systemInfo: null
     
     Column {
         anchors.left: parent.left
@@ -44,6 +46,13 @@ DashboardCardBase {
                 else if (slotAStatus === "good" || slotBStatus === "good") return "#44ff44"
                 else return "#ff4444"
             }
+            labelWidth: 80
+        }
+        
+        CardInfoRow {
+            label: "RFS"
+            value: systemInfo ? systemInfo.rootDevice : "Loading..."
+            valueColor: "#44ffff"
             labelWidth: 80
         }
     }

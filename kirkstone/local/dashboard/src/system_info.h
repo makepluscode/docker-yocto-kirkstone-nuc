@@ -31,6 +31,7 @@ class SystemInfo : public QObject
     Q_PROPERTY(double rootPartitionUsagePercent READ rootPartitionUsagePercent NOTIFY rootPartitionUsagePercentChanged)
     Q_PROPERTY(QString buildTime READ buildTime NOTIFY buildTimeChanged)
     Q_PROPERTY(QString yoctoVersion READ yoctoVersion NOTIFY yoctoVersionChanged)
+    Q_PROPERTY(QString rootDevice READ rootDevice NOTIFY rootDeviceChanged)
 
 public:
     explicit SystemInfo(QObject *parent = nullptr);
@@ -57,6 +58,7 @@ public:
     double rootPartitionUsagePercent() const { return m_rootPartitionUsagePercent; }
     QString buildTime() const { return m_buildTime; }
     QString yoctoVersion() const { return m_yoctoVersion; }
+    QString rootDevice() const { return m_rootDevice; }
 
 public slots:
     void updateSystemInfo();
@@ -87,6 +89,7 @@ signals:
     void rootPartitionUsagePercentChanged();
     void buildTimeChanged();
     void yoctoVersionChanged();
+    void rootDeviceChanged();
 
 private:
     void updateCpuUsage();
@@ -98,6 +101,7 @@ private:
     void updateNetworkInfo();
     void updateDiskInfo();
     void updateBuildInfo();
+    void updateRootDeviceInfo();
     QString readFileContent(const QString &filePath);
     
     // Member variables
@@ -122,6 +126,7 @@ private:
     double m_rootPartitionUsagePercent;
     QString m_buildTime;
     QString m_yoctoVersion;
+    QString m_rootDevice;
     
     // Timers
     QTimer *m_updateTimer;

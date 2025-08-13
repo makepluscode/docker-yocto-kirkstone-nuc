@@ -353,7 +353,9 @@ ApplicationWindow {
                 systemInfo: systemInfo
             }
             
-            Card06 {}
+            Card06 {
+                systemInfo: systemInfo
+            }
             
             // Row 2: System Info & Boot Management
             Card07 {}
@@ -397,6 +399,7 @@ ApplicationWindow {
             // Row 5: Empty Cards
             Card25 {
                 raucSystemManager: raucSystemManager
+                systemInfo: systemInfo
             }
             
             Card26 {

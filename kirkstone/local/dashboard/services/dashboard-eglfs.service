@@ -9,7 +9,7 @@ Environment=QT_QPA_EGLFS_KMS_CONFIG=/etc/qt5/eglfs_kms_config.json
 Environment=QT_QPA_FONTDIR=/usr/share/fonts
 Environment=XDG_RUNTIME_DIR=/tmp/runtime-root
 ExecStart=/usr/bin/dashboard --platform eglfs
-Restart=always
+Restart=no
 
 [Install]
 WantedBy=multi-user.target 

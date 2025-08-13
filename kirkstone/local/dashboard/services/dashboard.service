@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/dashboard
-Restart=always
+Restart=no
 
 [Install]
 WantedBy=multi-user.target 

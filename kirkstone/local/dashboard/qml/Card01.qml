@@ -31,12 +31,6 @@ DashboardCardBase {
         }
         
         CardInfoRow {
-            label: "Uptime"
-            value: systemInfo ? systemInfo.uptime : ""
-            labelWidth: 90
-        }
-        
-        CardInfoRow {
             label: "Build Time"
             value: systemInfo ? systemInfo.buildTime : ""
             labelWidth: 90
