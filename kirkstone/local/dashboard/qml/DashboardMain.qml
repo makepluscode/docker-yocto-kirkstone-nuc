@@ -73,6 +73,12 @@ ApplicationWindow {
         onUpdateProgress: function(percentage, message) {
             updateProgress = percentage / 100.0
             updateStatus = message
+            
+            // Auto-show popup when update starts (only if not already shown)
+            if (percentage > 0 && !swUpdateInProgress) {
+                swUpdateInProgress = true
+                updateComplete = false
+            }
         }
         
         onUpdateCompleted: function(success) {
@@ -100,154 +106,22 @@ ApplicationWindow {
         grubManager.refresh()
     }
 
-    // SW Update Popup
-    Rectangle {
+    // SW Update Popup - Enhanced with animations and modern styling
+    UpdatePopup {
         id: swUpdatePopup
-        anchors.centerIn: parent
-        width: 500
-        height: 300
-        color: "#2a2a2a"
-        border.color: "#444444"
-        border.width: 2
-        radius: 10
-        visible: false
         z: 1000
         
-        Column {
-            anchors.centerIn: parent
-            spacing: 20
-            width: parent.width - 40
-            
-            Text {
-                text: "Software Update"
-                color: "#ffffff"
-                font.pointSize: 16
-                font.bold: true
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-            
-            Text {
-                id: statusText
-                text: updateStatus
-                color: "#ffff44"
-                font.pointSize: 12
-                anchors.horizontalCenter: parent.horizontalCenter
-                horizontalAlignment: Text.AlignHCenter
-                width: parent.width
-                wrapMode: Text.WordWrap
-            }
-            
-            // Progress Bar
-            Rectangle {
-                width: parent.width
-                height: 20
-                color: "#1a1a1a"
-                border.color: "#444444"
-                border.width: 1
-                radius: 5
-                
-                Rectangle {
-                    width: parent.width * updateProgress
-                    height: parent.height - 2
-                    color: updateComplete ? "#44ff44" : "#ffff44"
-                    radius: 4
-                    anchors.left: parent.left
-                    anchors.top: parent.top
-                    anchors.margins: 1
-                    
-                    Behavior on width {
-                        NumberAnimation { duration: 300 }
-                    }
-                }
-            }
-            
-            Text {
-                text: Math.round(updateProgress * 100) + "%"
-                color: "#ffffff"
-                font.pointSize: 10
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-            
-            // Animated dots (only show when not complete)
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 5
-                visible: !updateComplete
-                
-                Rectangle {
-                    width: 8
-                    height: 8
-                    radius: 4
-                    color: "#ffff44"
-                    opacity: swUpdateInProgress ? 1 : 0.3
-                    
-                    SequentialAnimation on opacity {
-                        running: swUpdateInProgress && !updateComplete
-                        loops: Animation.Infinite
-                        NumberAnimation { to: 0.3; duration: 500 }
-                        NumberAnimation { to: 1; duration: 500 }
-                    }
-                }
-                
-                Rectangle {
-                    width: 8
-                    height: 8
-                    radius: 4
-                    color: "#ffff44"
-                    opacity: swUpdateInProgress ? 1 : 0.3
-                    
-                    SequentialAnimation on opacity {
-                        running: swUpdateInProgress && !updateComplete
-                        loops: Animation.Infinite
-                        PauseAnimation { duration: 200 }
-                        NumberAnimation { to: 0.3; duration: 500 }
-                        NumberAnimation { to: 1; duration: 500 }
-                    }
-                }
-                
-                Rectangle {
-                    width: 8
-                    height: 8
-                    radius: 4
-                    color: "#ffff44"
-                    opacity: swUpdateInProgress ? 1 : 0.3
-                    
-                    SequentialAnimation on opacity {
-                        running: swUpdateInProgress && !updateComplete
-                        loops: Animation.Infinite
-                        PauseAnimation { duration: 400 }
-                        NumberAnimation { to: 0.3; duration: 500 }
-                        NumberAnimation { to: 1; duration: 500 }
-                    }
-                }
-            }
-            
-            // Close button (only show when complete)
-            Button {
-                visible: updateComplete
-                text: "Close"
-                anchors.horizontalCenter: parent.horizontalCenter
-                
-                background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#333333"
-                    radius: 5
-                }
-                
-                contentItem: Text {
-                    text: parent.text
-                    color: "#ffffff"
-                    font.pointSize: 12
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                
-                onClicked: {
-                    swUpdateInProgress = false
-                    swUpdatePopup.visible = false
-                    updateComplete = false
-                    updateProgress = 0.0
-                    updateStatus = "Initializing..."
-                }
+        isVisible: swUpdateInProgress
+        status: updateStatus
+        progress: updateProgress * 100
+        showProgress: !updateComplete
+        
+        onIsVisibleChanged: {
+            if (!isVisible) {
+                swUpdateInProgress = false
+                updateComplete = false
+                updateProgress = 0.0
+                updateStatus = "Initializing..."
             }
         }
     }
@@ -465,7 +339,6 @@ ApplicationWindow {
                 
                 onClicked: {
                     swUpdateInProgress = true
-                    swUpdatePopup.visible = true
                     updateStatus = "Initializing software update..."
                     updateProgress = 0.0
                     updateComplete = false

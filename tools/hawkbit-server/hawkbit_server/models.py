@@ -59,7 +59,9 @@ class Artifact(BaseModel):
     filename: str
     size: int
     hashes: Dict[str, str] = Field(default_factory=dict)
-    _links: ArtifactLinks
+    links: ArtifactLinks = Field(alias="_links", serialization_alias="_links")
+    
+    model_config = {"populate_by_name": True}
 
 
 class Deployment(BaseModel):

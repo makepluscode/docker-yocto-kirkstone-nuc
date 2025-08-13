@@ -74,15 +74,18 @@ async def poll_for_updates(tenant: str, controller_id: str):
         type="application/octet-stream"
     )
     
-    # Create artifact with download link
-    artifact_link = ArtifactLink(href=deployment_config.download_url)
+    # Create artifact with download link - construct absolute URL
+    base_url = "http://192.168.1.101:8080"  # Use the host IP that clients can reach
+    download_url = f"{base_url}{deployment_config.download_url}"
+    
+    artifact_link = ArtifactLink(href=download_url)
     artifact_links = ArtifactLinks(**{"download-http": artifact_link})
     
     artifact = Artifact(
         filename=deployment_config.filename,
         size=deployment_config.size,
         hashes={},  # You could add actual file hashes here
-        _links=artifact_links
+        links=artifact_links
     )
     
     deployment = Deployment(
@@ -93,7 +96,12 @@ async def poll_for_updates(tenant: str, controller_id: str):
     
     response = PollResponse(deployment=deployment)
     
+    # Debug: Log the actual JSON being sent to client
+    import json
+    response_dict = response.model_dump()
+    response_json = json.dumps(response_dict, indent=2)
     logger.info(f"Returning deployment: {deployment_config.execution_id}")
+    logger.info(f"JSON Response: {response_json}")
     return response
 
 
