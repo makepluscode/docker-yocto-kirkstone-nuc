@@ -32,5 +32,6 @@ clone_repo git://git.yoctoproject.org/poky poky
 clone_repo https://github.com/openembedded/meta-openembedded.git meta-openembedded
 clone_repo https://git.yoctoproject.org/meta-intel meta-intel
 clone_repo https://github.com/meta-qt5/meta-qt5.git meta-qt5
+clone_repo https://github.com/rauc/meta-rauc.git meta-rauc
 
 echo -e "✅ \033[1;32mAll layers prepared.\033[0m"
