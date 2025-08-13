@@ -3,8 +3,18 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 #include <curl/curl.h>
 #include <json-c/json.h>
+
+// Update information structure
+struct UpdateInfo {
+    std::string execution_id;
+    std::string download_url;
+    std::string version;
+    std::string description;
+    bool is_available;
+};
 
 class HawkbitClient {
 public:
@@ -14,6 +24,12 @@ public:
     bool pollForUpdates();
     bool downloadBundle(const std::string& download_url, const std::string& local_path);
     bool sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message = "");
+    
+    // New methods for update handling
+    bool parseUpdateResponse(const std::string& response, UpdateInfo& update_info);
+    bool sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message = "");
+    bool sendStartedFeedback(const std::string& execution_id);
+    bool sendFinishedFeedback(const std::string& execution_id, bool success, const std::string& message = "");
 
 private:
     std::string server_url_;
@@ -25,6 +41,10 @@ private:
     static size_t writeFileCallback(void* contents, size_t size, size_t nmemb, FILE* file);
     std::string buildPollUrl() const;
     std::string buildFeedbackUrl(const std::string& execution_id) const;
+    
+    // Helper methods for JSON parsing
+    bool parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info);
+    bool parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info);
 };
 
 #endif // HAWKBIT_CLIENT_H 
