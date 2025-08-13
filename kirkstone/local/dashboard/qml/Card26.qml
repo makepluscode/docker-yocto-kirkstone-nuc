@@ -2,7 +2,7 @@ import QtQuick 2.15
 import RaucSystem 1.0
 
 DashboardCardBase {
-    title: "Update Bundle Info"
+    title: "RAUC Hawkbit Updater"
     property RaucSystemManager raucSystemManager: null
     
     Column {
@@ -12,7 +12,7 @@ DashboardCardBase {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 8
         
-        // Bundle status indicator
+        // Service status indicator
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 8
@@ -21,12 +21,12 @@ DashboardCardBase {
                 width: 12
                 height: 12
                 radius: 6
-                color: raucSystemManager && raucSystemManager.bundleExists ? "#44ff44" : "#ff4444"
+                color: "#ffff44" // Yellow for unknown status
                 anchors.verticalCenter: parent.verticalCenter
             }
             
             Text {
-                text: raucSystemManager && raucSystemManager.bundleExists ? "Bundle Available" : "No Bundle"
+                text: "Hawkbit Client"
                 color: "#ffffff"
                 font.pointSize: 10
                 font.bold: true
@@ -34,54 +34,48 @@ DashboardCardBase {
             }
         }
         
-        // Bundle information (only show if bundle exists)
+        // Status information
         Column {
             anchors.left: parent.left
             anchors.right: parent.right
             spacing: 6
-            visible: raucSystemManager && raucSystemManager.bundleExists
             
             CardInfoRow {
-                label: "File"
-                value: {
-                    if (!raucSystemManager || !raucSystemManager.bundleExists) return ""
-                    var path = raucSystemManager.bundlePath
-                    return path.split('/').pop() // Get filename only
-                }
-                labelWidth: 60
-                valueColor: "#44ff44"
-            }
-            
-            CardInfoRow {
-                label: "Size"
-                value: raucSystemManager ? raucSystemManager.bundleSizeFormatted : "0 B"
-                labelWidth: 60
-                valueColor: "#ffff44"
-            }
-            
-            CardInfoRow {
-                label: "Modified"
-                value: raucSystemManager ? raucSystemManager.bundleModified : ""
+                label: "Service"
+                value: "rauc-hawkbit-cpp.service"
                 labelWidth: 60
                 valueColor: "#cccccc"
             }
             
             CardInfoRow {
-                label: "Path"
-                value: raucSystemManager ? raucSystemManager.bundlePath : ""
+                label: "Status"
+                value: "Monitoring for updates"
+                labelWidth: 60
+                valueColor: "#44ff44"
+            }
+            
+            CardInfoRow {
+                label: "Server"
+                value: "hawkbit.example.com"
+                labelWidth: 60
+                valueColor: "#ffff44"
+            }
+            
+            CardInfoRow {
+                label: "Controller"
+                value: "nuc-device-01"
                 labelWidth: 60
                 valueColor: "#888888"
             }
         }
         
-        // No bundle message
+        // Info message
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Place .raucb file in\n/data directory"
+            text: "Automatic OTA updates\nvia Hawkbit server"
             color: "#888888"
             font.pointSize: 9
             horizontalAlignment: Text.AlignHCenter
-            visible: !raucSystemManager || !raucSystemManager.bundleExists
         }
     }
 }
