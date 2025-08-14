@@ -10,6 +10,31 @@
 #include <QRegExp>
 #include <QCoreApplication>
 
+// DLT context definition
+DltContext SystemInfo::m_dltCtx;
+
+// Helper macros for DLT logging
+#define DLT_LOG_SYS_INFO(str) \
+    do { \
+        DLT_LOG(SystemInfo::m_dltCtx, \
+                DLT_LOG_INFO, \
+                DLT_STRING(str)); \
+    } while(0)
+
+#define DLT_LOG_SYS_WARN(str) \
+    do { \
+        DLT_LOG(SystemInfo::m_dltCtx, \
+                DLT_LOG_WARN, \
+                DLT_STRING(str)); \
+    } while(0)
+
+#define DLT_LOG_SYS_ERROR(str) \
+    do { \
+        DLT_LOG(SystemInfo::m_dltCtx, \
+                DLT_LOG_ERROR, \
+                DLT_STRING(str)); \
+    } while(0)
+
 SystemInfo::SystemInfo(QObject *parent)
     : QObject(parent)
     , m_cpuUsage(0.0)
@@ -29,6 +54,16 @@ SystemInfo::SystemInfo(QObject *parent)
     , m_lastCpuTotal(0)
     , m_lastCpuIdle(0)
 {
+    // Register DLT context (once per process)
+    static bool dltContextRegistered = false;
+    if (!dltContextRegistered) {
+        DLT_REGISTER_CONTEXT(SystemInfo::m_dltCtx, "SYSM", "System Info Manager");
+        dltContextRegistered = true;
+        DLT_LOG_SYS_INFO("SystemInfo DLT context registered");
+    }
+    
+    DLT_LOG_SYS_INFO("SystemInfo manager initialized");
+    
     // Initialize system details that don't change frequently
     updateSystemDetails();
     updateBuildInfo();
@@ -453,43 +488,252 @@ void SystemInfo::refresh() {
 }
 
 void SystemInfo::exitApplication() {
+    DLT_LOG_SYS_INFO("Dashboard application exit requested");
     qDebug() << "Exiting application...";
     QCoreApplication::quit();
 }
 
 void SystemInfo::rebootSystem() {
+    DLT_LOG_SYS_INFO("System reboot requested");
     qDebug() << "Rebooting system...";
     QProcess::startDetached("reboot", QStringList());
 }
 
 void SystemInfo::startHawkbitUpdater() {
+    DLT_LOG_SYS_INFO("F1 Button pressed - Starting Hawkbit updater service...");
     qDebug() << "Starting Hawkbit updater service...";
 
     // First check if service is already running and stop it to ensure clean start
+    DLT_LOG_SYS_INFO("Stopping existing Hawkbit service for clean start");
     QProcess stopProcess;
     stopProcess.start("systemctl", QStringList() << "stop" << "rauc-hawkbit-cpp.service");
     stopProcess.waitForFinished(5000);
 
     // Start the rauc-hawkbit-cpp service
+    DLT_LOG_SYS_INFO("Starting rauc-hawkbit-cpp.service");
     QProcess startProcess;
     startProcess.start("systemctl", QStringList() << "start" << "rauc-hawkbit-cpp.service");
     startProcess.waitForFinished(5000);
 
     if (startProcess.exitCode() == 0) {
+        DLT_LOG_SYS_INFO("Hawkbit updater service started successfully");
         qDebug() << "Hawkbit updater service started successfully";
 
         // Create the start signal file to trigger the hawkbit client to begin polling
+        DLT_LOG_SYS_INFO("Creating start signal file: /tmp/rauc-hawkbit-start-signal");
         qDebug() << "Creating start signal file for rauc-hawkbit-cpp";
         QProcess signalProcess;
         signalProcess.start("touch", QStringList() << "/tmp/rauc-hawkbit-start-signal");
         signalProcess.waitForFinished(2000);
 
         if (signalProcess.exitCode() == 0) {
+            DLT_LOG_SYS_INFO("Start signal file created successfully - Hawkbit will begin polling");
             qDebug() << "Start signal file created successfully";
+            emit hawkbitServiceStatusChanged(true);
         } else {
-            qDebug() << "Failed to create start signal file:" << signalProcess.readAllStandardError();
+            QString error = signalProcess.readAllStandardError();
+            DLT_LOG_SYS_ERROR(QString("Failed to create start signal file: %1").arg(error).toUtf8().constData());
+            qDebug() << "Failed to create start signal file:" << error;
+            emit hawkbitUpdateFailed("Failed to create start signal file");
         }
     } else {
-        qDebug() << "Failed to start Hawkbit updater service:" << startProcess.readAllStandardError();
+        QString error = startProcess.readAllStandardError();
+        DLT_LOG_SYS_ERROR(QString("Failed to start Hawkbit service: %1").arg(error).toUtf8().constData());
+        qDebug() << "Failed to start Hawkbit updater service:" << error;
+        emit hawkbitUpdateFailed("Failed to start Hawkbit service");
+    }
+}
+
+bool SystemInfo::checkHawkbitServiceStatus() {
+    QProcess process;
+    process.start("systemctl", QStringList() << "is-active" << "rauc-hawkbit-cpp.service");
+    process.waitForFinished(3000);
+    
+    QString status = process.readAllStandardOutput().trimmed();
+    bool isActive = (status == "active");
+    
+    DLT_LOG_SYS_INFO(QString("Hawkbit service status check: %1 (active=%2)").arg(status).arg(isActive).toUtf8().constData());
+    qDebug() << "Hawkbit service status:" << status << "Active:" << isActive;
+    emit hawkbitServiceStatusChanged(isActive);
+    
+    return isActive;
+}
+
+void SystemInfo::stopHawkbitUpdater() {
+    DLT_LOG_SYS_INFO("F2 Button pressed - Stopping Hawkbit updater service...");
+    qDebug() << "Stopping Hawkbit updater service...";
+    
+    QProcess process;
+    process.start("systemctl", QStringList() << "stop" << "rauc-hawkbit-cpp.service");
+    process.waitForFinished(5000);
+    
+    if (process.exitCode() == 0) {
+        DLT_LOG_SYS_INFO("Hawkbit updater service stopped successfully");
+        qDebug() << "Hawkbit updater service stopped successfully";
+        emit hawkbitServiceStatusChanged(false);
+    } else {
+        QString error = process.readAllStandardError();
+        DLT_LOG_SYS_WARN(QString("Failed to stop Hawkbit service: %1").arg(error).toUtf8().constData());
+        qDebug() << "Failed to stop Hawkbit updater service:" << error;
+    }
+    
+    // Clean up signal file
+    DLT_LOG_SYS_INFO("Removing start signal file");
+    QFile::remove("/tmp/rauc-hawkbit-start-signal");
+}
+
+QString SystemInfo::getHawkbitServiceLogs(int lines) {
+    QProcess process;
+    process.start("journalctl", QStringList() << "-u" << "rauc-hawkbit-cpp.service" << "-n" << QString::number(lines) << "--no-pager");
+    process.waitForFinished(5000);
+    
+    if (process.exitCode() == 0) {
+        QString logs = process.readAllStandardOutput();
+        
+        // Log key events found in service logs
+        if (logs.contains("Connected to server", Qt::CaseInsensitive)) {
+            DLT_LOG_SYS_INFO("Hawkbit service connected to server");
+        }
+        if (logs.contains("Deployment found", Qt::CaseInsensitive)) {
+            DLT_LOG_SYS_INFO("Hawkbit deployment found");
+        }
+        if (logs.contains("rauc install", Qt::CaseInsensitive)) {
+            DLT_LOG_SYS_INFO("Hawkbit triggered RAUC installation");
+        }
+        if (logs.contains("error", Qt::CaseInsensitive)) {
+            DLT_LOG_SYS_WARN("Hawkbit service reported errors - check journalctl");
+        }
+        
+        return logs;
+    } else {
+        DLT_LOG_SYS_ERROR("Failed to retrieve Hawkbit service logs");
+        return "Failed to retrieve service logs";
+    }
+}
+
+void SystemInfo::logUIEvent(const QString &event, const QString &details) {
+    QString logMessage = QString("UI Event: %1").arg(event);
+    if (!details.isEmpty()) {
+        logMessage += QString(" - %1").arg(details);
+    }
+    DLT_LOG_SYS_INFO(logMessage.toUtf8().constData());
+}
+
+QString SystemInfo::getHawkbitServiceStatus() {
+    QProcess statusProcess;
+    statusProcess.start("systemctl", QStringList() << "status" << "rauc-hawkbit-cpp.service" << "--no-pager");
+    statusProcess.waitForFinished(5000);
+    
+    QString output = statusProcess.readAllStandardOutput();
+    QString error = statusProcess.readAllStandardError();
+    
+    QString fullStatus = "=== Service Status ===\n" + output;
+    if (!error.isEmpty()) {
+        fullStatus += "\n=== Errors ===\n" + error;
+    }
+    
+    DLT_LOG_SYS_INFO("Hawkbit service detailed status requested");
+    return fullStatus;
+}
+
+QString SystemInfo::checkHawkbitConfiguration() {
+    QString configInfo = "=== Hawkbit Configuration Check ===\n";
+    
+    // Check configuration file
+    QFile configFile("/etc/rauc-hawkbit-cpp/config.json");
+    if (configFile.exists()) {
+        if (configFile.open(QIODevice::ReadOnly)) {
+            QTextStream stream(&configFile);
+            QString config = stream.readAll();
+            configInfo += "Configuration file found:\n" + config + "\n\n";
+            configFile.close();
+            
+            // Parse for server URL
+            if (config.contains("hawkbit_server")) {
+                DLT_LOG_SYS_INFO("Hawkbit configuration file found and contains server URL");
+            } else {
+                DLT_LOG_SYS_WARN("Hawkbit configuration file found but no server URL detected");
+            }
+        } else {
+            configInfo += "Configuration file exists but cannot be read\n\n";
+            DLT_LOG_SYS_ERROR("Cannot read Hawkbit configuration file");
+        }
+    } else {
+        configInfo += "Configuration file not found: /etc/rauc-hawkbit-cpp/config.json\n\n";
+        DLT_LOG_SYS_ERROR("Hawkbit configuration file not found");
+    }
+    
+    // Check signal file
+    QFile signalFile("/tmp/rauc-hawkbit-start-signal");
+    if (signalFile.exists()) {
+        configInfo += "Start signal file exists: YES\n";
+        DLT_LOG_SYS_INFO("Hawkbit start signal file exists");
+    } else {
+        configInfo += "Start signal file exists: NO\n";
+        DLT_LOG_SYS_WARN("Hawkbit start signal file missing");
+    }
+    
+    // Check RAUC status
+    QProcess raucProcess;
+    raucProcess.start("rauc", QStringList() << "status");
+    raucProcess.waitForFinished(3000);
+    
+    if (raucProcess.exitCode() == 0) {
+        configInfo += "RAUC is accessible: YES\n";
+        DLT_LOG_SYS_INFO("RAUC service is accessible");
+    } else {
+        configInfo += "RAUC is accessible: NO\n";
+        configInfo += "RAUC Error: " + raucProcess.readAllStandardError() + "\n";
+        DLT_LOG_SYS_ERROR("RAUC service is not accessible");
+    }
+    
+    return configInfo;
+}
+
+bool SystemInfo::testNetworkConnectivity() {
+    DLT_LOG_SYS_INFO("Testing network connectivity for Hawkbit");
+    
+    // First check if Hawkbit server is configured
+    QString config = checkHawkbitConfiguration();
+    QString hawkbitServer;
+    
+    // Extract server from config
+    QStringList lines = config.split('\n');
+    for (const QString &line : lines) {
+        if (line.contains("hawkbit_server")) {
+            QStringList parts = line.split(':', Qt::SkipEmptyParts);
+            if (parts.size() >= 2) {
+                hawkbitServer = parts[1].trimmed();
+                // Remove http:// or https:// prefix for ping test
+                hawkbitServer = hawkbitServer.replace("http://", "").replace("https://", "");
+                // Remove port number if present
+                if (hawkbitServer.contains(':')) {
+                    hawkbitServer = hawkbitServer.split(':')[0];
+                }
+                break;
+            }
+        }
+    }
+    
+    QString testTarget = hawkbitServer.isEmpty() ? "8.8.8.8" : hawkbitServer;
+    DLT_LOG_SYS_INFO(QString("Testing connectivity to: %1").arg(testTarget).toUtf8().constData());
+    
+    // Test connectivity to Hawkbit server or fallback to Google DNS
+    QProcess pingProcess;
+    pingProcess.start("ping", QStringList() << "-c" << "1" << "-W" << "3" << testTarget);
+    pingProcess.waitForFinished(5000);
+    
+    if (pingProcess.exitCode() == 0) {
+        if (hawkbitServer.isEmpty()) {
+            DLT_LOG_SYS_INFO("Network connectivity test: PASSED (can reach internet)");
+            DLT_LOG_SYS_WARN("Network available but no Hawkbit server configured");
+        } else {
+            DLT_LOG_SYS_INFO(QString("Network connectivity test: PASSED (can reach Hawkbit server: %1)").arg(hawkbitServer).toUtf8().constData());
+            DLT_LOG_SYS_INFO("Network available and Hawkbit server reachable");
+        }
+        return true;
+    } else {
+        DLT_LOG_SYS_ERROR(QString("Network connectivity test: FAILED (cannot reach %1)").arg(testTarget).toUtf8().constData());
+        return false;
     }
 }

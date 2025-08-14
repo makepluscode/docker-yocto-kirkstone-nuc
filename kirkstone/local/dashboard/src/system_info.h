@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QDateTime>
 #include <QNetworkInterface>
+#include <dlt/dlt.h>
 
 class SystemInfo : public QObject
 {
@@ -68,6 +69,13 @@ public slots:
     Q_INVOKABLE void exitApplication();
     Q_INVOKABLE void rebootSystem();
     Q_INVOKABLE void startHawkbitUpdater();
+    Q_INVOKABLE bool checkHawkbitServiceStatus();
+    Q_INVOKABLE void stopHawkbitUpdater();
+    Q_INVOKABLE QString getHawkbitServiceLogs(int lines = 20);
+    Q_INVOKABLE void logUIEvent(const QString &event, const QString &details = "");
+    Q_INVOKABLE QString getHawkbitServiceStatus();
+    Q_INVOKABLE QString checkHawkbitConfiguration();
+    Q_INVOKABLE bool testNetworkConnectivity();
 
 signals:
     void cpuUsageChanged();
@@ -92,6 +100,9 @@ signals:
     void buildTimeChanged();
     void yoctoVersionChanged();
     void rootDeviceChanged();
+    void hawkbitServiceStatusChanged(bool active);
+    void hawkbitUpdateDetected();
+    void hawkbitUpdateFailed(const QString &error);
 
 private:
     void updateCpuUsage();
@@ -137,6 +148,9 @@ private:
     // CPU usage calculation
     qint64 m_lastCpuTotal;
     qint64 m_lastCpuIdle;
+    
+    // DLT context
+    static DltContext m_dltCtx;
 };
 
 #endif // SYSTEM_INFO_H

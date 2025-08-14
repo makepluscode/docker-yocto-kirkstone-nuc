@@ -48,6 +48,8 @@ public slots:
     Q_INVOKABLE bool checkRaucBundle();
     Q_INVOKABLE void installRaucBundle();
     Q_INVOKABLE void startSoftwareUpdate();
+    Q_INVOKABLE void monitorRaucDBus();
+    Q_INVOKABLE bool isRaucInstallationRunning();
     
     // System operations
     Q_INVOKABLE void rebootSystem();
@@ -80,6 +82,7 @@ private:
     QString executeRaucCommand(const QStringList &arguments);
     void setUpdateInProgress(bool inProgress);
     QString formatBytes(qint64 bytes);
+    void checkRaucDBusProgress();
     
     // Member variables
     QString m_currentBootSlot;
@@ -98,6 +101,7 @@ private:
     // Process management
     QProcess *m_raucProcess;
     QTimer *m_statusTimer;
+    QTimer *m_dbusMonitorTimer;
     
     // Constants
     static const QString RAUC_BUNDLE_PATH;

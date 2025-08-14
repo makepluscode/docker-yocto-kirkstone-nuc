@@ -63,6 +63,10 @@ RaucSystemManager::RaucSystemManager(QObject *parent)
     connect(m_statusTimer, &QTimer::timeout, this, &RaucSystemManager::refreshStatus);
     m_statusTimer->start(5000); // Refresh every 5 seconds
     
+    // Setup D-Bus monitoring timer for RAUC operations
+    m_dbusMonitorTimer = new QTimer(this);
+    connect(m_dbusMonitorTimer, &QTimer::timeout, this, &RaucSystemManager::checkRaucDBusProgress);
+    
     // Initial status update
     refreshStatus();
 }
@@ -449,5 +453,108 @@ QString RaucSystemManager::formatBytes(qint64 bytes)
         return QString("%1 %2").arg(static_cast<int>(size)).arg(suffixes[suffixIndex]);
     } else {
         return QString("%1 %2").arg(size, 0, 'f', 1).arg(suffixes[suffixIndex]);
+    }
+}
+
+void RaucSystemManager::monitorRaucDBus()
+{
+    DLT_LOG_CXX_INFO("Starting RAUC D-Bus monitoring for Hawkbit updates");
+    qDebug() << "Starting RAUC D-Bus monitoring for Hawkbit updates";
+    
+    // Start monitoring timer (every 2 seconds)
+    m_dbusMonitorTimer->start(2000);
+}
+
+bool RaucSystemManager::isRaucInstallationRunning()
+{
+    // Check if RAUC is currently installing by querying D-Bus
+    QProcess process;
+    process.start("gdbus", QStringList() 
+        << "call" << "--system"
+        << "--dest" << "de.pengutronix.rauc" 
+        << "--object-path" << "/de/pengutronix/rauc/Installer"
+        << "--method" << "org.freedesktop.DBus.Properties.Get"
+        << "de.pengutronix.rauc.Installer" << "Operation");
+    process.waitForFinished(3000);
+    
+    QString output = process.readAllStandardOutput().trimmed();
+    qDebug() << "RAUC Operation status:" << output;
+    
+    // If RAUC is installing, output will contain 'installing' or 'active'
+    return output.contains("installing", Qt::CaseInsensitive) || 
+           output.contains("active", Qt::CaseInsensitive);
+}
+
+void RaucSystemManager::checkRaucDBusProgress()
+{
+    if (!isRaucInstallationRunning()) {
+        // No installation running, stop monitoring
+        m_dbusMonitorTimer->stop();
+        return;
+    }
+    
+    // Get RAUC installation progress via D-Bus
+    QProcess progressProcess;
+    progressProcess.start("gdbus", QStringList()
+        << "call" << "--system"
+        << "--dest" << "de.pengutronix.rauc"
+        << "--object-path" << "/de/pengutronix/rauc/Installer"
+        << "--method" << "org.freedesktop.DBus.Properties.Get"
+        << "de.pengutronix.rauc.Installer" << "Progress");
+    progressProcess.waitForFinished(3000);
+    
+    QString progressOutput = progressProcess.readAllStandardOutput().trimmed();
+    
+    // Get RAUC last error (if any)
+    QProcess errorProcess;
+    errorProcess.start("gdbus", QStringList()
+        << "call" << "--system"
+        << "--dest" << "de.pengutronix.rauc"
+        << "--object-path" << "/de/pengutronix/rauc/Installer"
+        << "--method" << "org.freedesktop.DBus.Properties.Get"
+        << "de.pengutronix.rauc.Installer" << "LastError");
+    errorProcess.waitForFinished(3000);
+    
+    QString errorOutput = errorProcess.readAllStandardOutput().trimmed();
+    
+    qDebug() << "RAUC Progress:" << progressOutput;
+    qDebug() << "RAUC LastError:" << errorOutput;
+    
+    // Parse progress and emit signals
+    if (progressOutput.contains("(")) {
+        // Extract percentage from D-Bus output format: "(<int32 percentage>, '<string message>')"
+        QString cleaned = progressOutput;
+        cleaned = cleaned.remove(QRegExp("[()']")).split(',').first();
+        
+        bool ok;
+        int percentage = cleaned.toInt(&ok);
+        
+        if (ok && percentage >= 0) {
+            QString message = "RAUC installation in progress via Hawkbit...";
+            
+            // Extract message if available
+            if (progressOutput.contains("'") && progressOutput.split("'").size() > 1) {
+                message = progressOutput.split("'").at(1);
+            }
+            
+            if (percentage < 100) {
+                DLT_LOG_CXX_INFO(QString("RAUC Progress: %1% - %2").arg(percentage).arg(message).toUtf8().constData());
+                emit updateProgress(percentage, QString("RAUC Hawkbit: %1").arg(message));
+            } else {
+                // Installation completed
+                DLT_LOG_CXX_INFO("RAUC installation completed via Hawkbit");
+                emit updateProgress(100, "RAUC installation completed via Hawkbit!");
+                emit updateCompleted(true);
+                m_dbusMonitorTimer->stop();
+            }
+        }
+    }
+    
+    // Check for errors
+    if (!errorOutput.isEmpty() && !errorOutput.contains("''") && !errorOutput.contains("()")) {
+        DLT_LOG_CXX_ERROR(QString("RAUC installation error: %1").arg(errorOutput).toUtf8().constData());
+        emit updateProgress(0, QString("RAUC error: %1").arg(errorOutput));
+        emit updateCompleted(false);
+        m_dbusMonitorTimer->stop();
     }
 }

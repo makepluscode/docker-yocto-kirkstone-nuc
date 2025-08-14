@@ -15,19 +15,45 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
   exit 0
 fi
 
-# Default IP address
+# Default values
 DEFAULT_IP="192.168.1.100"
+DEFAULT_PORT="3490"
 
-if [[ -z "$1" ]]; then
-  # Use default IP if no argument provided
-  NUC_IP="$DEFAULT_IP"
-  PORT="3490"
-  echo "📡 Using default IP: $NUC_IP"
+# Color definitions using tput (more compatible)
+if [[ -t 1 ]] && tput colors >/dev/null 2>&1; then
+  RED=$(tput setaf 1 2>/dev/null || echo "")
+  GREEN=$(tput setaf 2 2>/dev/null || echo "")
+  YELLOW=$(tput setaf 3 2>/dev/null || echo "")
+  BLUE=$(tput setaf 4 2>/dev/null || echo "")
+  CYAN=$(tput setaf 6 2>/dev/null || echo "")
+  BOLD=$(tput bold 2>/dev/null || echo "")
+  NC=$(tput sgr0 2>/dev/null || echo "")
 else
-  NUC_IP="$1"
-  PORT="${2:-3490}"
-  shift 2 || true
+  RED="" GREEN="" YELLOW="" BLUE="" CYAN="" BOLD="" NC=""
 fi
+
+# Parse arguments
+NUC_IP=""
+PORT=""
+DLT_ARGS=()
+
+# Check if first argument looks like an IP address
+if [[ "$1" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+  NUC_IP="$1"
+  shift
+  # Check if second argument is a port number
+  if [[ "$1" =~ ^[0-9]+$ ]]; then
+    PORT="$1"
+    shift
+  fi
+fi
+
+# Use defaults if not set
+NUC_IP="${NUC_IP:-$DEFAULT_IP}"
+PORT="${PORT:-$DEFAULT_PORT}"
+
+# Remaining arguments are DLT options
+DLT_ARGS=("$@")
 
 # Verify dlt-receive exists
 if ! command -v dlt-receive >/dev/null 2>&1; then
@@ -35,12 +61,13 @@ if ! command -v dlt-receive >/dev/null 2>&1; then
   exit 2
 fi
 
-echo "📡 Connecting to $NUC_IP:$PORT for Dashboard DLT logs..."
-echo "💡 Dashboard app ID: DBO (Dashboard Application)"
-echo "💡 RAUC manager context: RUC"
-echo "💡 UI flow context: UIF"
-echo "💡 Use -e DBO to filter dashboard logs only"
+echo "📡 ${CYAN}대시보드 DLT 로그를 위해 ${BOLD}${YELLOW}$NUC_IP:$PORT${NC}${CYAN}에 연결 중...${NC}"
+echo "💡 ${GREEN}대시보드 앱 ID: ${BOLD}${YELLOW}DBO${NC} (대시보드 애플리케이션)"
+echo "💡 ${GREEN}RAUC 매니저 컨텍스트: ${BOLD}${YELLOW}RUC${NC}"
+echo "💡 ${GREEN}UI 플로우 컨텍스트: ${BOLD}${YELLOW}UIF${NC}"
+echo "💡 ${BLUE}대시보드 로그만 필터링하려면 ${BOLD}${YELLOW}-e DBO${NC}${BLUE} 사용${NC}"
 echo ""
 
 # Use ASCII payload output (-a) by default. dlt-receive requires the host argument LAST.
-exec dlt-receive -a -p "$PORT" "$@" "$NUC_IP" 
+echo "실행할 명령: dlt-receive -a -p \"$PORT\" ${DLT_ARGS[*]} \"$NUC_IP\""
+exec dlt-receive -a -p "$PORT" "${DLT_ARGS[@]}" "$NUC_IP"
