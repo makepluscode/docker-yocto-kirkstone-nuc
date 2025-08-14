@@ -31,6 +31,13 @@ target_link_libraries(rauc-hawkbit-cpp
     ${JSON_LIBRARIES}
 )
 
+# Set the correct dynamic linker for target device and static link C++ library
+if(CMAKE_CROSSCOMPILING)
+    set_target_properties(rauc-hawkbit-cpp PROPERTIES
+        LINK_FLAGS "-Wl,--dynamic-linker=/lib/ld-linux-x86-64.so.2 -static-libgcc -static-libstdc++"
+    )
+endif()
+
 target_compile_options(rauc-hawkbit-cpp PRIVATE
     ${DLT_CFLAGS_OTHER}
     ${DBUS_CFLAGS_OTHER}
@@ -44,4 +51,4 @@ install(TARGETS rauc-hawkbit-cpp
 
 install(FILES services/rauc-hawkbit-cpp.service
     DESTINATION /etc/systemd/system
-) 
+)

@@ -35,7 +35,7 @@ class SystemInfo : public QObject
 
 public:
     explicit SystemInfo(QObject *parent = nullptr);
-    
+
     // Getters
     double cpuUsage() const { return m_cpuUsage; }
     QStringList cpuCoreUsage() const { return m_cpuCoreUsage; }
@@ -66,6 +66,8 @@ public slots:
     QString formatBytes(qint64 bytes);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void exitApplication();
+    Q_INVOKABLE void rebootSystem();
+    Q_INVOKABLE void startHawkbitUpdater();
 
 signals:
     void cpuUsageChanged();
@@ -103,7 +105,7 @@ private:
     void updateBuildInfo();
     void updateRootDeviceInfo();
     QString readFileContent(const QString &filePath);
-    
+
     // Member variables
     double m_cpuUsage;
     QStringList m_cpuCoreUsage;
@@ -127,14 +129,14 @@ private:
     QString m_buildTime;
     QString m_yoctoVersion;
     QString m_rootDevice;
-    
+
     // Timers
     QTimer *m_updateTimer;
     QTimer *m_timeTimer;
-    
+
     // CPU usage calculation
     qint64 m_lastCpuTotal;
     qint64 m_lastCpuIdle;
 };
 
-#endif // SYSTEM_INFO_H 
+#endif // SYSTEM_INFO_H

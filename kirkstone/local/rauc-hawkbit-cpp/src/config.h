@@ -20,6 +20,7 @@ const int HTTP_TIMEOUT_SECONDS = 30;
 // File paths
 const std::string BUNDLE_DOWNLOAD_PATH = "/tmp/hawkbit_update.raucb";
 const std::string LOG_FILE_PATH = "/var/log/rauc-hawkbit-cpp.log";
+const std::string START_SIGNAL_FILE = "/tmp/rauc-hawkbit-start-signal";
 
 // DLT Configuration
 const std::string DLT_APP_NAME = "RHCP";
@@ -35,4 +36,4 @@ const bool FOLLOW_REDIRECTS = true;
 const bool ENABLE_VERBOSE_LOGGING = true;
 const bool ENABLE_DEBUG_OUTPUT = true;
 
-#endif // CONFIG_H 
+#endif // CONFIG_H

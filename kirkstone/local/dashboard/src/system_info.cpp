@@ -33,16 +33,16 @@ SystemInfo::SystemInfo(QObject *parent)
     updateSystemDetails();
     updateBuildInfo();
     updateRootDeviceInfo();
-    
+
     // Setup timers
     m_updateTimer = new QTimer(this);
     connect(m_updateTimer, &QTimer::timeout, this, &SystemInfo::updateSystemInfo);
     m_updateTimer->start(2000); // Update every 2 seconds
-    
+
     m_timeTimer = new QTimer(this);
     connect(m_timeTimer, &QTimer::timeout, this, &SystemInfo::updateTime);
     m_timeTimer->start(1000); // Update time every second
-    
+
     // Initial update
     updateSystemInfo();
     updateTime();
@@ -72,23 +72,23 @@ void SystemInfo::updateCpuUsage()
 {
     QString statContent = readFileContent("/proc/stat");
     if (statContent.isEmpty()) return;
-    
+
     QStringList lines = statContent.split('\n');
     if (lines.isEmpty()) return;
-    
+
     QStringList cpuData = lines[0].split(' ', Qt::SkipEmptyParts);
     if (cpuData.size() < 8) return;
-    
+
     qint64 idle = cpuData[4].toLongLong();
     qint64 total = 0;
     for (int i = 1; i < cpuData.size(); ++i) {
         total += cpuData[i].toLongLong();
     }
-    
+
     if (m_lastCpuTotal != 0) {
         qint64 totalDiff = total - m_lastCpuTotal;
         qint64 idleDiff = idle - m_lastCpuIdle;
-        
+
         if (totalDiff > 0) {
             double newCpuUsage = 100.0 * (totalDiff - idleDiff) / totalDiff;
             if (qAbs(m_cpuUsage - newCpuUsage) > 0.1) {
@@ -97,7 +97,7 @@ void SystemInfo::updateCpuUsage()
             }
         }
     }
-    
+
     m_lastCpuTotal = total;
     m_lastCpuIdle = idle;
 }
@@ -106,32 +106,32 @@ void SystemInfo::updateCpuCoreUsage()
 {
     QString statContent = readFileContent("/proc/stat");
     if (statContent.isEmpty()) return;
-    
+
     QStringList lines = statContent.split('\n');
     QStringList newCpuCoreUsage;
-    
+
     // Find all CPU core lines (cpu0, cpu1, cpu2, etc.)
     for (const QString &line : lines) {
         if (line.startsWith("cpu") && line != lines[0]) { // Skip the first "cpu" line (total)
             QStringList cpuData = line.split(' ', Qt::SkipEmptyParts);
             if (cpuData.size() < 8) continue;
-            
+
             qint64 idle = cpuData[4].toLongLong();
             qint64 total = 0;
             for (int i = 1; i < cpuData.size(); ++i) {
                 total += cpuData[i].toLongLong();
             }
-            
+
             // Calculate usage percentage
             double usage = 0.0;
             if (total > 0) {
                 usage = 100.0 * (total - idle) / total;
             }
-            
+
             newCpuCoreUsage.append(QString::number(usage, 'f', 1));
         }
     }
-    
+
     if (m_cpuCoreUsage != newCpuCoreUsage) {
         m_cpuCoreUsage = newCpuCoreUsage;
         emit cpuCoreUsageChanged();
@@ -142,30 +142,30 @@ void SystemInfo::updateMemoryInfo()
 {
     QString meminfoContent = readFileContent("/proc/meminfo");
     if (meminfoContent.isEmpty()) return;
-    
+
     QStringList lines = meminfoContent.split('\n');
     qint64 memTotal = 0, memFree = 0, memAvailable = 0, buffers = 0, cached = 0;
-    
+
     for (const QString &line : lines) {
         QStringList parts = line.split(':', Qt::SkipEmptyParts);
         if (parts.size() < 2) continue;
-        
+
         QString key = parts[0].trimmed();
         QString valueStr = parts[1].trimmed().split(' ')[0];
         qint64 value = valueStr.toLongLong() * 1024; // Convert from KB to bytes
-        
+
         if (key == "MemTotal") memTotal = value;
         else if (key == "MemFree") memFree = value;
         else if (key == "MemAvailable") memAvailable = value;
         else if (key == "Buffers") buffers = value;
         else if (key == "Cached") cached = value;
     }
-    
+
     qint64 newTotalMemory = memTotal;
     qint64 newUsedMemory = memTotal - memAvailable;
     qint64 newFreeMemory = memAvailable;
     double newMemoryUsage = memTotal > 0 ? (100.0 * newUsedMemory / memTotal) : 0.0;
-    
+
     if (m_totalMemory != newTotalMemory) {
         m_totalMemory = newTotalMemory;
         emit totalMemoryChanged();
@@ -240,19 +240,19 @@ void SystemInfo::updateUptime()
 {
     QString uptimeContent = readFileContent("/proc/uptime");
     if (uptimeContent.isEmpty()) return;
-    
+
     QStringList parts = uptimeContent.split(' ');
     if (parts.isEmpty()) return;
-    
+
     bool ok;
     double uptimeSeconds = parts[0].toDouble(&ok);
     if (!ok) return;
-    
+
     int days = uptimeSeconds / 86400;
     int hours = (int(uptimeSeconds) % 86400) / 3600;
     int minutes = (int(uptimeSeconds) % 3600) / 60;
     int seconds = int(uptimeSeconds) % 60;
-    
+
     QString newUptime = QString("%1d %2h %3m %4s").arg(days).arg(hours).arg(minutes).arg(seconds);
     if (m_uptime != newUptime) {
         m_uptime = newUptime;
@@ -265,7 +265,7 @@ void SystemInfo::updateSystemDetails()
     QString newKernelVersion = QSysInfo::kernelVersion();
     QString newHostname = QHostInfo::localHostName();
     QString newArchitecture = QSysInfo::currentCpuArchitecture();
-    
+
     if (m_kernelVersion != newKernelVersion) {
         m_kernelVersion = newKernelVersion;
         emit kernelVersionChanged();
@@ -285,13 +285,13 @@ void SystemInfo::updateNetworkInfo()
     bool connected = false;
     QString interface;
     QString ipAddr;
-    
+
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
     for (const QNetworkInterface &iface : interfaces) {
         if (iface.flags().testFlag(QNetworkInterface::IsUp) &&
             iface.flags().testFlag(QNetworkInterface::IsRunning) &&
             !iface.flags().testFlag(QNetworkInterface::IsLoopBack)) {
-            
+
             QList<QNetworkAddressEntry> entries = iface.addressEntries();
             for (const QNetworkAddressEntry &entry : entries) {
                 if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
@@ -304,7 +304,7 @@ void SystemInfo::updateNetworkInfo()
             if (connected) break;
         }
     }
-    
+
     if (m_networkConnected != connected) {
         m_networkConnected = connected;
         emit networkConnectedChanged();
@@ -322,12 +322,12 @@ void SystemInfo::updateNetworkInfo()
 void SystemInfo::updateDiskInfo()
 {
     QStorageInfo storage("/");
-    
+
     qint64 newTotal = storage.bytesTotal();
     qint64 newFree = storage.bytesAvailable();
     qint64 newUsed = newTotal - newFree;
     double newUsagePercent = newTotal > 0 ? (100.0 * newUsed / newTotal) : 0.0;
-    
+
     if (m_rootPartitionTotal != newTotal) {
         m_rootPartitionTotal = newTotal;
         emit rootPartitionTotalChanged();
@@ -352,7 +352,7 @@ QString SystemInfo::readFileContent(const QString &filePath)
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return QString();
     }
-    
+
     QTextStream stream(&file);
     return stream.readAll();
 }
@@ -362,7 +362,7 @@ void SystemInfo::updateRootDeviceInfo()
     // Read root device from /proc/mounts
     QString mountsContent = readFileContent("/proc/mounts");
     QString newRootDevice = "Unknown";
-    
+
     if (!mountsContent.isEmpty()) {
         QStringList lines = mountsContent.split('\n');
         for (const QString &line : lines) {
@@ -385,7 +385,7 @@ void SystemInfo::updateRootDeviceInfo()
             }
         }
     }
-    
+
     if (m_rootDevice != newRootDevice) {
         m_rootDevice = newRootDevice;
         emit rootDeviceChanged();
@@ -408,17 +408,17 @@ void SystemInfo::updateBuildInfo()
             }
         }
     }
-    
+
     if (m_buildTime != newBuildTime) {
         m_buildTime = newBuildTime;
         emit buildTimeChanged();
     }
-    
+
     // Read Yocto version from /etc/os-release
     QString osReleaseFile = "/etc/os-release";
     QString osReleaseContent = readFileContent(osReleaseFile);
     QString newYoctoVersion = "";
-    
+
     if (!osReleaseContent.isEmpty()) {
         QStringList lines = osReleaseContent.split('\n');
         for (const QString &line : lines) {
@@ -428,7 +428,7 @@ void SystemInfo::updateBuildInfo()
             }
         }
     }
-    
+
     if (m_yoctoVersion != newYoctoVersion) {
         m_yoctoVersion = newYoctoVersion;
         emit yoctoVersionChanged();
@@ -446,7 +446,7 @@ QString SystemInfo::formatBytes(qint64 bytes)
     } else {
         return QString("%1 GB").arg(bytes / (1024.0 * 1024.0 * 1024.0), 0, 'f', 1);
     }
-} 
+}
 
 void SystemInfo::refresh() {
     updateSystemInfo();
@@ -455,4 +455,41 @@ void SystemInfo::refresh() {
 void SystemInfo::exitApplication() {
     qDebug() << "Exiting application...";
     QCoreApplication::quit();
-} 
+}
+
+void SystemInfo::rebootSystem() {
+    qDebug() << "Rebooting system...";
+    QProcess::startDetached("reboot", QStringList());
+}
+
+void SystemInfo::startHawkbitUpdater() {
+    qDebug() << "Starting Hawkbit updater service...";
+
+    // First check if service is already running and stop it to ensure clean start
+    QProcess stopProcess;
+    stopProcess.start("systemctl", QStringList() << "stop" << "rauc-hawkbit-cpp.service");
+    stopProcess.waitForFinished(5000);
+
+    // Start the rauc-hawkbit-cpp service
+    QProcess startProcess;
+    startProcess.start("systemctl", QStringList() << "start" << "rauc-hawkbit-cpp.service");
+    startProcess.waitForFinished(5000);
+
+    if (startProcess.exitCode() == 0) {
+        qDebug() << "Hawkbit updater service started successfully";
+
+        // Create the start signal file to trigger the hawkbit client to begin polling
+        qDebug() << "Creating start signal file for rauc-hawkbit-cpp";
+        QProcess signalProcess;
+        signalProcess.start("touch", QStringList() << "/tmp/rauc-hawkbit-start-signal");
+        signalProcess.waitForFinished(2000);
+
+        if (signalProcess.exitCode() == 0) {
+            qDebug() << "Start signal file created successfully";
+        } else {
+            qDebug() << "Failed to create start signal file:" << signalProcess.readAllStandardError();
+        }
+    } else {
+        qDebug() << "Failed to start Hawkbit updater service:" << startProcess.readAllStandardError();
+    }
+}
