@@ -16,6 +16,13 @@ rauc-hawkbit-cpp
 *.so
 *.a
 
+# CMake build artifacts
+build/CMakeFiles/
+build/CMakeCache.txt
+build/cmake_install.cmake
+build/Makefile
+build/*.cmake
+
 # IDE and editor files
 .vscode/
 .idea/

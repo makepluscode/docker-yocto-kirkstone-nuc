@@ -182,6 +182,8 @@ int main() {
     int poll_counter = 0;
     while (running) {
         poll_counter++;
+        printf("Polling Hawkbit server (attempt %d) - Poll interval: %d seconds\n", poll_counter, POLL_INTERVAL_SECONDS);
+        fflush(stdout);
         DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Polling Hawkbit server (attempt "), DLT_INT(poll_counter), DLT_STRING(")"));
         
         // Don't poll if an update is in progress
