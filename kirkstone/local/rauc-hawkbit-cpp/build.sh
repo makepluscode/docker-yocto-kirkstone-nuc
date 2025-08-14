@@ -2,14 +2,20 @@
 
 set -e
 
-echo "Building rauc-hawkbit-cpp..."
+echo "Building rauc-hawkbit-cpp with Yocto SDK..."
+
+# Unset LD_LIBRARY_PATH as required by Yocto SDK
+unset LD_LIBRARY_PATH
+
+# Source Yocto SDK environment
+source /usr/local/oecore-x86_64/environment-setup-corei7-64-oe-linux
 
 # Create build directory
 mkdir -p build
 cd build
 
-# Configure with CMake
-cmake ..
+# Configure with CMake using Yocto SDK toolchain
+cmake .. -DCMAKE_TOOLCHAIN_FILE="/usr/local/oecore-x86_64/sysroots/x86_64-oesdk-linux/usr/share/cmake/OEToolchainConfig.cmake"
 
 # Build
 make -j$(nproc)

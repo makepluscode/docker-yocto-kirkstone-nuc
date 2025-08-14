@@ -17,6 +17,9 @@ sudo cp services/rauc-hawkbit-cpp.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable rauc-hawkbit-cpp.service
 
+# Start the service immediately
+sudo systemctl start rauc-hawkbit-cpp.service
+
 echo "Deployment completed!"
-echo "Service enabled and ready to start on boot"
-echo "To start immediately: sudo systemctl start rauc-hawkbit-cpp" 
+echo "Service enabled and started"
+echo "Check status with: sudo systemctl status rauc-hawkbit-cpp" 
