@@ -51,7 +51,13 @@ bool performUpdate(HawkbitClient& hawkbitClient, RaucClient& raucClient, const U
     DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Starting update process"));
     DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Execution ID: "), DLT_STRING(update_info.execution_id.c_str()));
     DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Version: "), DLT_STRING(update_info.version.c_str()));
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Description: "), DLT_STRING(update_info.description.c_str()));
+    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Filename: "), DLT_STRING(update_info.filename.c_str()));
+    if (update_info.expected_size > 0) {
+        DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Expected size: "), DLT_INT(update_info.expected_size), DLT_STRING(" bytes"));
+    }
+    if (!update_info.sha256_hash.empty()) {
+        DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("SHA256: "), DLT_STRING(update_info.sha256_hash.c_str()));
+    }
 
     current_execution_id = update_info.execution_id;
     update_in_progress = true;
@@ -69,7 +75,7 @@ bool performUpdate(HawkbitClient& hawkbitClient, RaucClient& raucClient, const U
     DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Downloading bundle from: "), DLT_STRING(update_info.download_url.c_str()));
     DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Bundle will be saved to: "), DLT_STRING(bundle_path.c_str()));
 
-    if (!hawkbitClient.downloadBundle(update_info.download_url, bundle_path)) {
+    if (!hawkbitClient.downloadBundle(update_info.download_url, bundle_path, update_info.expected_size)) {
         DLT_LOG(updateContext, DLT_LOG_ERROR, DLT_STRING("Failed to download bundle"));
         hawkbitClient.sendFinishedFeedback(update_info.execution_id, false, "Download failed");
         update_in_progress = false;
@@ -213,7 +219,8 @@ int main() {
     raucClient.setProgressCallback(onRaucProgress);
     raucClient.setCompletedCallback(onRaucCompleted);
 
-    // Wait for start signal from dashboard
+    // Wait for start signal from dashboard (commented out for direct operation)
+    /*
     if (!waitForStartSignal()) {
         DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Start signal wait interrupted, shutting down"));
         raucClient.disconnect();
@@ -223,6 +230,7 @@ int main() {
         DLT_UNREGISTER_APP();
         return 0;
     }
+    */
 
     DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Starting main polling loop"));
 
@@ -242,7 +250,7 @@ int main() {
 
         // Poll Hawkbit for updates
         std::string response;
-        if (hawkbitClient.pollForUpdates()) {
+        if (hawkbitClient.pollForUpdates(response)) {
             DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Successfully polled Hawkbit server"));
 
             // Parse the response to check for actual updates

@@ -12,7 +12,7 @@ const std::string HAWKBIT_TENANT = "DEFAULT";
 const std::string HAWKBIT_CONTROLLER_ID = "nuc-device-001";
 
 // Timing configuration
-const int POLL_INTERVAL_SECONDS = 1;
+const int POLL_INTERVAL_SECONDS = 10;
 const int DOWNLOAD_TIMEOUT_SECONDS = 300;  // 5 minutes
 const int INSTALLATION_TIMEOUT_SECONDS = 600;  // 10 minutes
 const int HTTP_TIMEOUT_SECONDS = 30;

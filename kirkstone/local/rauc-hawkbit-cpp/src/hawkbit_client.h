@@ -13,7 +13,14 @@ struct UpdateInfo {
     std::string download_url;
     std::string version;
     std::string description;
+    std::string filename;
+    long expected_size;
+    std::string md5_hash;
+    std::string sha1_hash;
+    std::string sha256_hash;
     bool is_available;
+    
+    UpdateInfo() : expected_size(0), is_available(false) {}
 };
 
 class HawkbitClient {
@@ -21,8 +28,9 @@ public:
     HawkbitClient(const std::string& server_url, const std::string& tenant, const std::string& controller_id);
     ~HawkbitClient();
 
-    bool pollForUpdates();
+    bool pollForUpdates(std::string& response);
     bool downloadBundle(const std::string& download_url, const std::string& local_path);
+    bool downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size);
     bool sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message = "");
     
     // New methods for update handling
@@ -41,6 +49,7 @@ private:
     static size_t writeFileCallback(void* contents, size_t size, size_t nmemb, FILE* file);
     std::string buildPollUrl() const;
     std::string buildFeedbackUrl(const std::string& execution_id) const;
+    void setupDownloadCurlOptions();
     
     // Helper methods for JSON parsing
     bool parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info);

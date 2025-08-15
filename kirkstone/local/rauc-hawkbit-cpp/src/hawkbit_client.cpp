@@ -4,6 +4,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <chrono>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+#include <cstring>
 #include <dlt/dlt.h>
 
 DLT_DECLARE_CONTEXT(hawkbitClientContext);
@@ -42,6 +47,9 @@ size_t HawkbitClient::writeCallback(void* contents, size_t size, size_t nmemb, s
 }
 
 size_t HawkbitClient::writeFileCallback(void* contents, size_t size, size_t nmemb, FILE* file) {
+    if (!contents || !file || size == 0 || nmemb == 0) {
+        return 0;
+    }
     return fwrite(contents, size, nmemb, file);
 }
 
@@ -57,13 +65,51 @@ std::string HawkbitClient::buildFeedbackUrl(const std::string& execution_id) con
     return url;
 }
 
-bool HawkbitClient::pollForUpdates() {
+void HawkbitClient::setupDownloadCurlOptions() {
+    if (!curl_handle_) return;
+    
+    // Based on rauc-hawkbit-updater reference implementation
+    
+    // Basic options
+    curl_easy_setopt(curl_handle_, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl_handle_, CURLOPT_MAXREDIRS, 3L);
+    curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, DOWNLOAD_TIMEOUT_SECONDS);
+    
+    // Connection timeout
+    curl_easy_setopt(curl_handle_, CURLOPT_CONNECTTIMEOUT, 30L);
+    
+    // Low speed limit (abort if speed drops below 1KB/s for 60 seconds)
+    curl_easy_setopt(curl_handle_, CURLOPT_LOW_SPEED_LIMIT, 1024L);
+    curl_easy_setopt(curl_handle_, CURLOPT_LOW_SPEED_TIME, 60L);
+    
+    // SSL options
+    curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYPEER, ENABLE_SSL_VERIFICATION ? 1L : 0L);
+    curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYHOST, ENABLE_SSL_VERIFICATION ? 2L : 0L);
+    
+    // User agent
+    curl_easy_setopt(curl_handle_, CURLOPT_USERAGENT, "rauc-hawkbit-cpp/1.0");
+    
+    // Accept ranges for resumable downloads
+    curl_easy_setopt(curl_handle_, CURLOPT_RANGE, NULL); // Clear any previous range
+    
+    // Disable progress meter to avoid interference with DLT logging
+    curl_easy_setopt(curl_handle_, CURLOPT_NOPROGRESS, 1L);
+    
+    // Enable TCP keep-alive
+    curl_easy_setopt(curl_handle_, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(curl_handle_, CURLOPT_TCP_KEEPIDLE, 120L);
+    curl_easy_setopt(curl_handle_, CURLOPT_TCP_KEEPINTVL, 60L);
+    
+    DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("CURL download options configured"));
+}
+
+bool HawkbitClient::pollForUpdates(std::string& response) {
     if (!curl_handle_) {
         DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
         return false;
     }
 
-    std::string response;
+    response.clear();
     std::string url = buildPollUrl();
 
     DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Polling for updates from: "), DLT_STRING(url.c_str()));
@@ -217,11 +263,43 @@ bool HawkbitClient::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& upd
         DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("No links field found in artifact"));
     }
 
-    // Get description
+    // Get filename and description
     json_object* filename_obj;
     if (json_object_object_get_ex(artifact_obj, "filename", &filename_obj)) {
-        update_info.description = json_object_get_string(filename_obj);
-        DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found filename: "), DLT_STRING(update_info.description.c_str()));
+        update_info.filename = json_object_get_string(filename_obj);
+        update_info.description = update_info.filename; // Use filename as description
+        DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found filename: "), DLT_STRING(update_info.filename.c_str()));
+    }
+    
+    // Get file size
+    json_object* size_obj;
+    if (json_object_object_get_ex(artifact_obj, "size", &size_obj)) {
+        update_info.expected_size = json_object_get_int64(size_obj);
+        DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found expected file size: "), DLT_INT(update_info.expected_size), DLT_STRING(" bytes"));
+    }
+    
+    // Get hash information (hashes object contains MD5, SHA1, SHA256)
+    json_object* hashes_obj;
+    if (json_object_object_get_ex(artifact_obj, "hashes", &hashes_obj)) {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found hashes object"));
+        
+        json_object* md5_obj;
+        if (json_object_object_get_ex(hashes_obj, "md5", &md5_obj)) {
+            update_info.md5_hash = json_object_get_string(md5_obj);
+            DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found MD5 hash: "), DLT_STRING(update_info.md5_hash.c_str()));
+        }
+        
+        json_object* sha1_obj;
+        if (json_object_object_get_ex(hashes_obj, "sha1", &sha1_obj)) {
+            update_info.sha1_hash = json_object_get_string(sha1_obj);
+            DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found SHA1 hash: "), DLT_STRING(update_info.sha1_hash.c_str()));
+        }
+        
+        json_object* sha256_obj;
+        if (json_object_object_get_ex(hashes_obj, "sha256", &sha256_obj)) {
+            update_info.sha256_hash = json_object_get_string(sha256_obj);
+            DLT_LOG(hawkbitClientContext, DLT_LOG_DEBUG, DLT_STRING("Found SHA256 hash: "), DLT_STRING(update_info.sha256_hash.c_str()));
+        }
     }
 
     bool success = !update_info.download_url.empty();
@@ -383,45 +461,123 @@ bool HawkbitClient::sendFinishedFeedback(const std::string& execution_id, bool s
 }
 
 bool HawkbitClient::downloadBundle(const std::string& download_url, const std::string& local_path) {
-    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Downloading bundle from: "), DLT_STRING(download_url.c_str()));
-    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Bundle will be saved to: "), DLT_STRING(local_path.c_str()));
-    
+    return downloadBundle(download_url, local_path, 0); // Call with no expected size check
+}
+
+bool HawkbitClient::downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size) {
+    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("=== Starting bundle download ==="));
+    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Download URL: "), DLT_STRING(download_url.c_str()));
+    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Local path: "), DLT_STRING(local_path.c_str()));
+
+    // Validate inputs
+    if (download_url.empty() || local_path.empty()) {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("Invalid download parameters"));
+        return false;
+    }
+
     if (!curl_handle_) {
         DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
         return false;
     }
 
+    // Remove existing file if present
+    if (access(local_path.c_str(), F_OK) == 0) {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Removing existing file"));
+        if (remove(local_path.c_str()) != 0) {
+            DLT_LOG(hawkbitClientContext, DLT_LOG_WARN, DLT_STRING("Failed to remove existing file"));
+        }
+    }
+
+    // Open file for writing with explicit error handling
     FILE* file = fopen(local_path.c_str(), "wb");
     if (!file) {
-        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("Failed to open file for writing: "), DLT_STRING(local_path.c_str()));
+        int err = errno;
+        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("Failed to open file for writing"));
+        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("Error: "), DLT_STRING(strerror(err)));
         return false;
     }
 
+    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("File opened successfully for writing"));
+
+    // Reset CURL handle to clean state
+    curl_easy_reset(curl_handle_);
+    
+    // Configure CURL options step by step
     curl_easy_setopt(curl_handle_, CURLOPT_URL, download_url.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_WRITEFUNCTION, writeFileCallback);
     curl_easy_setopt(curl_handle_, CURLOPT_WRITEDATA, file);
-    curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, DOWNLOAD_TIMEOUT_SECONDS);
-    curl_easy_setopt(curl_handle_, CURLOPT_FOLLOWLOCATION, FOLLOW_REDIRECTS ? 1L : 0L);
+    curl_easy_setopt(curl_handle_, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, 300L); // 5 minute timeout
+    curl_easy_setopt(curl_handle_, CURLOPT_CONNECTTIMEOUT, 30L);
+    curl_easy_setopt(curl_handle_, CURLOPT_USERAGENT, "rauc-hawkbit-cpp/1.0");
+    curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYPEER, 0L); // Disable for debugging
+    curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(curl_handle_, CURLOPT_NOPROGRESS, 1L);
 
-    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Starting download..."));
+    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("CURL configured, starting download..."));
+
+    // Perform download
+    auto start_time = std::chrono::steady_clock::now();
     CURLcode res = curl_easy_perform(curl_handle_);
-    fclose(file);
+    auto end_time = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
+    // Always close file first
+    if (file) {
+        fflush(file);
+        fclose(file);
+        file = nullptr;
+    }
+
+    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Download completed in "), DLT_INT(duration.count()), DLT_STRING(" ms"));
+
+    // Check CURL result
     if (res != CURLE_OK) {
-        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("Download failed: "), DLT_STRING(curl_easy_strerror(res)));
+        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("CURL error: "), DLT_STRING(curl_easy_strerror(res)));
+        remove(local_path.c_str()); // Clean up partial file
         return false;
     }
 
+    // Check HTTP status
     long http_code = 0;
     curl_easy_getinfo(curl_handle_, CURLINFO_RESPONSE_CODE, &http_code);
+    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("HTTP response code: "), DLT_INT(http_code));
 
-    if (http_code == 200) {
-        DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Bundle downloaded successfully to: "), DLT_STRING(local_path.c_str()));
-        return true;
-    } else {
-        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("Download HTTP error: "), DLT_INT(http_code));
+    if (http_code != 200) {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("HTTP error: "), DLT_INT(http_code));
+        remove(local_path.c_str()); // Clean up partial file
         return false;
     }
+
+    // Verify file was written and check size
+    struct stat file_info;
+    if (stat(local_path.c_str(), &file_info) == 0) {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("Downloaded file size: "), DLT_INT(file_info.st_size), DLT_STRING(" bytes"));
+        
+        if (file_info.st_size == 0) {
+            DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("Downloaded file is empty"));
+            remove(local_path.c_str());
+            return false;
+        }
+        
+        // Verify expected file size if provided
+        if (expected_size > 0) {
+            if (file_info.st_size != expected_size) {
+                DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("File size mismatch! Expected: "), DLT_INT(expected_size), 
+                        DLT_STRING(" bytes, got: "), DLT_INT(file_info.st_size), DLT_STRING(" bytes"));
+                remove(local_path.c_str());
+                return false;
+            } else {
+                DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("File size verification passed"));
+            }
+        }
+    } else {
+        DLT_LOG(hawkbitClientContext, DLT_LOG_ERROR, DLT_STRING("Failed to stat downloaded file"));
+        return false;
+    }
+
+    DLT_LOG(hawkbitClientContext, DLT_LOG_INFO, DLT_STRING("=== Bundle download successful ==="));
+    return true;
 }
 
 bool HawkbitClient::sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message) {
