@@ -20,6 +20,7 @@ public:
     Q_INVOKABLE void checkUpdateStatus();
     Q_INVOKABLE void startService();
     Q_INVOKABLE void stopService();
+    Q_INVOKABLE void testProgressParsing(const QString& testLine);
 
     // Property getters
     bool isUpdateActive() const { return m_isUpdateActive; }

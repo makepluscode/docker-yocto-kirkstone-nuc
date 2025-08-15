@@ -150,6 +150,13 @@ void UpdateAgentManager::parseLogContent()
 
 void UpdateAgentManager::parseLogLine(const QString& line)
 {
+    // Log the line for debugging
+    if (!line.trimmed().isEmpty()) {
+        DLT_LOG(m_ctx, DLT_LOG_DEBUG, 
+                DLT_STRING("Parsing log line:"), 
+                DLT_STRING(line.trimmed().toUtf8().constData()));
+    }
+    
     // Parse different update states from log lines
     updateStatusFromLog(line);
     updateProgressFromLog(line);
@@ -161,8 +168,10 @@ void UpdateAgentManager::updateStatusFromLog(const QString& line)
     bool wasUpdateActive = m_isUpdateActive;
     
     // Detect update start
-    if (line.contains("Starting update process", Qt::CaseInsensitive) ||
-        line.contains("Update available", Qt::CaseInsensitive)) {
+    if (line.contains("=== Starting update process ===", Qt::CaseInsensitive) ||
+        line.contains("Starting update process", Qt::CaseInsensitive) ||
+        line.contains("Update available", Qt::CaseInsensitive) ||
+        line.contains("Deployment found", Qt::CaseInsensitive)) {
         m_isUpdateActive = true;
         newStatus = "Update starting...";
         if (!wasUpdateActive) {
@@ -171,27 +180,39 @@ void UpdateAgentManager::updateStatusFromLog(const QString& line)
     }
     // Detect download phase
     else if (line.contains("downloading", Qt::CaseInsensitive) ||
-             line.contains("download", Qt::CaseInsensitive)) {
+             line.contains("download", Qt::CaseInsensitive) ||
+             line.contains("Downloading bundle", Qt::CaseInsensitive)) {
         m_isUpdateActive = true;
         newStatus = "Downloading update...";
     }
     // Detect installation phase
     else if (line.contains("installing", Qt::CaseInsensitive) ||
-             line.contains("install", Qt::CaseInsensitive)) {
+             line.contains("install", Qt::CaseInsensitive) ||
+             line.contains("Installing bundle", Qt::CaseInsensitive) ||
+             line.contains("rauc install", Qt::CaseInsensitive)) {
         m_isUpdateActive = true;
         newStatus = "Installing update...";
     }
+    // Detect verification phase
+    else if (line.contains("verifying", Qt::CaseInsensitive) ||
+             line.contains("verify", Qt::CaseInsensitive)) {
+        m_isUpdateActive = true;
+        newStatus = "Verifying update...";
+    }
     // Detect completion
-    else if (line.contains("Update completed", Qt::CaseInsensitive) ||
-             line.contains("Update successful", Qt::CaseInsensitive)) {
+    else if (line.contains("Update completed: success", Qt::CaseInsensitive) ||
+             line.contains("Update completed successfully", Qt::CaseInsensitive) ||
+             line.contains("Installation completed", Qt::CaseInsensitive)) {
         m_isUpdateActive = false;
         newStatus = "Update completed successfully";
         m_updateProgress = 100;
         emit updateCompleted(true, "Update completed successfully");
     }
     // Detect failure
-    else if (line.contains("Update failed", Qt::CaseInsensitive) ||
-             line.contains("Failed to", Qt::CaseInsensitive)) {
+    else if (line.contains("Update completed: failure", Qt::CaseInsensitive) ||
+             line.contains("Update failed", Qt::CaseInsensitive) ||
+             line.contains("Failed to", Qt::CaseInsensitive) ||
+             line.contains("Installation failed", Qt::CaseInsensitive)) {
         m_isUpdateActive = false;
         newStatus = "Update failed";
         emit updateCompleted(false, "Update failed");
@@ -208,26 +229,62 @@ void UpdateAgentManager::updateStatusFromLog(const QString& line)
 
 void UpdateAgentManager::updateProgressFromLog(const QString& line)
 {
-    // Look for progress indicators
-    QRegularExpression progressRegex(R"(progress[:\s]*(\d+)%)", QRegularExpression::CaseInsensitiveOption);
-    QRegularExpressionMatch match = progressRegex.match(line);
+    // Look for progress indicators in multiple formats
+    QRegularExpression progressRegex1(R"(Update progress:\s*(\d+)%)", QRegularExpression::CaseInsensitiveOption);
+    QRegularExpression progressRegex2(R"(progress[:\s]*(\d+)%)", QRegularExpression::CaseInsensitiveOption);
+    QRegularExpression progressRegex3(R"((\d+)%)", QRegularExpression::CaseInsensitiveOption);
+    
+    QRegularExpressionMatch match = progressRegex1.match(line);
+    if (!match.hasMatch()) {
+        match = progressRegex2.match(line);
+    }
+    if (!match.hasMatch() && line.contains("progress", Qt::CaseInsensitive)) {
+        match = progressRegex3.match(line);
+    }
     
     if (match.hasMatch()) {
         int progress = match.captured(1).toInt();
-        if (progress != m_updateProgress) {
+        if (progress != m_updateProgress && progress >= 0 && progress <= 100) {
             m_updateProgress = progress;
+            DLT_LOG(m_ctx, DLT_LOG_INFO, 
+                    DLT_STRING("Progress updated:"), 
+                    DLT_INT(progress));
             emit updateProgressChanged();
+            return; // Exit early if we found explicit progress
         }
     }
     
-    // Estimate progress from status
+    // Estimate progress from status keywords if no explicit progress found
     if (m_isUpdateActive) {
-        if (line.contains("downloading", Qt::CaseInsensitive)) {
-            if (m_updateProgress < 30) m_updateProgress = 30;
-        } else if (line.contains("installing", Qt::CaseInsensitive)) {
-            if (m_updateProgress < 70) m_updateProgress = 70;
+        bool progressUpdated = false;
+        if (line.contains("Starting update process", Qt::CaseInsensitive)) {
+            if (m_updateProgress < 5) {
+                m_updateProgress = 5;
+                progressUpdated = true;
+            }
+        } else if (line.contains("downloading", Qt::CaseInsensitive) || line.contains("download", Qt::CaseInsensitive)) {
+            if (m_updateProgress < 30) {
+                m_updateProgress = 30;
+                progressUpdated = true;
+            }
+        } else if (line.contains("installing", Qt::CaseInsensitive) || line.contains("install", Qt::CaseInsensitive)) {
+            if (m_updateProgress < 70) {
+                m_updateProgress = 70;
+                progressUpdated = true;
+            }
+        } else if (line.contains("verifying", Qt::CaseInsensitive) || line.contains("verify", Qt::CaseInsensitive)) {
+            if (m_updateProgress < 90) {
+                m_updateProgress = 90;
+                progressUpdated = true;
+            }
         }
-        emit updateProgressChanged();
+        
+        if (progressUpdated) {
+            DLT_LOG(m_ctx, DLT_LOG_INFO, 
+                    DLT_STRING("Progress estimated:"), 
+                    DLT_INT(m_updateProgress));
+            emit updateProgressChanged();
+        }
     }
 }
 
@@ -280,6 +337,25 @@ void UpdateAgentManager::startService()
     });
     
     startProcess->start("systemctl", QStringList() << "start" << "update-agent.service");
+}
+
+void UpdateAgentManager::testProgressParsing(const QString& testLine)
+{
+    DLT_LOG(m_ctx, DLT_LOG_INFO, 
+            DLT_STRING("Testing progress parsing with line:"), 
+            DLT_STRING(testLine.toUtf8().constData()));
+    
+    int oldProgress = m_updateProgress;
+    QString oldStatus = m_updateStatus;
+    
+    parseLogLine(testLine);
+    
+    DLT_LOG(m_ctx, DLT_LOG_INFO, 
+            DLT_STRING("Progress changed from"), DLT_INT(oldProgress),
+            DLT_STRING("to"), DLT_INT(m_updateProgress));
+    DLT_LOG(m_ctx, DLT_LOG_INFO, 
+            DLT_STRING("Status changed from"), DLT_STRING(oldStatus.toUtf8().constData()),
+            DLT_STRING("to"), DLT_STRING(m_updateStatus.toUtf8().constData()));
 }
 
 void UpdateAgentManager::stopService()

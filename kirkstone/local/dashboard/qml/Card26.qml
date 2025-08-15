@@ -90,5 +90,31 @@ DashboardCardBase {
             font.pointSize: 9
             horizontalAlignment: Text.AlignHCenter
         }
+        
+        // Test button (for debugging)
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 60
+            height: 20
+            color: "#333333"
+            radius: 3
+            visible: updateAgentManager !== null
+            
+            Text {
+                anchors.centerIn: parent
+                text: "Test"
+                color: "#ffffff"
+                font.pointSize: 8
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    if (updateAgentManager) {
+                        updateAgentManager.testProgressParsing("Sending progress feedback for execution: 123 Progress: 75%")
+                    }
+                }
+            }
+        }
     }
 }
