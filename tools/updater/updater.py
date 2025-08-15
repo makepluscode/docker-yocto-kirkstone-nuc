@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QTextEdit, QTableWidget, QTableWidgetItem,
     QGroupBox, QGridLayout, QProgressBar, QMessageBox, QTabWidget,
-    QSplitter, QFrame, QHeaderView
+    QSplitter, QFrame, QHeaderView, QLineEdit, QCheckBox
 )
 from PyQt6.QtCore import QTimer, QThread, pyqtSignal, Qt, QProcess
 from PyQt6.QtGui import QFont, QPalette, QColor
@@ -145,6 +145,119 @@ class ServerManager(QThread):
             return False
 
 
+class DLTManager(QThread):
+    """Thread for managing DLT log connection."""
+    
+    # Signals
+    dlt_connected = pyqtSignal()
+    dlt_disconnected = pyqtSignal()
+    dlt_log_received = pyqtSignal(str)
+    dlt_error = pyqtSignal(str)
+    
+    def __init__(self, target_ip="192.168.1.100", port=3490):
+        super().__init__()
+        self.target_ip = target_ip
+        self.port = port
+        self.dlt_process = None
+        self.running = False
+        self.is_connected = False
+    
+    def connect_to_target(self, target_ip=None, port=None):
+        """Connect to target device for DLT logs."""
+        if target_ip:
+            self.target_ip = target_ip
+        if port:
+            self.port = port
+        
+        if self.dlt_process and self.dlt_process.poll() is None:
+            self.dlt_error.emit("DLT connection already active")
+            return
+        
+        # Check if dlt-receive is available
+        try:
+            subprocess.run(["dlt-receive", "--help"], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            self.dlt_error.emit("dlt-receive not found. Install with: sudo apt install dlt-daemon")
+            return
+        
+        try:
+            # Start dlt-receive process
+            cmd = ["dlt-receive", "-a", "-p", str(self.port), self.target_ip]
+            
+            self.dlt_process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
+                bufsize=1
+            )
+            
+            self.running = True
+            self.start()  # Start the monitoring thread
+            
+            # Wait a moment to check if connection is successful
+            time.sleep(1)
+            
+            if self.dlt_process.poll() is None:
+                self.is_connected = True
+                self.dlt_connected.emit()
+            else:
+                self.dlt_error.emit("Failed to connect to target DLT service")
+                
+        except Exception as e:
+            self.dlt_error.emit(f"Failed to start DLT connection: {e}")
+    
+    def disconnect_from_target(self):
+        """Disconnect from target device."""
+        self.running = False
+        
+        if self.dlt_process:
+            try:
+                # Try graceful shutdown first
+                self.dlt_process.terminate()
+                
+                # Wait for graceful shutdown
+                try:
+                    self.dlt_process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    # Force kill if graceful shutdown fails
+                    self.dlt_process.kill()
+                    self.dlt_process.wait()
+                
+                self.dlt_process = None
+                self.is_connected = False
+                self.dlt_disconnected.emit()
+                
+            except Exception as e:
+                self.dlt_error.emit(f"Error stopping DLT connection: {e}")
+    
+    def run(self):
+        """Monitor DLT process and read logs."""
+        while self.running and self.dlt_process:
+            if self.dlt_process.poll() is not None:
+                # Process has terminated
+                if self.running:  # If we didn't intentionally stop it
+                    self.is_connected = False
+                    self.dlt_disconnected.emit()
+                    self.dlt_error.emit("DLT connection terminated unexpectedly")
+                break
+            
+            # Read DLT logs
+            try:
+                line = self.dlt_process.stdout.readline()
+                if line:
+                    self.dlt_log_received.emit(line.strip())
+            except:
+                pass
+            
+            time.sleep(0.01)  # Small delay to prevent CPU spinning
+    
+    def stop(self):
+        """Stop the DLT manager."""
+        self.disconnect_from_target()
+        self.wait()
+
+
 class BackendManager(QThread):
     """Thread for managing backend communication."""
     
@@ -251,6 +364,7 @@ class UpdaterGUI(QMainWindow):
         super().__init__()
         self.server_manager = ServerManager()
         self.backend_manager = BackendManager()
+        self.dlt_manager = DLTManager()
         self.deployments = []
         self.server_info = {}
         
@@ -333,6 +447,7 @@ class UpdaterGUI(QMainWindow):
         self.create_dashboard_tab()
         self.create_deployments_tab()
         self.create_logs_tab()
+        self.create_dlt_tab()
     
     def create_header(self, parent_layout):
         """Create the header section."""
@@ -432,9 +547,60 @@ class UpdaterGUI(QMainWindow):
         controls_group = QGroupBox("Server Controls")
         controls_layout = QHBoxLayout(controls_group)
         
+        self.start_btn = QPushButton("Start Server")
+        self.start_btn.clicked.connect(self.start_server)
+        self.start_btn.setEnabled(False)  # Initially disabled since server auto-starts
+        self.start_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+            QPushButton:pressed {
+                background-color: #1e7e34;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        controls_layout.addWidget(self.start_btn)
+        
         self.restart_btn = QPushButton("Restart Server")
         self.restart_btn.clicked.connect(self.restart_server)
+        self.restart_btn.setEnabled(False)  # Initially disabled
         controls_layout.addWidget(self.restart_btn)
+        
+        self.stop_btn = QPushButton("Stop Server")
+        self.stop_btn.clicked.connect(self.stop_server)
+        self.stop_btn.setEnabled(False)  # Initially disabled
+        self.stop_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c82333;
+            }
+            QPushButton:pressed {
+                background-color: #bd2130;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        controls_layout.addWidget(self.stop_btn)
         
         controls_layout.addStretch()
         
@@ -492,6 +658,126 @@ class UpdaterGUI(QMainWindow):
         
         self.tab_widget.addTab(logs_widget, "Logs")
     
+    def create_dlt_tab(self):
+        """Create the DLT logger tab."""
+        dlt_widget = QWidget()
+        dlt_layout = QVBoxLayout(dlt_widget)
+        
+        # Connection settings group
+        connection_group = QGroupBox("DLT Connection Settings")
+        connection_layout = QGridLayout(connection_group)
+        
+        # Target IP
+        connection_layout.addWidget(QLabel("Target IP:"), 0, 0)
+        self.dlt_ip_input = QLineEdit("192.168.1.100")
+        self.dlt_ip_input.setPlaceholderText("Enter target device IP address")
+        connection_layout.addWidget(self.dlt_ip_input, 0, 1)
+        
+        # Port
+        connection_layout.addWidget(QLabel("Port:"), 0, 2)
+        self.dlt_port_input = QLineEdit("3490")
+        self.dlt_port_input.setPlaceholderText("DLT port")
+        self.dlt_port_input.setMaximumWidth(100)
+        connection_layout.addWidget(self.dlt_port_input, 0, 3)
+        
+        # Connection controls
+        connection_controls = QHBoxLayout()
+        
+        self.dlt_connect_btn = QPushButton("Connect")
+        self.dlt_connect_btn.clicked.connect(self.connect_dlt)
+        self.dlt_connect_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+            QPushButton:pressed {
+                background-color: #1e7e34;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        connection_controls.addWidget(self.dlt_connect_btn)
+        
+        self.dlt_disconnect_btn = QPushButton("Disconnect")
+        self.dlt_disconnect_btn.clicked.connect(self.disconnect_dlt)
+        self.dlt_disconnect_btn.setEnabled(False)
+        self.dlt_disconnect_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c82333;
+            }
+            QPushButton:pressed {
+                background-color: #bd2130;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        connection_controls.addWidget(self.dlt_disconnect_btn)
+        
+        # Status indicator
+        self.dlt_status_label = QLabel("Disconnected")
+        self.dlt_status_label.setStyleSheet("font-weight: bold; color: #e74c3c;")
+        connection_controls.addWidget(self.dlt_status_label)
+        
+        connection_controls.addStretch()
+        
+        connection_layout.addLayout(connection_controls, 1, 0, 1, 4)
+        dlt_layout.addWidget(connection_group)
+        
+        # DLT log display
+        log_group = QGroupBox("DLT Logs")
+        log_layout = QVBoxLayout(log_group)
+        
+        # Log text area
+        self.dlt_log_text = QTextEdit()
+        self.dlt_log_text.setReadOnly(True)
+        self.dlt_log_text.setFont(QFont("Monospace", 9))
+        self.dlt_log_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #1e1e1e;
+                color: #ffffff;
+                border: 1px solid #333333;
+            }
+        """)
+        log_layout.addWidget(self.dlt_log_text)
+        
+        # Log controls
+        log_controls = QHBoxLayout()
+        
+        clear_dlt_logs_btn = QPushButton("Clear Logs")
+        clear_dlt_logs_btn.clicked.connect(self.dlt_log_text.clear)
+        log_controls.addWidget(clear_dlt_logs_btn)
+        
+        # Auto-scroll toggle
+        self.dlt_auto_scroll = QCheckBox("Auto-scroll")
+        self.dlt_auto_scroll.setChecked(True)
+        log_controls.addWidget(self.dlt_auto_scroll)
+        
+        log_controls.addStretch()
+        
+        log_layout.addLayout(log_controls)
+        dlt_layout.addWidget(log_group)
+        
+        self.tab_widget.addTab(dlt_widget, "DLT Logger")
+    
     def setup_connections(self):
         """Setup signal connections."""
         # Server manager connections
@@ -505,6 +791,12 @@ class UpdaterGUI(QMainWindow):
         self.backend_manager.deployments_updated.connect(self.update_deployments)
         self.backend_manager.server_info_updated.connect(self.update_server_info)
         self.backend_manager.error_occurred.connect(self.log_error)
+        
+        # DLT manager connections
+        self.dlt_manager.dlt_connected.connect(self.on_dlt_connected)
+        self.dlt_manager.dlt_disconnected.connect(self.on_dlt_disconnected)
+        self.dlt_manager.dlt_log_received.connect(self.on_dlt_log_received)
+        self.dlt_manager.dlt_error.connect(self.on_dlt_error)
     
     def on_server_started(self):
         """Handle server started event."""
@@ -512,6 +804,11 @@ class UpdaterGUI(QMainWindow):
         self.server_text.setText("Running")
         self.server_status_label.setText("Running")
         self.server_status_label.setStyleSheet("font-weight: bold; color: #27ae60;")
+        
+        # Update button states - server is running
+        self.start_btn.setEnabled(False)
+        self.restart_btn.setEnabled(True)
+        self.stop_btn.setEnabled(True)
         
         # Start backend communication
         self.backend_manager.start()
@@ -523,6 +820,11 @@ class UpdaterGUI(QMainWindow):
         self.server_text.setText("Stopped")
         self.server_status_label.setText("Stopped")
         self.server_status_label.setStyleSheet("font-weight: bold; color: #e74c3c;")
+        
+        # Update button states - server is stopped
+        self.start_btn.setEnabled(True)
+        self.restart_btn.setEnabled(False)
+        self.stop_btn.setEnabled(False)
         
         # Stop backend communication
         if self.backend_manager.isRunning():
@@ -540,6 +842,72 @@ class UpdaterGUI(QMainWindow):
         self.log_error(f"Server error: {error}")
         QMessageBox.critical(self, "Server Error", f"Server error: {error}")
     
+    def on_dlt_connected(self):
+        """Handle DLT connection established."""
+        self.dlt_status_label.setText("Connected")
+        self.dlt_status_label.setStyleSheet("font-weight: bold; color: #27ae60;")
+        self.dlt_connect_btn.setEnabled(False)
+        self.dlt_disconnect_btn.setEnabled(True)
+        self.log_message("🔗 DLT connection established")
+    
+    def on_dlt_disconnected(self):
+        """Handle DLT connection lost."""
+        self.dlt_status_label.setText("Disconnected")
+        self.dlt_status_label.setStyleSheet("font-weight: bold; color: #e74c3c;")
+        self.dlt_connect_btn.setEnabled(True)
+        self.dlt_disconnect_btn.setEnabled(False)
+        self.log_message("🔌 DLT connection lost")
+    
+    def on_dlt_log_received(self, log_line):
+        """Handle DLT log line received."""
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        formatted_line = f"[{timestamp}] {log_line}"
+        
+        # Add to DLT log display
+        self.dlt_log_text.append(formatted_line)
+        
+        # Auto-scroll if enabled
+        if self.dlt_auto_scroll.isChecked():
+            scrollbar = self.dlt_log_text.verticalScrollBar()
+            scrollbar.setValue(scrollbar.maximum())
+    
+    def on_dlt_error(self, error):
+        """Handle DLT error."""
+        self.log_error(f"DLT error: {error}")
+        QMessageBox.warning(self, "DLT Error", f"DLT error: {error}")
+    
+    def connect_dlt(self):
+        """Connect to DLT target."""
+        try:
+            target_ip = self.dlt_ip_input.text().strip()
+            port = int(self.dlt_port_input.text().strip())
+            
+            if not target_ip:
+                QMessageBox.warning(self, "Invalid Input", "Please enter a valid target IP address.")
+                return
+            
+            if port <= 0 or port > 65535:
+                QMessageBox.warning(self, "Invalid Input", "Please enter a valid port number (1-65535).")
+                return
+            
+            self.log_message(f"🔗 Connecting to DLT target: {target_ip}:{port}")
+            self.dlt_manager.connect_to_target(target_ip, port)
+            
+        except ValueError:
+            QMessageBox.warning(self, "Invalid Input", "Please enter a valid port number.")
+        except Exception as e:
+            self.log_error(f"Failed to connect to DLT target: {e}")
+    
+    def disconnect_dlt(self):
+        """Disconnect from DLT target."""
+        self.log_message("🔌 Disconnecting from DLT target...")
+        self.dlt_manager.disconnect_from_target()
+    
+    def start_server(self):
+        """Start the server manually."""
+        self.log_message("Starting server manually...")
+        self.server_manager.start_server()
+    
     def restart_server(self):
         """Restart the server."""
         self.log_message("Restarting server...")
@@ -547,6 +915,20 @@ class UpdaterGUI(QMainWindow):
         
         # Wait a moment and restart
         QTimer.singleShot(2000, self.server_manager.start_server)
+    
+    def stop_server(self):
+        """Stop the server manually."""
+        reply = QMessageBox.question(
+            self, 
+            "Stop Server", 
+            "Are you sure you want to stop the server?\n\nThis will make the updater unavailable to devices.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.log_message("Stopping server manually...")
+            self.server_manager.stop_server()
     
     def update_connection_status(self, connected):
         """Update the connection status display."""
@@ -640,6 +1022,10 @@ class UpdaterGUI(QMainWindow):
     def closeEvent(self, event):
         """Handle application close event."""
         self.log_message("Shutting down...")
+        
+        # Stop DLT manager
+        if self.dlt_manager.isRunning():
+            self.dlt_manager.stop()
         
         # Stop backend communication
         if self.backend_manager.isRunning():
