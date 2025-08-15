@@ -845,7 +845,15 @@ class UpdaterGUI(QMainWindow):
         self.server_status_label.setStyleSheet("font-weight: bold; color: #e74c3c;")
         
         self.log_error(f"Server error: {error}")
-        QMessageBox.critical(self, "Server Error", f"Server error: {error}")
+        
+        # Create a non-modal message box with proper close button
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Critical)
+        msg_box.setWindowTitle("Server Error")
+        msg_box.setText(f"Server error: {error}")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.setModal(False)  # Make it non-modal so it doesn't block the UI
+        msg_box.show()
     
     def on_dlt_connected(self):
         """Handle DLT connection established."""
@@ -879,7 +887,15 @@ class UpdaterGUI(QMainWindow):
     def on_dlt_error(self, error):
         """Handle DLT error."""
         self.log_error(f"DLT error: {error}")
-        QMessageBox.warning(self, "DLT Error", f"DLT error: {error}")
+        
+        # Create a non-modal message box with proper close button
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("DLT Error")
+        msg_box.setText(f"DLT error: {error}")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.setModal(False)  # Make it non-modal so it doesn't block the UI
+        msg_box.show()
     
     def connect_dlt(self):
         """Connect to DLT target."""
@@ -888,18 +904,36 @@ class UpdaterGUI(QMainWindow):
             port = int(self.dlt_port_input.text().strip())
             
             if not target_ip:
-                QMessageBox.warning(self, "Invalid Input", "Please enter a valid target IP address.")
+                msg_box = QMessageBox(self)
+                msg_box.setIcon(QMessageBox.Icon.Warning)
+                msg_box.setWindowTitle("Invalid Input")
+                msg_box.setText("Please enter a valid target IP address.")
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg_box.setModal(False)
+                msg_box.show()
                 return
             
             if port <= 0 or port > 65535:
-                QMessageBox.warning(self, "Invalid Input", "Please enter a valid port number (1-65535).")
+                msg_box = QMessageBox(self)
+                msg_box.setIcon(QMessageBox.Icon.Warning)
+                msg_box.setWindowTitle("Invalid Input")
+                msg_box.setText("Please enter a valid port number (1-65535).")
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg_box.setModal(False)
+                msg_box.show()
                 return
             
             self.log_message(f"🔗 Connecting to DLT target: {target_ip}:{port}")
             self.dlt_manager.connect_to_target(target_ip, port)
             
         except ValueError:
-            QMessageBox.warning(self, "Invalid Input", "Please enter a valid port number.")
+            msg_box = QMessageBox(self)
+            msg_box.setIcon(QMessageBox.Icon.Warning)
+            msg_box.setWindowTitle("Invalid Input")
+            msg_box.setText("Please enter a valid port number.")
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg_box.setModal(False)
+            msg_box.show()
         except Exception as e:
             self.log_error(f"Failed to connect to DLT target: {e}")
     
