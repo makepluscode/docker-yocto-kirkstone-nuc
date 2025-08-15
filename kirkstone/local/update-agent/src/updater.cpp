@@ -1,42 +1,46 @@
 #include "updater.h"
-#include <iostream>
+#include <dlt/dlt.h>
 #include <cstring>
 #include <unistd.h> // For access()
 
+DLT_DECLARE_CONTEXT(dlt_context_updater);
+
 Updater::Updater() : connection_(nullptr), connected_(false) {
-    std::cout << "Initializing updater" << std::endl;
+    DLT_REGISTER_CONTEXT(dlt_context_updater, "UPDATER", "Updater Logic");
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Initializing updater"));
 }
 
 Updater::~Updater() {
-    std::cout << "Destroying updater" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Destroying updater"));
     disconnect();
+    DLT_UNREGISTER_CONTEXT(dlt_context_updater);
 }
 
 bool Updater::connect() {
-    std::cout << "Connecting to update service" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Connecting to update service"));
     
     DBusError error;
     dbus_error_init(&error);
 
     connection_ = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
     if (dbus_error_is_set(&error)) {
-        std::cout << "DBus connection error: " << error.message << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("DBus connection error: "), DLT_STRING(error.message));
         dbus_error_free(&error);
         return false;
     }
 
-    std::cout << "DBus connection established" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("DBus connection established"));
 
     // Test if RAUC service is available
     if (!dbus_bus_name_has_owner(connection_, "de.pengutronix.rauc", &error)) {
-        std::cout << "RAUC service is not available: " << error.message << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("RAUC service is not available: "), DLT_STRING(error.message));
         dbus_error_free(&error);
         dbus_connection_unref(connection_);
         connection_ = nullptr;
         return false;
     }
 
-    std::cout << "RAUC service is available" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("RAUC service is available"));
 
     // Add message filter for signals
     dbus_bus_add_match(connection_, 
@@ -44,29 +48,29 @@ bool Updater::connect() {
         &error);
     
     if (dbus_error_is_set(&error)) {
-        std::cout << "DBus match error: " << error.message << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("DBus match error: "), DLT_STRING(error.message));
         dbus_error_free(&error);
         dbus_connection_unref(connection_);
         connection_ = nullptr;
         return false;
     }
 
-    std::cout << "DBus signal filter added" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("DBus signal filter added"));
 
     dbus_connection_add_filter(connection_, messageHandler, this, nullptr);
     connected_ = true;
-    std::cout << "Successfully connected to RAUC DBus service" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Successfully connected to RAUC DBus service"));
     return true;
 }
 
 void Updater::disconnect() {
-    std::cout << "Disconnecting from RAUC DBus service" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Disconnecting from RAUC DBus service"));
     if (connection_) {
         dbus_connection_remove_filter(connection_, messageHandler, this);
         // dbus_connection_close(connection_); // 공유 연결이므로 닫으면 안 됨
         dbus_connection_unref(connection_);
         connection_ = nullptr;
-        std::cout << "DBus connection closed" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("DBus connection closed"));
     }
     connected_ = false;
 }
@@ -77,11 +81,11 @@ bool Updater::isConnected() const {
 
 bool Updater::sendMethodCall(const std::string& method, const std::string& interface) {
     if (!connected_) {
-        std::cout << "Not connected to DBus" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to DBus"));
         return false;
     }
 
-    std::cout << "Sending method call: " << method << " to interface: " << interface << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Sending method call: "), DLT_STRING(method.c_str()), DLT_STRING(" to interface: "), DLT_STRING(interface.c_str()));
 
     DBusMessage* message = dbus_message_new_method_call(
         "de.pengutronix.rauc",
@@ -91,32 +95,32 @@ bool Updater::sendMethodCall(const std::string& method, const std::string& inter
     );
 
     if (!message) {
-        std::cout << "Failed to create DBus message" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to create DBus message"));
         return false;
     }
 
-    std::cout << "DBus message created, sending..." << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_DEBUG, DLT_STRING("DBus message created, sending..."));
 
     DBusMessage* reply = dbus_connection_send_with_reply_and_block(connection_, message, -1, nullptr);
     dbus_message_unref(message);
 
     if (!reply) {
-        std::cout << "Failed to get reply for method: " << method << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to get reply for method: "), DLT_STRING(method.c_str()));
         return false;
     }
 
-    std::cout << "Method call successful: " << method << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Method call successful: "), DLT_STRING(method.c_str()));
     dbus_message_unref(reply);
     return true;
 }
 
 bool Updater::sendMethodCallWithPath(const std::string& method, const std::string& path, const std::string& interface) {
     if (!connected_) {
-        std::cout << "Not connected to DBus" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to DBus"));
         return false;
     }
 
-    std::cout << "Sending method call: " << method << " with path: " << path << " to interface: " << interface << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Sending method call: "), DLT_STRING(method.c_str()), DLT_STRING(" with path: "), DLT_STRING(path.c_str()), DLT_STRING(" to interface: "), DLT_STRING(interface.c_str()));
 
     DBusMessage* message = dbus_message_new_method_call(
         "de.pengutronix.rauc",
@@ -126,7 +130,7 @@ bool Updater::sendMethodCallWithPath(const std::string& method, const std::strin
     );
 
     if (!message) {
-        std::cout << "Failed to create DBus message" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to create DBus message"));
         return false;
     }
 
@@ -134,19 +138,19 @@ bool Updater::sendMethodCallWithPath(const std::string& method, const std::strin
     dbus_message_iter_init_append(message, &iter);
     const char* path_str = path.c_str();
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &path_str)) {
-        std::cout << "Failed to append path to DBus message" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to append path to DBus message"));
         dbus_message_unref(message);
         return false;
     }
 
-    std::cout << "DBus message created with path, sending..." << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_DEBUG, DLT_STRING("DBus message created with path, sending..."));
 
     // Send with timeout (30 seconds)
     DBusMessage* reply = dbus_connection_send_with_reply_and_block(connection_, message, 30000, nullptr);
     dbus_message_unref(message);
 
     if (!reply) {
-        std::cout << "Failed to get reply for method: " << method << " (timeout or no response)" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to get reply for method: "), DLT_STRING(method.c_str()), DLT_STRING(" (timeout or no response)"));
         return false;
     }
 
@@ -155,65 +159,65 @@ bool Updater::sendMethodCallWithPath(const std::string& method, const std::strin
         DBusError error;
         dbus_error_init(&error);
         if (dbus_set_error_from_message(&error, reply)) {
-            std::cout << "DBus error reply: " << error.name << " - " << error.message << std::endl;
+            DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("DBus error reply: "), DLT_STRING(error.name), DLT_STRING(" - "), DLT_STRING(error.message));
             dbus_error_free(&error);
         }
         dbus_message_unref(reply);
         return false;
     }
 
-    std::cout << "Method call successful: " << method << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Method call successful: "), DLT_STRING(method.c_str()));
     dbus_message_unref(reply);
     return true;
 }
 
 bool Updater::checkService() {
     if (!connected_) {
-        std::cout << "Not connected to DBus" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to DBus"));
         return false;
     }
 
-    std::cout << "Checking RAUC service status..." << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Checking RAUC service status..."));
 
     // Try to get RAUC status to verify service is responding
     std::string status;
     if (getStatus(status)) {
-        std::cout << "RAUC service is responding, current status: " << status << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("RAUC service is responding, current status: "), DLT_STRING(status.c_str()));
         return true;
     } else {
-        std::cout << "RAUC service is not responding" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("RAUC service is not responding"));
         return false;
     }
 }
 
 bool Updater::installBundle(const std::string& bundle_path) {
-    std::cout << "Installing bundle: " << bundle_path << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Installing bundle: "), DLT_STRING(bundle_path.c_str()));
     
     // Check if file exists and is readable
     if (access(bundle_path.c_str(), F_OK) != 0) {
-        std::cout << "Bundle file does not exist: " << bundle_path << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle file does not exist: "), DLT_STRING(bundle_path.c_str()));
         return false;
     }
     
     if (access(bundle_path.c_str(), R_OK) != 0) {
-        std::cout << "Bundle file is not readable: " << bundle_path << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle file is not readable: "), DLT_STRING(bundle_path.c_str()));
         return false;
     }
     
-    std::cout << "Bundle file exists and is readable" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Bundle file exists and is readable"));
     
     // Check RAUC service status before attempting installation
     if (!checkService()) {
-        std::cout << "RAUC service is not available, cannot install bundle" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("RAUC service is not available, cannot install bundle"));
         return false;
     }
     
     bool result = sendMethodCallWithPath("Install", bundle_path, "de.pengutronix.rauc.Installer");
     
     if (result) {
-        std::cout << "Bundle installation started successfully" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Bundle installation started successfully"));
     } else {
-        std::cout << "Bundle installation failed to start" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle installation failed to start"));
     }
     
     return result;
@@ -221,11 +225,11 @@ bool Updater::installBundle(const std::string& bundle_path) {
 
 bool Updater::getStatus(std::string& status) {
     if (!connected_) {
-        std::cout << "Not connected to DBus" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to DBus"));
         return false;
     }
 
-    std::cout << "Getting RAUC status" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Getting RAUC status"));
 
     DBusMessage* message = dbus_message_new_method_call(
         "de.pengutronix.rauc",
@@ -235,7 +239,7 @@ bool Updater::getStatus(std::string& status) {
     );
 
     if (!message) {
-        std::cout << "Failed to create DBus message" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to create DBus message"));
         return false;
     }
 
@@ -245,7 +249,7 @@ bool Updater::getStatus(std::string& status) {
     // Add interface name
     const char* interface_name = "de.pengutronix.rauc.Installer";
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &interface_name)) {
-        std::cout << "Failed to append interface name" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to append interface name"));
         dbus_message_unref(message);
         return false;
     }
@@ -253,18 +257,18 @@ bool Updater::getStatus(std::string& status) {
     // Add property name
     const char* property_name = "Operation";
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &property_name)) {
-        std::cout << "Failed to append property name" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to append property name"));
         dbus_message_unref(message);
         return false;
     }
 
-    std::cout << "DBus message created, sending..." << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_DEBUG, DLT_STRING("DBus message created, sending..."));
 
     DBusMessage* reply = dbus_connection_send_with_reply_and_block(connection_, message, 30000, nullptr);
     dbus_message_unref(message);
 
     if (!reply) {
-        std::cout << "Failed to get status" << std::endl;
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to get status"));
         return false;
     }
 
@@ -279,12 +283,12 @@ bool Updater::getStatus(std::string& status) {
                 const char* status_str;
                 dbus_message_iter_get_basic(&variant_iter, &status_str);
                 status = status_str;
-                std::cout << "RAUC status: " << status << std::endl;
+                DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("RAUC status: "), DLT_STRING(status.c_str()));
             } else {
-                std::cout << "Unexpected variant type for Operation property" << std::endl;
+                DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Unexpected variant type for Operation property"));
             }
         } else {
-            std::cout << "Unexpected reply type" << std::endl;
+            DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Unexpected reply type"));
         }
     }
 
@@ -323,17 +327,17 @@ bool Updater::getBootSlot(std::string& boot_slot) {
 }
 
 bool Updater::markGood() {
-    std::cout << "Marking current slot as good" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Marking current slot as good"));
     return sendMethodCall("Mark", "de.pengutronix.rauc.Installer");
 }
 
 bool Updater::markBad() {
-    std::cout << "Marking current slot as bad" << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Marking current slot as bad"));
     return sendMethodCall("Mark", "de.pengutronix.rauc.Installer");
 }
 
 bool Updater::getBundleInfo(const std::string& bundle_path, std::string& info) {
-    std::cout << "Getting bundle info for: " << bundle_path << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Getting bundle info for: "), DLT_STRING(bundle_path.c_str()));
     return sendMethodCallWithPath("Info", bundle_path, "de.pengutronix.rauc.Installer");
 }
 
@@ -356,7 +360,7 @@ DBusHandlerResult Updater::messageHandler(DBusConnection* connection, DBusMessag
 void Updater::handleSignal(DBusMessage* message) {
     const char* interface = dbus_message_get_interface(message);
     const char* member = dbus_message_get_member(message);
-    std::cout << "Received signal: " << interface << "." << member << std::endl;
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Received signal: "), DLT_STRING(interface), DLT_STRING("."), DLT_STRING(member));
     if (strcmp(interface, "de.pengutronix.rauc.Installer") == 0) {
         if (strcmp(member, "Progress") == 0) {
             DBusMessageIter iter;
@@ -387,7 +391,7 @@ void Updater::handleSignal(DBusMessage* message) {
                     }
                 }
             }
-            std::cout << "Completed signal: Success=" << success << ", Message: " << message_text << std::endl;
+            DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Completed signal: Success="), DLT_BOOL(success), DLT_STRING(", Message: "), DLT_STRING(message_text.c_str()));
             if (completed_callback_) {
                 completed_callback_(success, message_text);
             }

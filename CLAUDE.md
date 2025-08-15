@@ -174,3 +174,106 @@ sudo rauc install /data/nuc-image-qt5-bundle-intel-corei7-64.raucb
 ./connect.sh        # Setup network interface and SSH keys
 ./dlt-receive.sh    # Connect to DLT logging on target
 ```
+
+## Updater Server
+
+The `tools/updater` directory contains a FastAPI-based OTA update server implementation.
+
+### Updater Architecture
+- **FastAPI Server**: RESTful API following updater protocol for OTA updates
+- **Python Backend**: `updater_server/` - Poll, feedback, and bundle download endpoints
+- **Qt6 GUI**: `gui/` - Qt6/QML updater management interface
+- **RAUC Integration**: `updater-rauc/` - RAUC client libraries and utilities
+- **Bundle Management**: Automatic discovery of .raucb files for deployment
+
+### Updater Commands
+```bash
+# Install and run updater server
+cd tools/updater
+./build.sh                    # Build backend and GUI
+./server.sh                   # Start HTTP server (port 8080)
+
+# With HTTPS/TLS support
+export UPDATER_ENABLE_HTTPS=true
+./server.sh                   # Start HTTPS server (port 8443)
+
+# Generate SSL certificates
+./generate_certs.sh
+
+# Build specific components
+./build.sh backend            # Build Python backend only
+./build.sh gui               # Build Qt6 GUI only
+./build.sh certs             # Generate certificates only
+
+# Test the server
+python test_client.py        # Test client verification
+```
+
+### Updater Protocol Endpoints
+- **Poll**: `GET /{tenant}/controller/v1/{controller_id}` - Check for updates
+- **Feedback**: `POST /{tenant}/controller/v1/{controller_id}/deploymentBase/{execution_id}/feedback` - Send status
+- **Download**: `GET /download/{filename}` - Download bundle files
+- **Admin API**: `GET/POST/DELETE /admin/deployments` - Deployment management
+
+### Bundle Deployment with Updater Server
+```bash
+# Place bundles in bundle directory
+cp *.raucb tools/updater/bundle/
+
+# Start server (auto-discovers bundles)
+cd tools/updater
+./server.sh
+
+# Server URLs
+# HTTP:  http://localhost:8080
+# HTTPS: https://localhost:8443 (with UPDATER_ENABLE_HTTPS=true)
+# Admin: http://localhost:8080/admin/deployments
+```
+
+### Environment Configuration
+- `UPDATER_ENABLE_HTTPS`: Enable HTTPS/TLS mode
+- `UPDATER_PORT`: HTTP port (default: 8080)
+- `UPDATER_HTTPS_PORT`: HTTPS port (default: 8443)
+- `UPDATER_BUNDLE_DIR`: Bundle directory (default: bundle)
+- `UPDATER_LOG_LEVEL`: Logging level (default: INFO)
+- `UPDATER_EXTERNAL_HOST`: External host for client URLs (default: auto-detect)
+- `UPDATER_LOG_FILE`: Log file path (optional)
+- `UPDATER_ENABLE_AUTH`: Enable API authentication (default: false)
+
+### Refactored Architecture
+
+The updater server has been refactored for improved maintainability with:
+
+- **Layered Architecture**: API, Service, and Storage layers with clear separation
+- **Configuration Management**: Structured config with validation and type safety
+- **Service-Oriented Design**: DeploymentService, BundleService, FeedbackService
+- **Error Handling**: Custom exception hierarchy with specific error types
+- **Logging Infrastructure**: Structured logging with context and standardized formats
+- **Input Validation**: Comprehensive validation utilities for all inputs
+
+### Updater Application Usage
+
+```bash
+# Run integrated GUI application (recommended)
+cd tools/updater
+./updater.py                     # Integrated GUI with auto server management
+
+# Run server only (headless)
+./server.sh                      # HTTP server
+export UPDATER_ENABLE_HTTPS=true && ./server.sh  # HTTPS server
+
+# Run refactored server (improved architecture)
+uv run python -m updater_server.main_refactored
+
+# Install dependencies if needed
+./scripts/install_deps.sh        # Install PyQt6 and other dependencies
+```
+
+### Integrated Features
+- **Auto Server Management**: GUI automatically starts/stops backend server
+- **Real-time Monitoring**: Live deployment status and server health
+- **File Organization**: Cleaner directory structure with organized subdirectories
+- **Deployment Control**: Enable/disable deployments with GUI interface
+- **Activity Logging**: Real-time server output and application events
+
+See `tools/updater/REFACTORING_GUIDE.md` for detailed architecture documentation.

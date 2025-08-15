@@ -1,4 +1,4 @@
-#include <iostream>
+#include <dlt/dlt.h>
 #include <thread>
 #include <chrono>
 #include <signal.h>
@@ -7,39 +7,42 @@
 #include "updater.h"
 #include "config.h"
 
+// DLT context
+DLT_DECLARE_CONTEXT(dlt_context_main);
+
 // Global variables
 volatile bool running = true;
 volatile bool update_in_progress = false;
 
 // Signal handler
 void signalHandler(int signum) {
-    std::cout << "Received signal " << signum << ", shutting down..." << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Received signal "), DLT_INT(signum), DLT_STRING(", shutting down..."));
     running = false;
 }
 
 // Update progress callback
 void onUpdateProgress(int progress) {
-    std::cout << "Update progress: " << progress << "%" << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update progress: "), DLT_INT(progress), DLT_STRING("%"));
 }
 
 // Update completed callback
 void onUpdateCompleted(bool success, const std::string& message) {
-    std::cout << "Update completed: " << (success ? "success" : "failure") << " - " << message << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update completed: "), DLT_STRING(success ? "success" : "failure"), DLT_STRING(" - "), DLT_STRING(message.c_str()));
     update_in_progress = false;
 }
 
 // Perform update process
 bool performUpdate(Agent& agent, Updater& updater, const UpdateInfo& update_info) {
-    std::cout << "=== Starting update process ===" << std::endl;
-    std::cout << "Execution ID: " << update_info.execution_id << std::endl;
-    std::cout << "Version: " << update_info.version << std::endl;
-    std::cout << "Download URL: " << update_info.download_url << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("=== Starting update process ==="));
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Execution ID: "), DLT_STRING(update_info.execution_id.c_str()));
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Version: "), DLT_STRING(update_info.version.c_str()));
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Download URL: "), DLT_STRING(update_info.download_url.c_str()));
 
     update_in_progress = true;
 
     // Send started feedback
     if (!agent.sendStartedFeedback(update_info.execution_id)) {
-        std::cout << "Failed to send started feedback" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to send started feedback"));
         update_in_progress = false;
         return false;
     }
@@ -47,7 +50,7 @@ bool performUpdate(Agent& agent, Updater& updater, const UpdateInfo& update_info
     // Download bundle
     std::string local_path = UPDATE_BUNDLE_PATH;
     if (!agent.downloadBundle(update_info.download_url, local_path, update_info.expected_size)) {
-        std::cout << "Failed to download bundle" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to download bundle"));
         agent.sendFinishedFeedback(update_info.execution_id, false, "Download failed");
         update_in_progress = false;
         return false;
@@ -57,31 +60,31 @@ bool performUpdate(Agent& agent, Updater& updater, const UpdateInfo& update_info
     agent.sendProgressFeedback(update_info.execution_id, 50, "Bundle downloaded successfully");
 
     // Install bundle using RAUC (non-blocking)
-    std::cout << "Starting RAUC installation..." << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Starting RAUC installation..."));
     if (!updater.installBundle(local_path)) {
-        std::cout << "Failed to start bundle installation" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to start bundle installation"));
         agent.sendFinishedFeedback(update_info.execution_id, false, "Installation failed to start");
         update_in_progress = false;
         return false;
     }
 
-    std::cout << "RAUC installation started, waiting for completion..." << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("RAUC installation started, waiting for completion..."));
 
     // Wait for installation to complete (with timeout)
     int timeout_counter = 0;
-    const int MAX_TIMEOUT = 300; // 5 minutes timeout
+    const int MAX_TIMEOUT = INSTALLATION_TIMEOUT_SECONDS_MAIN; // Installation timeout from config
     bool installation_completed = false;
     bool installation_success = false;
 
     while (update_in_progress && timeout_counter < MAX_TIMEOUT) {
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        timeout_counter += 2;
+        std::this_thread::sleep_for(std::chrono::seconds(MAIN_LOOP_SLEEP_SECONDS));
+        timeout_counter += MAIN_LOOP_SLEEP_SECONDS;
 
-        // Check RAUC status every 10 seconds
-        if (timeout_counter % 10 == 0) {
+        // Check RAUC status based on config interval
+        if (timeout_counter % RAUC_STATUS_CHECK_INTERVAL_SECONDS == 0) {
             std::string status;
             if (updater.getStatus(status)) {
-                std::cout << "RAUC status: " << status << std::endl;
+                DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("RAUC status: "), DLT_STRING(status.c_str()));
                 if (status == "idle") {
                     installation_completed = true;
                     installation_success = true;
@@ -92,12 +95,12 @@ bool performUpdate(Agent& agent, Updater& updater, const UpdateInfo& update_info
                     break;
                 }
             } else {
-                std::cout << "Failed to get RAUC status" << std::endl;
+                DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to get RAUC status"));
             }
         }
 
-        // Send progress feedback every 30 seconds
-        if (timeout_counter % 30 == 0) {
+        // Send progress feedback based on config interval
+        if (timeout_counter % PROGRESS_FEEDBACK_INTERVAL_SECONDS == 0) {
             int progress = 50 + (timeout_counter * 50 / MAX_TIMEOUT);
             if (progress > 95) progress = 95;
             agent.sendProgressFeedback(update_info.execution_id, progress, "Installation in progress...");
@@ -105,85 +108,85 @@ bool performUpdate(Agent& agent, Updater& updater, const UpdateInfo& update_info
     }
 
     if (timeout_counter >= MAX_TIMEOUT) {
-        std::cout << "Installation timeout after " << MAX_TIMEOUT << " seconds" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Installation timeout after "), DLT_INT(MAX_TIMEOUT), DLT_STRING(" seconds"));
         agent.sendFinishedFeedback(update_info.execution_id, false, "Installation timeout");
         update_in_progress = false;
         return false;
     }
 
     if (installation_success) {
-        std::cout << "Installation completed successfully" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Installation completed successfully"));
         agent.sendProgressFeedback(update_info.execution_id, 100, "Installation completed");
         agent.sendFinishedFeedback(update_info.execution_id, true, "Update completed successfully");
         
         // Clean up downloaded file
         if (remove(local_path.c_str()) == 0) {
-            std::cout << "Cleaned up downloaded bundle file" << std::endl;
+            DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Cleaned up downloaded bundle file"));
         } else {
-            std::cout << "Failed to clean up downloaded bundle file" << std::endl;
+            DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to clean up downloaded bundle file"));
         }
         
         // Reboot system to boot into new image
-        std::cout << "Update completed successfully. Rebooting system to new image..." << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(2)); // Brief delay for log message
+        DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update completed successfully. Rebooting system to new image..."));
+        std::this_thread::sleep_for(std::chrono::seconds(REBOOT_DELAY_SECONDS)); // Brief delay for log message
         system("sync && reboot");
         running = false;
     } else {
-        std::cout << "Installation failed" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Installation failed"));
         agent.sendFinishedFeedback(update_info.execution_id, false, "Installation failed");
         
         // Clean up downloaded file on failure too
         if (remove(local_path.c_str()) == 0) {
-            std::cout << "Cleaned up downloaded bundle file after failure" << std::endl;
+            DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Cleaned up downloaded bundle file after failure"));
         }
     }
 
-    std::cout << "=== Update process completed ===" << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("=== Update process completed ==="));
     update_in_progress = false;
     
     // Add a small delay to ensure all cleanup is complete
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(CLEANUP_DELAY_MS));
     
     return installation_success;
 }
 
 int main() {
-    std::cout << "=== Update Agent Starting ===" << std::endl;
+    DLT_REGISTER_APP("UAGT", "Update Agent");
+    DLT_REGISTER_CONTEXT(dlt_context_main, "MAIN", "Main Application Logic");
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("=== Update Agent Starting ==="));
 
     // Set up signal handlers
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
 
     // Initialize update agent
-    std::cout << "Initializing update agent" << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Initializing update agent"));
     Agent agent(UPDATE_SERVER_URL, UPDATE_TENANT, DEVICE_ID);
 
     // Initialize updater
-    std::cout << "Initializing updater" << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Initializing updater"));
     Updater updater;
     if (!updater.connect()) {
-        std::cout << "Failed to connect to RAUC DBus service" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_FATAL, DLT_STRING("Failed to connect to RAUC DBus service"));
         return 1;
     }
 
-    std::cout << "Successfully connected to RAUC DBus service" << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Successfully connected to RAUC DBus service"));
 
     // Set up RAUC callbacks
     updater.setProgressCallback(onUpdateProgress);
     updater.setCompletedCallback(onUpdateCompleted);
 
-    std::cout << "Starting main polling loop" << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Starting main polling loop"));
 
     int poll_counter = 0;
     while (running) {
         poll_counter++;
-        printf("Polling update server (attempt %d) - Poll interval: %d seconds\n", poll_counter, POLL_INTERVAL_SECONDS);
-        fflush(stdout);
-        std::cout << "Polling update server (attempt " << poll_counter << ")" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Polling update server (attempt "), DLT_INT(poll_counter), DLT_STRING(")"));
 
         // Don't poll if an update is in progress
         if (update_in_progress) {
-            std::cout << "Update in progress, skipping poll" << std::endl;
+            DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update in progress, skipping poll"));
             std::this_thread::sleep_for(std::chrono::seconds(5));
             continue;
         }
@@ -191,43 +194,45 @@ int main() {
         // Poll Hawkbit for updates
         std::string response;
         if (agent.pollForUpdates(response)) {
-            std::cout << "Successfully polled update server" << std::endl;
+            DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Successfully polled update server"));
 
             // Parse the response to check for actual updates
             UpdateInfo update_info;
             if (agent.parseUpdateResponse(response, update_info)) {
-                std::cout << "Update available detected" << std::endl;
-                std::cout << "Execution ID: " << update_info.execution_id << std::endl;
-                std::cout << "Version: " << update_info.version << std::endl;
+                DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update available detected"));
+                DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Execution ID: "), DLT_STRING(update_info.execution_id.c_str()));
+                DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Version: "), DLT_STRING(update_info.version.c_str()));
 
                 // Perform the update
                 if (!performUpdate(agent, updater, update_info)) {
-                    std::cout << "Update process failed" << std::endl;
+                    DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Update process failed"));
                 }
             } else {
-                std::cout << "No update available in response" << std::endl;
+                DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("No update available in response"));
             }
         } else {
-            std::cout << "Failed to poll update server" << std::endl;
+            DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to poll update server"));
         }
 
         // Wait before next poll
-        std::cout << "Waiting " << POLL_INTERVAL_SECONDS << " seconds before next poll" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Waiting "), DLT_INT(POLL_INTERVAL_SECONDS), DLT_STRING(" seconds before next poll"));
         for (int i = 0; i < POLL_INTERVAL_SECONDS && running; ++i) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 
-    std::cout << "=== Update Agent Stopping ===" << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("=== Update Agent Stopping ==="));
 
     // Cleanup
     if (update_in_progress) {
-        std::cout << "Update was in progress during shutdown" << std::endl;
+        DLT_LOG(dlt_context_main, DLT_LOG_WARN, DLT_STRING("Update was in progress during shutdown"));
     }
 
     updater.disconnect();
 
-    std::cout << "Update Agent stopped gracefully" << std::endl;
+    DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update Agent stopped gracefully"));
+    DLT_UNREGISTER_CONTEXT(dlt_context_main);
+    DLT_UNREGISTER_APP();
 
     return 0;
 }

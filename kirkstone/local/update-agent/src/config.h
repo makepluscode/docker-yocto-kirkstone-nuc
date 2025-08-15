@@ -16,6 +16,12 @@ const int POLL_INTERVAL_SECONDS = 10;
 const int DOWNLOAD_TIMEOUT_SECONDS = 300;  // 5 minutes
 const int INSTALLATION_TIMEOUT_SECONDS = 600;  // 10 minutes
 const int HTTP_TIMEOUT_SECONDS = 30;
+const int PROGRESS_FEEDBACK_INTERVAL_SECONDS = 3;  // Progress feedback cycle
+const int INSTALLATION_TIMEOUT_SECONDS_MAIN = 300;  // Installation timeout in main loop (5 minutes)
+const int RAUC_STATUS_CHECK_INTERVAL_SECONDS = 10;  // RAUC status check interval
+const int MAIN_LOOP_SLEEP_SECONDS = 2;  // Main loop sleep interval
+const int REBOOT_DELAY_SECONDS = 2;  // Delay before reboot
+const int CLEANUP_DELAY_MS = 100;  // Cleanup delay in milliseconds
 
 // File paths
 const std::string UPDATE_BUNDLE_PATH = "/tmp/update_bundle.raucb";

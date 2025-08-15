@@ -1,7 +1,7 @@
 
 #include "agent.h"
 #include "config.h"
-#include <iostream>
+#include <dlt/dlt.h>
 #include <fstream>
 #include <sstream>
 #include <chrono>
@@ -10,40 +10,46 @@
 #include <errno.h>
 #include <cstring>
 
+DLT_DECLARE_CONTEXT(dlt_context);
+
 Agent::Agent(const std::string& server_url, const std::string& tenant, const std::string& device_id)
     : server_url_(server_url), tenant_(tenant), device_id_(device_id), curl_handle_(nullptr) {
-    std::cout << "Initializing update agent" << std::endl;
-    std::cout << "Server URL: " << server_url_ << std::endl;
-    std::cout << "Tenant: " << tenant_ << std::endl;
-    std::cout << "Device ID: " << device_id_ << std::endl;
+    DLT_REGISTER_APP("UAGT", "Update Agent");
+    DLT_REGISTER_CONTEXT(dlt_context, "AGENT", "Update Agent Logic");
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Initializing update agent"));
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Server URL: "), DLT_STRING(server_url_.c_str()));
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Tenant: "), DLT_STRING(tenant_.c_str()));
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Device ID: "), DLT_STRING(device_id_.c_str()));
     
     curl_global_init(CURL_GLOBAL_ALL);
     curl_handle_ = curl_easy_init();
     
     if (curl_handle_) {
-        std::cout << "CURL handle initialized successfully" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("CURL handle initialized successfully"));
     } else {
-        std::cout << "Failed to initialize CURL handle" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Failed to initialize CURL handle"));
     }
 }
 
 Agent::~Agent() {
-    std::cout << "Cleaning up update agent" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Cleaning up update agent"));
     if (curl_handle_) {
         curl_easy_cleanup(curl_handle_);
-        std::cout << "CURL handle cleaned up" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("CURL handle cleaned up"));
     }
     curl_global_cleanup();
+    DLT_UNREGISTER_CONTEXT(dlt_context);
+    DLT_UNREGISTER_APP();
 }
 
 size_t Agent::writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     if (!userp) {
-        std::cout << "writeCallback: userp is null" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("writeCallback: userp is null"));
         return 0;
     }
     
     if (!contents) {
-        std::cout << "writeCallback: contents is null" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("writeCallback: contents is null"));
         return 0;
     }
     
@@ -53,10 +59,10 @@ size_t Agent::writeCallback(void* contents, size_t size, size_t nmemb, std::stri
         userp->append((char*)contents, total_size);
         return total_size;
     } catch (const std::exception& e) {
-        std::cout << "Exception in writeCallback: " << e.what() << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Exception in writeCallback: "), DLT_STRING(e.what()));
         return 0;
     } catch (...) {
-        std::cout << "Unknown exception in writeCallback" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Unknown exception in writeCallback"));
         return 0;
     }
 }
@@ -70,13 +76,13 @@ size_t Agent::writeFileCallback(void* contents, size_t size, size_t nmemb, FILE*
 
 std::string Agent::buildPollUrl() const {
     std::string url = server_url_ + "/" + tenant_ + "/controller/v1/" + device_id_;
-    std::cout << "Built poll URL: " << url << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Built poll URL: "), DLT_STRING(url.c_str()));
     return url;
 }
 
 std::string Agent::buildFeedbackUrl(const std::string& execution_id) const {
     std::string url = server_url_ + "/" + tenant_ + "/controller/v1/" + device_id_ + "/deploymentBase/" + execution_id + "/feedback";
-    std::cout << "Built feedback URL: " << url << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Built feedback URL: "), DLT_STRING(url.c_str()));
     return url;
 }
 
@@ -115,12 +121,12 @@ void Agent::setupDownloadCurlOptions() {
     curl_easy_setopt(curl_handle_, CURLOPT_TCP_KEEPIDLE, 120L);
     curl_easy_setopt(curl_handle_, CURLOPT_TCP_KEEPINTVL, 60L);
     
-    std::cout << "CURL download options configured" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("CURL download options configured"));
 }
 
 bool Agent::pollForUpdates(std::string& response) {
     if (!curl_handle_) {
-        std::cout << "CURL handle not initialized" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
         return false;
     }
 
@@ -130,7 +136,7 @@ bool Agent::pollForUpdates(std::string& response) {
     response.clear();
     std::string url = buildPollUrl();
 
-    std::cout << "Polling for updates from: " << url << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Polling for updates from: "), DLT_STRING(url.c_str()));
 
     curl_easy_setopt(curl_handle_, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_WRITEFUNCTION, writeCallback);
@@ -140,63 +146,63 @@ bool Agent::pollForUpdates(std::string& response) {
 
     CURLcode res = curl_easy_perform(curl_handle_);
     if (res != CURLE_OK) {
-        std::cout << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("curl_easy_perform() failed: "), DLT_STRING(curl_easy_strerror(res)));
         return false;
     }
 
     long http_code = 0;
     curl_easy_getinfo(curl_handle_, CURLINFO_RESPONSE_CODE, &http_code);
 
-    std::cout << "Poll response HTTP code: " << http_code << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Poll response HTTP code: "), DLT_INT(http_code));
 
     if (http_code == 200) {
-        std::cout << "Poll successful, response length: " << response.length() << std::endl;
-        std::cout << "Poll response: " << response << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Poll successful, response length: "), DLT_UINT(response.length()));
+        DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Poll response: "), DLT_STRING(response.c_str()));
         return true;
     } else if (http_code == 204) {
-        std::cout << "No updates available (HTTP 204)" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("No updates available (HTTP 204)"));
         return true;
     } else {
-        std::cout << "HTTP error: " << http_code << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("HTTP error: "), DLT_INT(http_code));
         return false;
     }
 }
 
 bool Agent::parseUpdateResponse(const std::string& response, UpdateInfo& update_info) {
-    std::cout << "Parsing update response" << std::endl;
-    std::cout << "Response length: " << response.length() << std::endl;
-    std::cout << "Response content: " << response << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Parsing update response"));
+    DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Response length: "), DLT_UINT(response.length()));
+    DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Response content: "), DLT_STRING(response.c_str()));
     
     update_info.is_available = false;
     
     if (response.empty()) {
-        std::cout << "Empty response received" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_WARN, DLT_STRING("Empty response received"));
         return false;
     }
 
     json_object* root = json_tokener_parse(response.c_str());
     if (!root) {
-        std::cout << "Failed to parse JSON response" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Failed to parse JSON response"));
         return false;
     }
 
-    std::cout << "JSON parsed successfully" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("JSON parsed successfully"));
 
     // Check if there's a deployment
     json_object* deployment_obj;
     if (json_object_object_get_ex(root, "deployment", &deployment_obj)) {
-        std::cout << "Deployment object found in response" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Deployment object found in response"));
         if (parseDeploymentInfo(deployment_obj, update_info)) {
             update_info.is_available = true;
-            std::cout << "Update info parsed successfully" << std::endl;
-            std::cout << "Execution ID: " << update_info.execution_id << std::endl;
-            std::cout << "Version: " << update_info.version << std::endl;
-            std::cout << "Download URL: " << update_info.download_url << std::endl;
+            DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Update info parsed successfully"));
+            DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Execution ID: "), DLT_STRING(update_info.execution_id.c_str()));
+            DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Version: "), DLT_STRING(update_info.version.c_str()));
+            DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Download URL: "), DLT_STRING(update_info.download_url.c_str()));
         } else {
-            std::cout << "Failed to parse deployment info" << std::endl;
+            DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Failed to parse deployment info"));
         }
     } else {
-        std::cout << "No deployment object in response" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("No deployment object in response"));
     }
 
     json_object_put(root);
@@ -204,15 +210,15 @@ bool Agent::parseUpdateResponse(const std::string& response, UpdateInfo& update_
 }
 
 bool Agent::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info) {
-    std::cout << "Parsing deployment info" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Parsing deployment info"));
     
     // Get execution ID
     json_object* execution_id_obj;
     if (json_object_object_get_ex(deployment_obj, "id", &execution_id_obj)) {
         update_info.execution_id = json_object_get_string(execution_id_obj);
-        std::cout << "Found execution ID: " << update_info.execution_id << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Found execution ID: "), DLT_STRING(update_info.execution_id.c_str()));
     } else {
-        std::cout << "No execution ID found in deployment" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("No execution ID found in deployment"));
         return false;
     }
 
@@ -224,13 +230,13 @@ bool Agent::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_
         if (json_object_object_get_ex(deployment_info_obj, "chunks", &version_obj)) {
             if (json_object_is_type(version_obj, json_type_array)) {
                 int array_len = json_object_array_length(version_obj);
-                std::cout << "Found " << array_len << " chunks" << std::endl;
+                DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Found "), DLT_INT(array_len), DLT_STRING(" chunks"));
                 if (array_len > 0) {
                     json_object* first_chunk = json_object_array_get_idx(version_obj, 0);
                     json_object* version_info_obj;
                     if (json_object_object_get_ex(first_chunk, "version", &version_info_obj)) {
                         update_info.version = json_object_get_string(version_info_obj);
-                        std::cout << "Found version: " << update_info.version << std::endl;
+                        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Found version: "), DLT_STRING(update_info.version.c_str()));
                     }
                 }
             }
@@ -242,30 +248,30 @@ bool Agent::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_
     if (json_object_object_get_ex(deployment_obj, "artifacts", &artifacts_obj)) {
         if (json_object_is_type(artifacts_obj, json_type_array)) {
             int array_len = json_object_array_length(artifacts_obj);
-            std::cout << "Found " << array_len << " artifacts" << std::endl;
+            DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Found "), DLT_INT(array_len), DLT_STRING(" artifacts"));
             if (array_len > 0) {
                 json_object* first_artifact = json_object_array_get_idx(artifacts_obj, 0);
                 if (parseArtifactInfo(first_artifact, update_info)) {
-                    std::cout << "Artifact info parsed successfully" << std::endl;
+                    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Artifact info parsed successfully"));
                     return true;
                 }
             }
         }
     }
 
-    std::cout << "Failed to parse deployment info completely" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Failed to parse deployment info completely"));
     return false;
 }
 
 bool Agent::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info) {
-    std::cout << "Parsing artifact info" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Parsing artifact info"));
     
     // Get download URL - try both "_links" and "links" field names
     json_object* links_obj = nullptr;
     if (json_object_object_get_ex(artifact_obj, "_links", &links_obj)) {
-        std::cout << "Found _links field" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Found _links field"));
     } else if (json_object_object_get_ex(artifact_obj, "links", &links_obj)) {
-        std::cout << "Found links field" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Found links field"));
     }
     
     if (links_obj) {
@@ -274,11 +280,11 @@ bool Agent::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info
             json_object* href_obj;
             if (json_object_object_get_ex(download_obj, "href", &href_obj)) {
                 update_info.download_url = json_object_get_string(href_obj);
-                std::cout << "Found download URL: " << update_info.download_url << std::endl;
+                DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Found download URL: "), DLT_STRING(update_info.download_url.c_str()));
             }
         }
     } else {
-        std::cout << "No links field found in artifact" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_WARN, DLT_STRING("No links field found in artifact"));
     }
 
     // Get filename and description
@@ -286,47 +292,47 @@ bool Agent::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info
     if (json_object_object_get_ex(artifact_obj, "filename", &filename_obj)) {
         update_info.filename = json_object_get_string(filename_obj);
         update_info.description = update_info.filename; // Use filename as description
-        std::cout << "Found filename: " << update_info.filename << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Found filename: "), DLT_STRING(update_info.filename.c_str()));
     }
     
     // Get file size
     json_object* size_obj;
     if (json_object_object_get_ex(artifact_obj, "size", &size_obj)) {
         update_info.expected_size = json_object_get_int64(size_obj);
-        std::cout << "Found expected file size: " << update_info.expected_size << " bytes" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Found expected file size: "), DLT_INT64(update_info.expected_size), DLT_STRING(" bytes"));
     }
     
     // Get hash information (hashes object contains MD5, SHA1, SHA256)
     json_object* hashes_obj;
     if (json_object_object_get_ex(artifact_obj, "hashes", &hashes_obj)) {
-        std::cout << "Found hashes object" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Found hashes object"));
         
         json_object* md5_obj;
         if (json_object_object_get_ex(hashes_obj, "md5", &md5_obj)) {
             update_info.md5_hash = json_object_get_string(md5_obj);
-            std::cout << "Found MD5 hash: " << update_info.md5_hash << std::endl;
+            DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Found MD5 hash: "), DLT_STRING(update_info.md5_hash.c_str()));
         }
         
         json_object* sha1_obj;
         if (json_object_object_get_ex(hashes_obj, "sha1", &sha1_obj)) {
             update_info.sha1_hash = json_object_get_string(sha1_obj);
-            std::cout << "Found SHA1 hash: " << update_info.sha1_hash << std::endl;
+            DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Found SHA1 hash: "), DLT_STRING(update_info.sha1_hash.c_str()));
         }
         
         json_object* sha256_obj;
         if (json_object_object_get_ex(hashes_obj, "sha256", &sha256_obj)) {
             update_info.sha256_hash = json_object_get_string(sha256_obj);
-            std::cout << "Found SHA256 hash: " << update_info.sha256_hash << std::endl;
+            DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Found SHA256 hash: "), DLT_STRING(update_info.sha256_hash.c_str()));
         }
     }
 
     bool success = !update_info.download_url.empty();
-    std::cout << "Artifact parsing " << (success ? "successful" : "failed") << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Artifact parsing "), DLT_STRING(success ? "successful" : "failed"));
     return success;
 }
 
 bool Agent::sendStartedFeedback(const std::string& execution_id) {
-    std::cout << "Sending started feedback for execution: " << execution_id << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending started feedback for execution: "), DLT_STRING(execution_id.c_str()));
     
     json_object* root = json_object_new_object();
     json_object* execution = json_object_new_object();
@@ -341,7 +347,7 @@ bool Agent::sendStartedFeedback(const std::string& execution_id) {
     json_object_object_add(root, "execution", execution);
 
     const char* json_string = json_object_to_json_string(root);
-    std::cout << "Started feedback JSON: " << json_string << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Started feedback JSON: "), DLT_STRING(json_string));
 
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -356,7 +362,7 @@ bool Agent::sendStartedFeedback(const std::string& execution_id) {
     json_object_put(root);
 
     if (res != CURLE_OK) {
-        std::cout << "Started feedback send failed: " << curl_easy_strerror(res) << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Started feedback send failed: "), DLT_STRING(curl_easy_strerror(res)));
         return false;
     }
 
@@ -364,16 +370,16 @@ bool Agent::sendStartedFeedback(const std::string& execution_id) {
     curl_easy_getinfo(curl_handle_, CURLINFO_RESPONSE_CODE, &http_code);
 
     if (http_code == 200) {
-        std::cout << "Started feedback sent successfully" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Started feedback sent successfully"));
         return true;
     } else {
-        std::cout << "Started feedback HTTP error: " << http_code << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Started feedback HTTP error: "), DLT_INT(http_code));
         return false;
     }
 }
 
 bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message) {
-    std::cout << "Sending progress feedback for execution: " << execution_id << " Progress: " << progress << "%" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending progress feedback for execution: "), DLT_STRING(execution_id.c_str()), DLT_STRING(" Progress: "), DLT_INT(progress), DLT_STRING("%"));
     
     json_object* root = json_object_new_object();
     json_object* execution = json_object_new_object();
@@ -393,7 +399,7 @@ bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, 
     json_object_object_add(root, "execution", execution);
 
     const char* json_string = json_object_to_json_string(root);
-    std::cout << "Progress feedback JSON: " << json_string << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Progress feedback JSON: "), DLT_STRING(json_string));
 
     // Copy the JSON string before freeing the object
     std::string json_copy(json_string);
@@ -411,7 +417,7 @@ bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, 
     json_object_put(root);
 
     if (res != CURLE_OK) {
-        std::cout << "Progress feedback send failed: " << curl_easy_strerror(res) << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Progress feedback send failed: "), DLT_STRING(curl_easy_strerror(res)));
         return false;
     }
 
@@ -419,16 +425,16 @@ bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, 
     curl_easy_getinfo(curl_handle_, CURLINFO_RESPONSE_CODE, &http_code);
 
     if (http_code == 200) {
-        std::cout << "Progress feedback sent successfully: " << progress << "%" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Progress feedback sent successfully: "), DLT_INT(progress), DLT_STRING("%"));
         return true;
     } else {
-        std::cout << "Progress feedback HTTP error: " << http_code << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Progress feedback HTTP error: "), DLT_INT(http_code));
         return false;
     }
 }
 
 bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, const std::string& message) {
-    std::cout << "Sending finished feedback for execution: " << execution_id << " Success: " << (success ? "true" : "false") << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending finished feedback for execution: "), DLT_STRING(execution_id.c_str()), DLT_STRING(" Success: "), DLT_BOOL(success));
     
     json_object* root = json_object_new_object();
     json_object* execution = json_object_new_object();
@@ -448,7 +454,7 @@ bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, 
     json_object_object_add(root, "execution", execution);
 
     const char* json_string = json_object_to_json_string(root);
-    std::cout << "Finished feedback JSON: " << json_string << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Finished feedback JSON: "), DLT_STRING(json_string));
 
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -463,7 +469,7 @@ bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, 
     json_object_put(root);
 
     if (res != CURLE_OK) {
-        std::cout << "Finished feedback send failed: " << curl_easy_strerror(res) << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Finished feedback send failed: "), DLT_STRING(curl_easy_strerror(res)));
         return false;
     }
 
@@ -471,10 +477,10 @@ bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, 
     curl_easy_getinfo(curl_handle_, CURLINFO_RESPONSE_CODE, &http_code);
 
     if (http_code == 200) {
-        std::cout << "Finished feedback sent successfully: " << (success ? "success" : "failure") << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Finished feedback sent successfully: "), DLT_STRING(success ? "success" : "failure"));
         return true;
     } else {
-        std::cout << "Finished feedback HTTP error: " << http_code << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Finished feedback HTTP error: "), DLT_INT(http_code));
         return false;
     }
 }
@@ -484,26 +490,26 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
 }
 
 bool Agent::downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size) {
-    std::cout << "=== Starting bundle download ===" << std::endl;
-    std::cout << "Download URL: " << download_url << std::endl;
-    std::cout << "Local path: " << local_path << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("=== Starting bundle download ==="));
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Download URL: "), DLT_STRING(download_url.c_str()));
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Local path: "), DLT_STRING(local_path.c_str()));
 
     // Validate inputs
     if (download_url.empty() || local_path.empty()) {
-        std::cout << "Invalid download parameters" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Invalid download parameters"));
         return false;
     }
 
     if (!curl_handle_) {
-        std::cout << "CURL handle not initialized" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
         return false;
     }
 
     // Remove existing file if present
     if (access(local_path.c_str(), F_OK) == 0) {
-        std::cout << "Removing existing file" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Removing existing file"));
         if (remove(local_path.c_str()) != 0) {
-            std::cout << "Failed to remove existing file" << std::endl;
+            DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Failed to remove existing file"));
         }
     }
 
@@ -511,12 +517,12 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
     FILE* file = fopen(local_path.c_str(), "wb");
     if (!file) {
         int err = errno;
-        std::cout << "Failed to open file for writing" << std::endl;
-        std::cout << "Error: " << strerror(err) << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Failed to open file for writing"));
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Error: "), DLT_STRING(strerror(err)));
         return false;
     }
 
-    std::cout << "File opened successfully for writing" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("File opened successfully for writing"));
 
     // Reset CURL handle to clean state
     curl_easy_reset(curl_handle_);
@@ -533,7 +539,7 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
     curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(curl_handle_, CURLOPT_NOPROGRESS, 1L);
 
-    std::cout << "CURL configured, starting download..." << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("CURL configured, starting download..."));
 
     // Perform download
     auto start_time = std::chrono::steady_clock::now();
@@ -548,11 +554,11 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
         file = nullptr;
     }
 
-    std::cout << "Download completed in " << duration.count() << " ms" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Download completed in "), DLT_INT(duration.count()), DLT_STRING(" ms"));
 
     // Check CURL result
     if (res != CURLE_OK) {
-        std::cout << "CURL error: " << curl_easy_strerror(res) << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("CURL error: "), DLT_STRING(curl_easy_strerror(res)));
         remove(local_path.c_str()); // Clean up partial file
         return false;
     }
@@ -560,10 +566,10 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
     // Check HTTP status
     long http_code = 0;
     curl_easy_getinfo(curl_handle_, CURLINFO_RESPONSE_CODE, &http_code);
-    std::cout << "HTTP response code: " << http_code << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("HTTP response code: "), DLT_INT(http_code));
 
     if (http_code != 200) {
-        std::cout << "HTTP error: " << http_code << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("HTTP error: "), DLT_INT(http_code));
         remove(local_path.c_str()); // Clean up partial file
         return false;
     }
@@ -571,10 +577,10 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
     // Verify file was written and check size
     struct stat file_info;
     if (stat(local_path.c_str(), &file_info) == 0) {
-        std::cout << "Downloaded file size: " << file_info.st_size << " bytes" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Downloaded file size: "), DLT_INT64(file_info.st_size), DLT_STRING(" bytes"));
         
         if (file_info.st_size == 0) {
-            std::cout << "Downloaded file is empty" << std::endl;
+            DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Downloaded file is empty"));
             remove(local_path.c_str());
             return false;
         }
@@ -582,27 +588,27 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
         // Verify expected file size if provided
         if (expected_size > 0) {
             if (file_info.st_size != expected_size) {
-                std::cout << "File size mismatch! Expected: " << expected_size << " bytes, got: " << file_info.st_size << " bytes" << std::endl;
+                DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("File size mismatch! Expected: "), DLT_INT64(expected_size), DLT_STRING(" bytes, got: "), DLT_INT64(file_info.st_size), DLT_STRING(" bytes"));
                 remove(local_path.c_str());
                 return false;
             } else {
-                std::cout << "File size verification passed" << std::endl;
+                DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("File size verification passed"));
             }
         }
     } else {
-        std::cout << "Failed to stat downloaded file" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Failed to stat downloaded file"));
         return false;
     }
 
-    std::cout << "=== Bundle download successful ===" << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("=== Bundle download successful ==="));
     return true;
 }
 
 bool Agent::sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message) {
-    std::cout << "Sending feedback for execution: " << execution_id << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending feedback for execution: "), DLT_STRING(execution_id.c_str()));
     
     if (!curl_handle_) {
-        std::cout << "CURL handle not initialized" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
         return false;
     }
 
@@ -626,7 +632,7 @@ bool Agent::sendFeedback(const std::string& execution_id, const std::string& sta
     }
 
     const char* json_string = json_object_to_json_string(root);
-    std::cout << "Feedback JSON: " << json_string << std::endl;
+    DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Feedback JSON: "), DLT_STRING(json_string));
 
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -641,7 +647,7 @@ bool Agent::sendFeedback(const std::string& execution_id, const std::string& sta
     json_object_put(root);
 
     if (res != CURLE_OK) {
-        std::cout << "Feedback send failed: " << curl_easy_strerror(res) << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Feedback send failed: "), DLT_STRING(curl_easy_strerror(res)));
         return false;
     }
 
@@ -649,10 +655,10 @@ bool Agent::sendFeedback(const std::string& execution_id, const std::string& sta
     curl_easy_getinfo(curl_handle_, CURLINFO_RESPONSE_CODE, &http_code);
 
     if (http_code == 200) {
-        std::cout << "Feedback sent successfully" << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Feedback sent successfully"));
         return true;
     } else {
-        std::cout << "Feedback HTTP error: " << http_code << std::endl;
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("Feedback HTTP error: "), DLT_INT(http_code));
         return false;
     }
 } 
