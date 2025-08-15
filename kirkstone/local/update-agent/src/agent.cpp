@@ -395,11 +395,14 @@ bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, 
     const char* json_string = json_object_to_json_string(root);
     std::cout << "Progress feedback JSON: " << json_string << std::endl;
 
+    // Copy the JSON string before freeing the object
+    std::string json_copy(json_string);
+
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
     curl_easy_setopt(curl_handle_, CURLOPT_URL, buildFeedbackUrl(execution_id).c_str());
-    curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_string);
+    curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_copy.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, 30L);
 

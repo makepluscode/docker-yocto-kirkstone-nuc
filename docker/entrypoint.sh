@@ -67,6 +67,20 @@ complete_bundle_build() {
   if [ -n "$BUNDLE_PATH" ]; then
     echo "📍 Bundle created at: $BUNDLE_PATH"
     echo "📏 Bundle size: $(du -h "$BUNDLE_PATH" | cut -f1)"
+    
+    # Copy bundle to tools/updater/bundle/ for software update
+    UPDATER_BUNDLE_DIR="$BUILDDIR/../../tools/updater/bundle"
+    if [ -d "$UPDATER_BUNDLE_DIR" ]; then
+      echo "📦 Copying bundle to tools/updater/bundle/ for software update..."
+      cp "$BUNDLE_PATH" "$UPDATER_BUNDLE_DIR/"
+      if [ $? -eq 0 ]; then
+        echo "✅ Bundle copied to $UPDATER_BUNDLE_DIR/$(basename "$BUNDLE_PATH")"
+      else
+        echo "❌ Failed to copy bundle to $UPDATER_BUNDLE_DIR"
+      fi
+    else
+      echo "⚠️  tools/updater/bundle/ directory not found, skipping copy"
+    fi
   fi
   return 0
 }

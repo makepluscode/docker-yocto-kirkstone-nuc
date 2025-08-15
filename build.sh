@@ -18,7 +18,28 @@ elif [ "$1" = "bundle" ]; then
         exit 1
     fi
     echo "📦 Bundle build mode"
-    exec "$SCRIPT_DIR/docker.sh" bundle
+    if ! "$SCRIPT_DIR/docker.sh" bundle; then
+        echo "❌ Bundle build failed. Aborting."
+        exit 1
+    fi
+
+    echo "📦 Copying bundle..."
+    DEST_DIR=./tools/updater/bundle/
+    if [ ! -d "$DEST_DIR" ]; then
+        echo "⚠️  $DEST_DIR directory not found, skipping copy"
+    else
+        bundle_path=$(find kirkstone/build/tmp-glibc/deploy/images/intel-corei7-64 -name "nuc-image-qt5-bundle-intel-corei7-64-*.raucb" | sort -r | head -n 1)
+        if [ -z "$bundle_path" ]; then
+            echo "❌ Bundle file not found."
+            exit 1
+        fi
+
+        if ! cp "$bundle_path" "$DEST_DIR"; then
+            echo "❌ Failed to copy bundle."
+            exit 1
+        fi
+        echo "✅ Bundle copied to $DEST_DIR"
+    fi
 elif [ "$1" = "auto" ] || [ $# -eq 0 ]; then
     echo "🔄 Running clean.sh ..."
     if "$SCRIPT_DIR/clean.sh"; then

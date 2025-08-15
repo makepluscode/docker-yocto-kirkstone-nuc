@@ -1,12 +1,12 @@
-# Hawkbit Server Implementation Summary
+# Updater Server Implementation Summary
 
 ## Overview
 
-A simple Hawkbit server implementation using FastAPI with Python, designed to work with the existing Hawkbit client C++ code in the project. The server provides OTA (Over-The-Air) update functionality following the Hawkbit protocol.
+A simple updater server implementation using FastAPI with Python, designed to work with the existing updater client C++ code in the project. The server provides OTA (Over-The-Air) update functionality following the updater protocol.
 
 ## Features Implemented
 
-### Core Hawkbit Protocol Endpoints
+### Core Updater Protocol Endpoints
 
 1. **Poll for Updates** (`GET /{tenant}/controller/v1/{controller_id}`)
    - Returns deployment information when updates are available
@@ -47,14 +47,14 @@ A simple Hawkbit server implementation using FastAPI with Python, designed to wo
 ### Project Structure
 
 ```
-hawkbit-server/
+updater-server/
 ├── pyproject.toml          # Project configuration with uv
 ├── requirements.txt        # Traditional pip dependencies
 ├── README.md              # Project documentation
 ├── run_server.sh          # Startup script
 ├── test_client.py         # Test client for verification
 ├── config.py              # Configuration settings
-└── hawkbit_server/
+└── updater_server/
     ├── __init__.py        # Package initialization
     ├── main.py            # FastAPI application and endpoints
     ├── models.py          # Pydantic data models
@@ -63,7 +63,7 @@ hawkbit-server/
 
 ### Data Models
 
-The server uses Pydantic models that match the Hawkbit protocol:
+The server uses Pydantic models that match the updater protocol:
 
 - `PollResponse`: Response structure for poll requests
 - `Deployment`: Deployment information with chunks and artifacts
@@ -82,7 +82,7 @@ The server uses Pydantic models that match the Hawkbit protocol:
 ### Installation
 
 ```bash
-cd tools/hawkbit-server
+cd tools/updater
 uv sync
 ```
 
@@ -93,7 +93,7 @@ uv sync
 ./run_server.sh
 
 # Or directly with uv
-uv run uvicorn hawkbit_server.main:app --host 0.0.0.0 --port 8080 --reload
+uv run uvicorn updater_server.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
 ### Testing
@@ -109,7 +109,7 @@ curl http://localhost:8080/default/controller/v1/test-device-001
 
 ## Protocol Compatibility
 
-The server implements the exact protocol expected by the C++ Hawkbit client:
+The server implements the exact protocol expected by the C++ updater client:
 
 1. **Poll URL Format**: `/{tenant}/controller/v1/{controller_id}`
 2. **Feedback URL Format**: `/{tenant}/controller/v1/{controller_id}/deploymentBase/{execution_id}/feedback`
@@ -127,10 +127,10 @@ The server implements the exact protocol expected by the C++ Hawkbit client:
 
 The server can be configured via environment variables:
 
-- `HAWKBIT_HOST`: Server host (default: 0.0.0.0)
-- `HAWKBIT_PORT`: Server port (default: 8080)
-- `HAWKBIT_BUNDLE_DIR`: Bundle directory (default: bundle)
-- `HAWKBIT_LOG_LEVEL`: Logging level (default: INFO)
+- `UPDATER_HOST`: Server host (default: 0.0.0.0)
+- `UPDATER_PORT`: Server port (default: 8080)
+- `UPDATER_BUNDLE_DIR`: Bundle directory (default: bundle)
+- `UPDATER_LOG_LEVEL`: Logging level (default: INFO)
 
 ## Testing Results
 
@@ -147,7 +147,7 @@ The server has been thoroughly tested and verified to work with:
 
 ## Integration with Existing Client
 
-The server is designed to work seamlessly with the existing C++ Hawkbit client:
+The server is designed to work seamlessly with the existing C++ updater client:
 
 - Compatible URL structures
 - Matching JSON response formats
@@ -165,4 +165,4 @@ The server is designed to work seamlessly with the existing C++ Hawkbit client:
 
 ## Conclusion
 
-The Hawkbit server implementation provides a complete, working OTA update solution that integrates seamlessly with the existing C++ client code. It follows the Hawkbit protocol specification and provides all necessary endpoints for device updates, feedback, and bundle management. 
+The updater server implementation provides a complete, working OTA update solution that integrates seamlessly with the existing C++ client code. It follows the updater protocol specification and provides all necessary endpoints for device updates, feedback, and bundle management. 

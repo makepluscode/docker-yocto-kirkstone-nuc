@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple test client for Hawkbit server."""
+"""Simple test client for updater server."""
 
 import requests
 import json
@@ -118,7 +118,7 @@ def test_admin_endpoints():
 
 def main():
     """Main test function."""
-    print("Hawkbit Server Test Client")
+    print("Updater Server Test Client")
     print("=" * 40)
     
     # Test admin endpoints first

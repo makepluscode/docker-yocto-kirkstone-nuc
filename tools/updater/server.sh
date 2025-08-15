@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# Hawkbit Server Startup Script
+# Updater Server Startup Script
 
-echo "=== Hawkbit Server Startup ==="
+echo "=== Updater Server Startup ==="
 
 # Kill existing server processes
 echo "Checking for existing server processes..."
-PIDS=$(pgrep -f "uvicorn.*hawkbit_server" || true)
+PIDS=$(pgrep -f "uvicorn.*updater_server" || true)
 if [ -n "$PIDS" ]; then
     echo "Killing existing server processes: $PIDS"
-    pkill -f "uvicorn.*hawkbit_server" || true
+    pkill -f "uvicorn.*updater_server" || true
     sleep 2
     # Force kill if still running
-    PIDS=$(pgrep -f "uvicorn.*hawkbit_server" || true)
+    PIDS=$(pgrep -f "uvicorn.*updater_server" || true)
     if [ -n "$PIDS" ]; then
         echo "Force killing stubborn processes: $PIDS"
-        pkill -9 -f "uvicorn.*hawkbit_server" || true
+        pkill -9 -f "uvicorn.*updater_server" || true
     fi
 else
     echo "No existing server processes found"
@@ -57,11 +57,26 @@ uv sync
 
 # Start the server
 echo ""
-echo "=== Starting Hawkbit Server ==="
+echo "=== Starting Updater Server ==="
 echo "Server URL: http://0.0.0.0:8080"
 echo "Admin API: http://localhost:8080/admin/deployments"
 echo "Press Ctrl+C to stop the server"
 echo "==================================="
 echo ""
 
-exec uv run uvicorn hawkbit_server.main:app --host 0.0.0.0 --port 8080 --reload 
+# Determine port and protocol based on HTTPS setting
+if [ "${UPDATER_ENABLE_HTTPS:-false}" = "true" ]; then
+    PORT=${UPDATER_HTTPS_PORT:-8443}
+    if [ -f "certs/server.crt" ] && [ -f "certs/server.key" ]; then
+        echo "🔒 HTTPS/TLS mode enabled on port $PORT"
+        exec uv run python -m uvicorn updater_server.main:app --host 0.0.0.0 --port $PORT --ssl-keyfile certs/server.key --ssl-certfile certs/server.crt --reload
+    else
+        echo "⚠️  HTTPS requested but certificates not found. Falling back to HTTP."
+        PORT=${UPDATER_PORT:-8080}
+        exec uv run python -m uvicorn updater_server.main:app --host 0.0.0.0 --port $PORT --reload
+    fi
+else
+    PORT=${UPDATER_PORT:-8080}
+    echo "🌐 HTTP mode on port $PORT"
+    exec uv run python -m uvicorn updater_server.main:app --host 0.0.0.0 --port $PORT --reload
+fi 
