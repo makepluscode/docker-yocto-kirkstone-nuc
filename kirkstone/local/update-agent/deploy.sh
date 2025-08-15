@@ -9,10 +9,10 @@ TARGET_USER="root"
 
 set -e
 
-echo "Deploying rauc-hawkbit-cpp to target device $TARGET_USER@$TARGET_IP..."
+echo "Deploying update-agent to target device $TARGET_USER@$TARGET_IP..."
 
 # Build the application
-echo "[1] Building rauc-hawkbit-cpp..."
+echo "[1] Building update-agent..."
 ./build.sh
 
 # Remote deployment
@@ -33,37 +33,37 @@ fi
 echo "SSH connection successful"
 
 echo "[4] Copying binary to target device..."
-scp build/rauc-hawkbit-cpp $TARGET_USER@$TARGET_IP:/tmp/rauc-hawkbit-cpp-new
+scp build/update-agent $TARGET_USER@$TARGET_IP:/tmp/update-agent-new
 
 echo "[5] Copying service file to target device..."
-scp services/rauc-hawkbit-cpp.service $TARGET_USER@$TARGET_IP:/tmp/rauc-hawkbit-cpp.service-new
+scp services/update-agent.service $TARGET_USER@$TARGET_IP:/tmp/update-agent.service-new
 
 echo "[6] Deploying on target device..."
 ssh $TARGET_USER@$TARGET_IP << 'EOF'
-    echo "Stopping rauc-hawkbit-cpp service..."
-    systemctl stop rauc-hawkbit-cpp || true
+    echo "Stopping update-agent service..."
+    systemctl stop update-agent || true
     
     echo "Installing new binary..."
-    cp /tmp/rauc-hawkbit-cpp-new /usr/local/bin/rauc-hawkbit-cpp
-    chmod +x /usr/local/bin/rauc-hawkbit-cpp
+    cp /tmp/update-agent-new /usr/local/bin/update-agent
+    chmod +x /usr/local/bin/update-agent
     
     echo "Installing service file..."
-    cp /tmp/rauc-hawkbit-cpp.service-new /etc/systemd/system/rauc-hawkbit-cpp.service
+    cp /tmp/update-agent.service-new /etc/systemd/system/update-agent.service
     
     echo "Reloading systemd..."
     systemctl daemon-reload
-    systemctl enable rauc-hawkbit-cpp.service
+    systemctl enable update-agent.service
     
     echo "Starting service..."
-    systemctl start rauc-hawkbit-cpp.service
+    systemctl start update-agent.service
     
     echo "Cleaning up temporary files..."
-    rm -f /tmp/rauc-hawkbit-cpp-new /tmp/rauc-hawkbit-cpp.service-new
+    rm -f /tmp/update-agent-new /tmp/update-agent.service-new
     
     echo "Checking service status..."
-    systemctl status rauc-hawkbit-cpp --no-pager -l
+    systemctl status update-agent --no-pager -l
 EOF
 
 echo "Remote deployment completed!"
-echo "Check target status with: ssh $TARGET_USER@$TARGET_IP systemctl status rauc-hawkbit-cpp"
-echo "View target logs with: ssh $TARGET_USER@$TARGET_IP journalctl -u rauc-hawkbit-cpp -f" 
+echo "Check target status with: ssh $TARGET_USER@$TARGET_IP systemctl status update-agent"
+echo "View target logs with: ssh $TARGET_USER@$TARGET_IP journalctl -u update-agent -f" 

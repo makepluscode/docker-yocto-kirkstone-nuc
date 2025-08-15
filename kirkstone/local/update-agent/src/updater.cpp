@@ -1,19 +1,19 @@
-#include "rauc_client.h"
+#include "updater.h"
 #include <iostream>
 #include <cstring>
 #include <unistd.h> // For access()
 
-RaucClient::RaucClient() : connection_(nullptr), connected_(false) {
-    std::cout << "Initializing RAUC client" << std::endl;
+Updater::Updater() : connection_(nullptr), connected_(false) {
+    std::cout << "Initializing updater" << std::endl;
 }
 
-RaucClient::~RaucClient() {
-    std::cout << "Destroying RAUC client" << std::endl;
+Updater::~Updater() {
+    std::cout << "Destroying updater" << std::endl;
     disconnect();
 }
 
-bool RaucClient::connect() {
-    std::cout << "Connecting to RAUC DBus service" << std::endl;
+bool Updater::connect() {
+    std::cout << "Connecting to update service" << std::endl;
     
     DBusError error;
     dbus_error_init(&error);
@@ -59,7 +59,7 @@ bool RaucClient::connect() {
     return true;
 }
 
-void RaucClient::disconnect() {
+void Updater::disconnect() {
     std::cout << "Disconnecting from RAUC DBus service" << std::endl;
     if (connection_) {
         dbus_connection_remove_filter(connection_, messageHandler, this);
@@ -71,11 +71,11 @@ void RaucClient::disconnect() {
     connected_ = false;
 }
 
-bool RaucClient::isConnected() const {
+bool Updater::isConnected() const {
     return connected_;
 }
 
-bool RaucClient::sendMethodCall(const std::string& method, const std::string& interface) {
+bool Updater::sendMethodCall(const std::string& method, const std::string& interface) {
     if (!connected_) {
         std::cout << "Not connected to DBus" << std::endl;
         return false;
@@ -110,7 +110,7 @@ bool RaucClient::sendMethodCall(const std::string& method, const std::string& in
     return true;
 }
 
-bool RaucClient::sendMethodCallWithPath(const std::string& method, const std::string& path, const std::string& interface) {
+bool Updater::sendMethodCallWithPath(const std::string& method, const std::string& path, const std::string& interface) {
     if (!connected_) {
         std::cout << "Not connected to DBus" << std::endl;
         return false;
@@ -167,7 +167,7 @@ bool RaucClient::sendMethodCallWithPath(const std::string& method, const std::st
     return true;
 }
 
-bool RaucClient::checkRaucService() {
+bool Updater::checkService() {
     if (!connected_) {
         std::cout << "Not connected to DBus" << std::endl;
         return false;
@@ -186,7 +186,7 @@ bool RaucClient::checkRaucService() {
     }
 }
 
-bool RaucClient::installBundle(const std::string& bundle_path) {
+bool Updater::installBundle(const std::string& bundle_path) {
     std::cout << "Installing bundle: " << bundle_path << std::endl;
     
     // Check if file exists and is readable
@@ -203,7 +203,7 @@ bool RaucClient::installBundle(const std::string& bundle_path) {
     std::cout << "Bundle file exists and is readable" << std::endl;
     
     // Check RAUC service status before attempting installation
-    if (!checkRaucService()) {
+    if (!checkService()) {
         std::cout << "RAUC service is not available, cannot install bundle" << std::endl;
         return false;
     }
@@ -219,7 +219,7 @@ bool RaucClient::installBundle(const std::string& bundle_path) {
     return result;
 }
 
-bool RaucClient::getStatus(std::string& status) {
+bool Updater::getStatus(std::string& status) {
     if (!connected_) {
         std::cout << "Not connected to DBus" << std::endl;
         return false;
@@ -292,7 +292,7 @@ bool RaucClient::getStatus(std::string& status) {
     return true;
 }
 
-bool RaucClient::getBootSlot(std::string& boot_slot) {
+bool Updater::getBootSlot(std::string& boot_slot) {
     if (!connected_) {
         return false;
     }
@@ -322,38 +322,38 @@ bool RaucClient::getBootSlot(std::string& boot_slot) {
     return true;
 }
 
-bool RaucClient::markGood() {
+bool Updater::markGood() {
     std::cout << "Marking current slot as good" << std::endl;
     return sendMethodCall("Mark", "de.pengutronix.rauc.Installer");
 }
 
-bool RaucClient::markBad() {
+bool Updater::markBad() {
     std::cout << "Marking current slot as bad" << std::endl;
     return sendMethodCall("Mark", "de.pengutronix.rauc.Installer");
 }
 
-bool RaucClient::getBundleInfo(const std::string& bundle_path, std::string& info) {
+bool Updater::getBundleInfo(const std::string& bundle_path, std::string& info) {
     std::cout << "Getting bundle info for: " << bundle_path << std::endl;
     return sendMethodCallWithPath("Info", bundle_path, "de.pengutronix.rauc.Installer");
 }
 
-void RaucClient::setProgressCallback(std::function<void(int)> callback) {
+void Updater::setProgressCallback(std::function<void(int)> callback) {
     progress_callback_ = callback;
 }
 
-void RaucClient::setCompletedCallback(std::function<void(bool, const std::string&)> callback) {
+void Updater::setCompletedCallback(std::function<void(bool, const std::string&)> callback) {
     completed_callback_ = callback;
 }
 
-DBusHandlerResult RaucClient::messageHandler(DBusConnection* connection, DBusMessage* message, void* user_data) {
-    RaucClient* client = static_cast<RaucClient*>(user_data);
+DBusHandlerResult Updater::messageHandler(DBusConnection* connection, DBusMessage* message, void* user_data) {
+    Updater* client = static_cast<Updater*>(user_data);
     if (dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL) {
         client->handleSignal(message);
     }
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
-void RaucClient::handleSignal(DBusMessage* message) {
+void Updater::handleSignal(DBusMessage* message) {
     const char* interface = dbus_message_get_interface(message);
     const char* member = dbus_message_get_member(message);
     std::cout << "Received signal: " << interface << "." << member << std::endl;

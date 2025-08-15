@@ -1,5 +1,5 @@
 
-#include "hawkbit_client.h"
+#include "agent.h"
 #include "config.h"
 #include <iostream>
 #include <fstream>
@@ -10,12 +10,12 @@
 #include <errno.h>
 #include <cstring>
 
-HawkbitClient::HawkbitClient(const std::string& server_url, const std::string& tenant, const std::string& controller_id)
-    : server_url_(server_url), tenant_(tenant), controller_id_(controller_id), curl_handle_(nullptr) {
-    std::cout << "Initializing Hawkbit client" << std::endl;
+Agent::Agent(const std::string& server_url, const std::string& tenant, const std::string& device_id)
+    : server_url_(server_url), tenant_(tenant), device_id_(device_id), curl_handle_(nullptr) {
+    std::cout << "Initializing update agent" << std::endl;
     std::cout << "Server URL: " << server_url_ << std::endl;
     std::cout << "Tenant: " << tenant_ << std::endl;
-    std::cout << "Controller ID: " << controller_id_ << std::endl;
+    std::cout << "Device ID: " << device_id_ << std::endl;
     
     curl_global_init(CURL_GLOBAL_ALL);
     curl_handle_ = curl_easy_init();
@@ -27,8 +27,8 @@ HawkbitClient::HawkbitClient(const std::string& server_url, const std::string& t
     }
 }
 
-HawkbitClient::~HawkbitClient() {
-    std::cout << "Cleaning up Hawkbit client" << std::endl;
+Agent::~Agent() {
+    std::cout << "Cleaning up update agent" << std::endl;
     if (curl_handle_) {
         curl_easy_cleanup(curl_handle_);
         std::cout << "CURL handle cleaned up" << std::endl;
@@ -36,7 +36,7 @@ HawkbitClient::~HawkbitClient() {
     curl_global_cleanup();
 }
 
-size_t HawkbitClient::writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
+size_t Agent::writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     if (!userp) {
         std::cout << "writeCallback: userp is null" << std::endl;
         return 0;
@@ -61,26 +61,26 @@ size_t HawkbitClient::writeCallback(void* contents, size_t size, size_t nmemb, s
     }
 }
 
-size_t HawkbitClient::writeFileCallback(void* contents, size_t size, size_t nmemb, FILE* file) {
+size_t Agent::writeFileCallback(void* contents, size_t size, size_t nmemb, FILE* file) {
     if (!contents || !file || size == 0 || nmemb == 0) {
         return 0;
     }
     return fwrite(contents, size, nmemb, file);
 }
 
-std::string HawkbitClient::buildPollUrl() const {
-    std::string url = server_url_ + "/" + tenant_ + "/controller/v1/" + controller_id_;
+std::string Agent::buildPollUrl() const {
+    std::string url = server_url_ + "/" + tenant_ + "/controller/v1/" + device_id_;
     std::cout << "Built poll URL: " << url << std::endl;
     return url;
 }
 
-std::string HawkbitClient::buildFeedbackUrl(const std::string& execution_id) const {
-    std::string url = server_url_ + "/" + tenant_ + "/controller/v1/" + controller_id_ + "/deploymentBase/" + execution_id + "/feedback";
+std::string Agent::buildFeedbackUrl(const std::string& execution_id) const {
+    std::string url = server_url_ + "/" + tenant_ + "/controller/v1/" + device_id_ + "/deploymentBase/" + execution_id + "/feedback";
     std::cout << "Built feedback URL: " << url << std::endl;
     return url;
 }
 
-void HawkbitClient::setupDownloadCurlOptions() {
+void Agent::setupDownloadCurlOptions() {
     if (!curl_handle_) return;
     
     // Based on rauc-hawkbit-updater reference implementation
@@ -118,7 +118,7 @@ void HawkbitClient::setupDownloadCurlOptions() {
     std::cout << "CURL download options configured" << std::endl;
 }
 
-bool HawkbitClient::pollForUpdates(std::string& response) {
+bool Agent::pollForUpdates(std::string& response) {
     if (!curl_handle_) {
         std::cout << "CURL handle not initialized" << std::endl;
         return false;
@@ -162,7 +162,7 @@ bool HawkbitClient::pollForUpdates(std::string& response) {
     }
 }
 
-bool HawkbitClient::parseUpdateResponse(const std::string& response, UpdateInfo& update_info) {
+bool Agent::parseUpdateResponse(const std::string& response, UpdateInfo& update_info) {
     std::cout << "Parsing update response" << std::endl;
     std::cout << "Response length: " << response.length() << std::endl;
     std::cout << "Response content: " << response << std::endl;
@@ -203,7 +203,7 @@ bool HawkbitClient::parseUpdateResponse(const std::string& response, UpdateInfo&
     return update_info.is_available;
 }
 
-bool HawkbitClient::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info) {
+bool Agent::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info) {
     std::cout << "Parsing deployment info" << std::endl;
     
     // Get execution ID
@@ -257,7 +257,7 @@ bool HawkbitClient::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo&
     return false;
 }
 
-bool HawkbitClient::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info) {
+bool Agent::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info) {
     std::cout << "Parsing artifact info" << std::endl;
     
     // Get download URL - try both "_links" and "links" field names
@@ -325,7 +325,7 @@ bool HawkbitClient::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& upd
     return success;
 }
 
-bool HawkbitClient::sendStartedFeedback(const std::string& execution_id) {
+bool Agent::sendStartedFeedback(const std::string& execution_id) {
     std::cout << "Sending started feedback for execution: " << execution_id << std::endl;
     
     json_object* root = json_object_new_object();
@@ -372,7 +372,7 @@ bool HawkbitClient::sendStartedFeedback(const std::string& execution_id) {
     }
 }
 
-bool HawkbitClient::sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message) {
+bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message) {
     std::cout << "Sending progress feedback for execution: " << execution_id << " Progress: " << progress << "%" << std::endl;
     
     json_object* root = json_object_new_object();
@@ -424,7 +424,7 @@ bool HawkbitClient::sendProgressFeedback(const std::string& execution_id, int pr
     }
 }
 
-bool HawkbitClient::sendFinishedFeedback(const std::string& execution_id, bool success, const std::string& message) {
+bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, const std::string& message) {
     std::cout << "Sending finished feedback for execution: " << execution_id << " Success: " << (success ? "true" : "false") << std::endl;
     
     json_object* root = json_object_new_object();
@@ -476,11 +476,11 @@ bool HawkbitClient::sendFinishedFeedback(const std::string& execution_id, bool s
     }
 }
 
-bool HawkbitClient::downloadBundle(const std::string& download_url, const std::string& local_path) {
+bool Agent::downloadBundle(const std::string& download_url, const std::string& local_path) {
     return downloadBundle(download_url, local_path, 0); // Call with no expected size check
 }
 
-bool HawkbitClient::downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size) {
+bool Agent::downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size) {
     std::cout << "=== Starting bundle download ===" << std::endl;
     std::cout << "Download URL: " << download_url << std::endl;
     std::cout << "Local path: " << local_path << std::endl;
@@ -595,7 +595,7 @@ bool HawkbitClient::downloadBundle(const std::string& download_url, const std::s
     return true;
 }
 
-bool HawkbitClient::sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message) {
+bool Agent::sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message) {
     std::cout << "Sending feedback for execution: " << execution_id << std::endl;
     
     if (!curl_handle_) {

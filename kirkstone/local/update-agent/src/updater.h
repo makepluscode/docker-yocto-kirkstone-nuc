@@ -1,29 +1,28 @@
-#ifndef RAUC_CLIENT_H
-#define RAUC_CLIENT_H
+#ifndef UPDATER_H
+#define UPDATER_H
 
 #include <string>
 #include <dbus/dbus.h>
 #include <functional>
 
-class RaucClient {
+class Updater {
 public:
-    RaucClient();
-    ~RaucClient();
+    Updater();
+    ~Updater();
 
     bool connect();
     void disconnect();
     bool isConnected() const;
-    bool checkRaucService();
+    bool checkService();
 
-    // RAUC operations via DBus
     bool installBundle(const std::string& bundle_path);
+    bool installBundleAsync(const std::string& bundle_path);
     bool getStatus(std::string& status);
     bool getBootSlot(std::string& boot_slot);
     bool markGood();
     bool markBad();
     bool getBundleInfo(const std::string& bundle_path, std::string& info);
 
-    // Signal handlers
     void setProgressCallback(std::function<void(int)> callback);
     void setCompletedCallback(std::function<void(bool, const std::string&)> callback);
 
@@ -39,4 +38,4 @@ private:
     void handleSignal(DBusMessage* message);
 };
 
-#endif // RAUC_CLIENT_H 
+#endif // UPDATER_H 

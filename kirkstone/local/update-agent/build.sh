@@ -2,7 +2,7 @@
 
 set -e
 
-echo "Building rauc-hawkbit-cpp with Yocto SDK..."
+echo "Building update-agent with Yocto SDK..."
 
 # Unset LD_LIBRARY_PATH as required by Yocto SDK
 unset LD_LIBRARY_PATH
@@ -27,4 +27,4 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE="/usr/local/oecore-x86_64/sysroots/x86_64-oesdk-
 make -j$(nproc)
 
 echo "Build completed successfully!"
-echo "Binary location: build/rauc-hawkbit-cpp"
+echo "Binary location: build/update-agent"

@@ -1,5 +1,5 @@
-#ifndef HAWKBIT_CLIENT_H
-#define HAWKBIT_CLIENT_H
+#ifndef UPDATE_AGENT_H
+#define UPDATE_AGENT_H
 
 #include <string>
 #include <memory>
@@ -23,17 +23,16 @@ struct UpdateInfo {
     UpdateInfo() : expected_size(0), is_available(false) {}
 };
 
-class HawkbitClient {
+class Agent {
 public:
-    HawkbitClient(const std::string& server_url, const std::string& tenant, const std::string& controller_id);
-    ~HawkbitClient();
+    Agent(const std::string& server_url, const std::string& tenant, const std::string& device_id);
+    ~Agent();
 
     bool pollForUpdates(std::string& response);
     bool downloadBundle(const std::string& download_url, const std::string& local_path);
     bool downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size);
     bool sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message = "");
     
-    // New methods for update handling
     bool parseUpdateResponse(const std::string& response, UpdateInfo& update_info);
     bool sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message = "");
     bool sendStartedFeedback(const std::string& execution_id);
@@ -42,7 +41,7 @@ public:
 private:
     std::string server_url_;
     std::string tenant_;
-    std::string controller_id_;
+    std::string device_id_;
     CURL* curl_handle_;
 
     static size_t writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp);
@@ -51,9 +50,8 @@ private:
     std::string buildFeedbackUrl(const std::string& execution_id) const;
     void setupDownloadCurlOptions();
     
-    // Helper methods for JSON parsing
     bool parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info);
     bool parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info);
 };
 
-#endif // HAWKBIT_CLIENT_H 
+#endif // UPDATE_AGENT_H 

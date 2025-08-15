@@ -1,11 +1,11 @@
 [Unit]
-Description=RAUC Hawkbit C++ Client
+Description=Update Agent
 After=network.target rauc.service
 Wants=network.target rauc.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/rauc-hawkbit-cpp
+ExecStart=/usr/local/bin/update-agent
 Restart=always
 RestartSec=5
 User=root

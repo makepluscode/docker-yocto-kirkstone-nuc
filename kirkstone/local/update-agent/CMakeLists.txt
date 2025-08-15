@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(rauc-hawkbit-cpp)
+project(update-agent)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,13 +10,13 @@ pkg_check_modules(DBUS REQUIRED dbus-1)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(JSON REQUIRED json-c)
 
-add_executable(rauc-hawkbit-cpp
-    src/main.cpp
-    src/hawkbit_client.cpp
-    src/rauc_client.cpp
+add_executable(update-agent
+    src/update_agent.cpp
+    src/agent.cpp
+    src/updater.cpp
 )
 
-target_include_directories(rauc-hawkbit-cpp PRIVATE
+target_include_directories(update-agent PRIVATE
     ${DLT_INCLUDE_DIRS}
     ${DBUS_INCLUDE_DIRS}
     ${CURL_INCLUDE_DIRS}
@@ -24,7 +24,7 @@ target_include_directories(rauc-hawkbit-cpp PRIVATE
     src
 )
 
-target_link_libraries(rauc-hawkbit-cpp
+target_link_libraries(update-agent
     ${DLT_LIBRARIES}
     ${DBUS_LIBRARIES}
     ${CURL_LIBRARIES}
@@ -33,22 +33,22 @@ target_link_libraries(rauc-hawkbit-cpp
 
 # Set the correct dynamic linker for target device
 if(CMAKE_CROSSCOMPILING)
-    set_target_properties(rauc-hawkbit-cpp PROPERTIES
+    set_target_properties(update-agent PROPERTIES
         LINK_FLAGS "-Wl,--dynamic-linker=/lib/ld-linux-x86-64.so.2"
     )
 endif()
 
-target_compile_options(rauc-hawkbit-cpp PRIVATE
+target_compile_options(update-agent PRIVATE
     ${DLT_CFLAGS_OTHER}
     ${DBUS_CFLAGS_OTHER}
     ${CURL_CFLAGS_OTHER}
     ${JSON_CFLAGS_OTHER}
 )
 
-install(TARGETS rauc-hawkbit-cpp
+install(TARGETS update-agent
     DESTINATION /usr/local/bin
 )
 
-install(FILES services/rauc-hawkbit-cpp.service
+install(FILES services/update-agent.service
     DESTINATION /etc/systemd/system
 )
