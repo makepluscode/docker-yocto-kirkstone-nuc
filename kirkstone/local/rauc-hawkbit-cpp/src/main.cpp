@@ -1,249 +1,187 @@
 #include <iostream>
-#include <chrono>
 #include <thread>
+#include <chrono>
 #include <signal.h>
 #include <unistd.h>
-#include <dlt/dlt.h>
 #include "hawkbit_client.h"
 #include "rauc_client.h"
 #include "config.h"
 
-DLT_DECLARE_CONTEXT(hawkbitContext);
-DLT_DECLARE_CONTEXT(raucContext);
-DLT_DECLARE_CONTEXT(updateContext);
-
+// Global variables
 volatile bool running = true;
+volatile bool update_in_progress = false;
 
-// Global variables for update tracking
-std::string current_execution_id;
-bool update_in_progress = false;
-
-void signalHandler(int signal) {
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Received signal: "), DLT_INT(signal));
+// Signal handler
+void signalHandler(int signum) {
+    std::cout << "Received signal " << signum << ", shutting down..." << std::endl;
     running = false;
 }
 
+// RAUC progress callback
 void onRaucProgress(int progress) {
-    DLT_LOG(raucContext, DLT_LOG_INFO, DLT_STRING("RAUC installation progress: "), DLT_INT(progress), DLT_STRING("%"));
-
-    // Send progress feedback to Hawkbit if we have an execution ID
-    if (!current_execution_id.empty()) {
-        // This would need to be called from the main loop or a separate thread
-        // For now, we'll just log it
-        DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Progress feedback needed for execution: "),
-                DLT_STRING(current_execution_id.c_str()), DLT_STRING(" Progress: "), DLT_INT(progress));
-    }
+    std::cout << "RAUC progress: " << progress << "%" << std::endl;
 }
 
+// RAUC completed callback
 void onRaucCompleted(bool success, const std::string& message) {
-    if (success) {
-        DLT_LOG(raucContext, DLT_LOG_INFO, DLT_STRING("RAUC installation completed successfully: "), DLT_STRING(message.c_str()));
-    } else {
-        DLT_LOG(raucContext, DLT_LOG_ERROR, DLT_STRING("RAUC installation failed: "), DLT_STRING(message.c_str()));
-    }
-
-    // Mark update as completed
+    std::cout << "RAUC completed: " << (success ? "success" : "failure") << " - " << message << std::endl;
     update_in_progress = false;
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Update process completed. Success: "), DLT_BOOL(success));
 }
 
+// Perform update process
 bool performUpdate(HawkbitClient& hawkbitClient, RaucClient& raucClient, const UpdateInfo& update_info) {
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Starting update process"));
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Execution ID: "), DLT_STRING(update_info.execution_id.c_str()));
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Version: "), DLT_STRING(update_info.version.c_str()));
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Filename: "), DLT_STRING(update_info.filename.c_str()));
-    if (update_info.expected_size > 0) {
-        DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Expected size: "), DLT_INT(update_info.expected_size), DLT_STRING(" bytes"));
-    }
-    if (!update_info.sha256_hash.empty()) {
-        DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("SHA256: "), DLT_STRING(update_info.sha256_hash.c_str()));
-    }
+    std::cout << "=== Starting update process ===" << std::endl;
+    std::cout << "Execution ID: " << update_info.execution_id << std::endl;
+    std::cout << "Version: " << update_info.version << std::endl;
+    std::cout << "Download URL: " << update_info.download_url << std::endl;
 
-    current_execution_id = update_info.execution_id;
     update_in_progress = true;
 
-    // Step 1: Send started feedback
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Sending started feedback to Hawkbit"));
+    // Send started feedback
     if (!hawkbitClient.sendStartedFeedback(update_info.execution_id)) {
-        DLT_LOG(updateContext, DLT_LOG_ERROR, DLT_STRING("Failed to send started feedback"));
+        std::cout << "Failed to send started feedback" << std::endl;
         update_in_progress = false;
         return false;
     }
 
-    // Step 2: Download bundle
-    std::string bundle_path = BUNDLE_DOWNLOAD_PATH;
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Downloading bundle from: "), DLT_STRING(update_info.download_url.c_str()));
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Bundle will be saved to: "), DLT_STRING(bundle_path.c_str()));
-
-    if (!hawkbitClient.downloadBundle(update_info.download_url, bundle_path, update_info.expected_size)) {
-        DLT_LOG(updateContext, DLT_LOG_ERROR, DLT_STRING("Failed to download bundle"));
+    // Download bundle
+    std::string local_path = "/tmp/update.raucb";
+    if (!hawkbitClient.downloadBundle(update_info.download_url, local_path, update_info.expected_size)) {
+        std::cout << "Failed to download bundle" << std::endl;
         hawkbitClient.sendFinishedFeedback(update_info.execution_id, false, "Download failed");
         update_in_progress = false;
         return false;
     }
 
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Bundle downloaded successfully"));
-
-    // Step 3: Send download progress feedback
+    // Send progress feedback
     hawkbitClient.sendProgressFeedback(update_info.execution_id, 50, "Bundle downloaded successfully");
 
-    // Step 4: Install bundle with RAUC
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Starting RAUC bundle installation"));
-    if (!raucClient.installBundle(bundle_path)) {
-        DLT_LOG(updateContext, DLT_LOG_ERROR, DLT_STRING("Failed to start bundle installation"));
-        hawkbitClient.sendFinishedFeedback(update_info.execution_id, false, "Failed to start installation");
+    // Install bundle using RAUC (non-blocking)
+    std::cout << "Starting RAUC installation..." << std::endl;
+    if (!raucClient.installBundle(local_path)) {
+        std::cout << "Failed to start bundle installation" << std::endl;
+        hawkbitClient.sendFinishedFeedback(update_info.execution_id, false, "Installation failed to start");
         update_in_progress = false;
         return false;
     }
 
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Bundle installation started successfully"));
+    std::cout << "RAUC installation started, waiting for completion..." << std::endl;
 
-    // Step 5: Monitor installation progress
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Monitoring installation progress"));
-    std::string status;
+    // Wait for installation to complete (with timeout)
     int timeout_counter = 0;
-    const int MAX_TIMEOUT = INSTALLATION_TIMEOUT_SECONDS;
+    const int MAX_TIMEOUT = 300; // 5 minutes timeout
+    bool installation_completed = false;
+    bool installation_success = false;
 
     while (update_in_progress && timeout_counter < MAX_TIMEOUT) {
-        if (raucClient.getStatus(status)) {
-            DLT_LOG(updateContext, DLT_LOG_DEBUG, DLT_STRING("Current RAUC status: "), DLT_STRING(status.c_str()));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        timeout_counter += 2;
 
-            if (status == "idle") {
-                DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Installation completed successfully"));
-                hawkbitClient.sendFinishedFeedback(update_info.execution_id, true, "Installation completed successfully");
-                break;
-            } else if (status == "failed") {
-                DLT_LOG(updateContext, DLT_LOG_ERROR, DLT_STRING("Installation failed"));
-                hawkbitClient.sendFinishedFeedback(update_info.execution_id, false, "Installation failed");
-                break;
+        // Check RAUC status every 10 seconds
+        if (timeout_counter % 10 == 0) {
+            std::string status;
+            if (raucClient.getStatus(status)) {
+                std::cout << "RAUC status: " << status << std::endl;
+                if (status == "idle") {
+                    installation_completed = true;
+                    installation_success = true;
+                    break;
+                } else if (status == "failed") {
+                    installation_completed = true;
+                    installation_success = false;
+                    break;
+                }
+            } else {
+                std::cout << "Failed to get RAUC status" << std::endl;
             }
-        } else {
-            DLT_LOG(updateContext, DLT_LOG_WARN, DLT_STRING("Failed to get RAUC status"));
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        timeout_counter++;
+        // Send progress feedback every 30 seconds
+        if (timeout_counter % 30 == 0) {
+            int progress = 50 + (timeout_counter * 50 / MAX_TIMEOUT);
+            if (progress > 95) progress = 95;
+            hawkbitClient.sendProgressFeedback(update_info.execution_id, progress, "Installation in progress...");
+        }
     }
 
     if (timeout_counter >= MAX_TIMEOUT) {
-        DLT_LOG(updateContext, DLT_LOG_ERROR, DLT_STRING("Installation timeout after "), DLT_INT(MAX_TIMEOUT), DLT_STRING(" seconds"));
+        std::cout << "Installation timeout after " << MAX_TIMEOUT << " seconds" << std::endl;
         hawkbitClient.sendFinishedFeedback(update_info.execution_id, false, "Installation timeout");
+        update_in_progress = false;
+        return false;
     }
 
-    // Cleanup
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Cleaning up temporary files"));
-    if (remove(bundle_path.c_str()) == 0) {
-        DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Temporary bundle file removed"));
+    if (installation_success) {
+        std::cout << "Installation completed successfully" << std::endl;
+        hawkbitClient.sendProgressFeedback(update_info.execution_id, 100, "Installation completed");
+        hawkbitClient.sendFinishedFeedback(update_info.execution_id, true, "Update completed successfully");
+        
+        // Clean up downloaded file
+        if (remove(local_path.c_str()) == 0) {
+            std::cout << "Cleaned up downloaded bundle file" << std::endl;
+        } else {
+            std::cout << "Failed to clean up downloaded bundle file" << std::endl;
+        }
+        
+        // Stop polling after successful update
+        std::cout << "Update completed successfully. Stopping polling loop." << std::endl;
+        running = false;
     } else {
-        DLT_LOG(updateContext, DLT_LOG_WARN, DLT_STRING("Failed to remove temporary bundle file"));
+        std::cout << "Installation failed" << std::endl;
+        hawkbitClient.sendFinishedFeedback(update_info.execution_id, false, "Installation failed");
+        
+        // Clean up downloaded file on failure too
+        if (remove(local_path.c_str()) == 0) {
+            std::cout << "Cleaned up downloaded bundle file after failure" << std::endl;
+        }
     }
 
+    std::cout << "=== Update process completed ===" << std::endl;
     update_in_progress = false;
-    current_execution_id.clear();
-
-    DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Update process completed"));
-    return true;
-}
-
-bool waitForStartSignal() {
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Waiting for start signal from dashboard..."));
-    printf("Waiting for dashboard F1 button press to start Hawkbit polling...\n");
-    fflush(stdout);
-
-    int check_counter = 0;
-    while (running) {
-        check_counter++;
-        if (check_counter % 30 == 0) {  // Log every 30 seconds
-            DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Still waiting for start signal. Check count: "), DLT_INT(check_counter));
-            printf("Still waiting for F1 button press (checked %d times)...\n", check_counter);
-            fflush(stdout);
-        }
-
-        // Check if signal file exists
-        if (access(START_SIGNAL_FILE.c_str(), F_OK) == 0) {
-            DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Start signal received! Beginning Hawkbit operations"));
-            printf("Start signal received! Beginning Hawkbit server polling...\n");
-            fflush(stdout);
-
-            // Remove the signal file
-            if (remove(START_SIGNAL_FILE.c_str()) == 0) {
-                DLT_LOG(hawkbitContext, DLT_LOG_DEBUG, DLT_STRING("Start signal file removed"));
-            } else {
-                DLT_LOG(hawkbitContext, DLT_LOG_WARN, DLT_STRING("Failed to remove start signal file"));
-            }
-            return true;
-        }
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
-    return false;  // Signal handler was called, exit gracefully
+    
+    // Add a small delay to ensure all cleanup is complete
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    return installation_success;
 }
 
 int main() {
-    // Initialize DLT
-    DLT_REGISTER_APP(DLT_APP_NAME.c_str(), "RAUC Hawkbit C++ Client");
-    DLT_REGISTER_CONTEXT(hawkbitContext, DLT_HAWK_CONTEXT.c_str(), "Hawkbit client context");
-    DLT_REGISTER_CONTEXT(raucContext, DLT_RAUC_CONTEXT.c_str(), "RAUC client context");
-    DLT_REGISTER_CONTEXT(updateContext, DLT_UPDATE_CONTEXT.c_str(), "Update process context");
+    std::cout << "=== RAUC Hawkbit C++ Client Starting ===" << std::endl;
 
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("=== RAUC Hawkbit C++ Client Starting ==="));
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Server URL: "), DLT_STRING(HAWKBIT_SERVER_URL.c_str()));
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Tenant: "), DLT_STRING(HAWKBIT_TENANT.c_str()));
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Controller ID: "), DLT_STRING(HAWKBIT_CONTROLLER_ID.c_str()));
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Poll interval: "), DLT_INT(POLL_INTERVAL_SECONDS), DLT_STRING(" seconds"));
-
-    // Register signal handlers for graceful shutdown
+    // Set up signal handlers
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
 
     // Initialize Hawkbit client
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Initializing Hawkbit client"));
+    std::cout << "Initializing Hawkbit client" << std::endl;
     HawkbitClient hawkbitClient(HAWKBIT_SERVER_URL, HAWKBIT_TENANT, HAWKBIT_CONTROLLER_ID);
 
     // Initialize RAUC client
-    DLT_LOG(raucContext, DLT_LOG_INFO, DLT_STRING("Initializing RAUC client"));
+    std::cout << "Initializing RAUC client" << std::endl;
     RaucClient raucClient;
     if (!raucClient.connect()) {
-        DLT_LOG(raucContext, DLT_LOG_ERROR, DLT_STRING("Failed to connect to RAUC DBus service"));
-        DLT_UNREGISTER_CONTEXT(hawkbitContext);
-        DLT_UNREGISTER_CONTEXT(raucContext);
-        DLT_UNREGISTER_CONTEXT(updateContext);
-        DLT_UNREGISTER_APP();
+        std::cout << "Failed to connect to RAUC DBus service" << std::endl;
         return 1;
     }
 
-    DLT_LOG(raucContext, DLT_LOG_INFO, DLT_STRING("Successfully connected to RAUC DBus service"));
+    std::cout << "Successfully connected to RAUC DBus service" << std::endl;
 
     // Set up RAUC callbacks
     raucClient.setProgressCallback(onRaucProgress);
     raucClient.setCompletedCallback(onRaucCompleted);
 
-    // Wait for start signal from dashboard (commented out for direct operation)
-    /*
-    if (!waitForStartSignal()) {
-        DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Start signal wait interrupted, shutting down"));
-        raucClient.disconnect();
-        DLT_UNREGISTER_CONTEXT(hawkbitContext);
-        DLT_UNREGISTER_CONTEXT(raucContext);
-        DLT_UNREGISTER_CONTEXT(updateContext);
-        DLT_UNREGISTER_APP();
-        return 0;
-    }
-    */
-
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Starting main polling loop"));
+    std::cout << "Starting main polling loop" << std::endl;
 
     int poll_counter = 0;
     while (running) {
         poll_counter++;
         printf("Polling Hawkbit server (attempt %d) - Poll interval: %d seconds\n", poll_counter, POLL_INTERVAL_SECONDS);
         fflush(stdout);
-        DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Polling Hawkbit server (attempt "), DLT_INT(poll_counter), DLT_STRING(")"));
+        std::cout << "Polling Hawkbit server (attempt " << poll_counter << ")" << std::endl;
 
         // Don't poll if an update is in progress
         if (update_in_progress) {
-            DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Update in progress, skipping poll"));
+            std::cout << "Update in progress, skipping poll" << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(5));
             continue;
         }
@@ -251,49 +189,43 @@ int main() {
         // Poll Hawkbit for updates
         std::string response;
         if (hawkbitClient.pollForUpdates(response)) {
-            DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("Successfully polled Hawkbit server"));
+            std::cout << "Successfully polled Hawkbit server" << std::endl;
 
             // Parse the response to check for actual updates
             UpdateInfo update_info;
             if (hawkbitClient.parseUpdateResponse(response, update_info)) {
-                DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Update available detected"));
-                DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Execution ID: "), DLT_STRING(update_info.execution_id.c_str()));
-                DLT_LOG(updateContext, DLT_LOG_INFO, DLT_STRING("Version: "), DLT_STRING(update_info.version.c_str()));
+                std::cout << "Update available detected" << std::endl;
+                std::cout << "Execution ID: " << update_info.execution_id << std::endl;
+                std::cout << "Version: " << update_info.version << std::endl;
 
                 // Perform the update
                 if (!performUpdate(hawkbitClient, raucClient, update_info)) {
-                    DLT_LOG(updateContext, DLT_LOG_ERROR, DLT_STRING("Update process failed"));
+                    std::cout << "Update process failed" << std::endl;
                 }
             } else {
-                DLT_LOG(hawkbitContext, DLT_LOG_DEBUG, DLT_STRING("No update available in response"));
+                std::cout << "No update available in response" << std::endl;
             }
         } else {
-            DLT_LOG(hawkbitContext, DLT_LOG_ERROR, DLT_STRING("Failed to poll Hawkbit server"));
+            std::cout << "Failed to poll Hawkbit server" << std::endl;
         }
 
         // Wait before next poll
-        DLT_LOG(hawkbitContext, DLT_LOG_DEBUG, DLT_STRING("Waiting "), DLT_INT(POLL_INTERVAL_SECONDS), DLT_STRING(" seconds before next poll"));
+        std::cout << "Waiting " << POLL_INTERVAL_SECONDS << " seconds before next poll" << std::endl;
         for (int i = 0; i < POLL_INTERVAL_SECONDS && running; ++i) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("=== RAUC Hawkbit C++ Client Stopping ==="));
+    std::cout << "=== RAUC Hawkbit C++ Client Stopping ===" << std::endl;
 
     // Cleanup
     if (update_in_progress) {
-        DLT_LOG(updateContext, DLT_LOG_WARN, DLT_STRING("Update was in progress during shutdown"));
+        std::cout << "Update was in progress during shutdown" << std::endl;
     }
 
     raucClient.disconnect();
 
-    // Unregister DLT
-    DLT_UNREGISTER_CONTEXT(hawkbitContext);
-    DLT_UNREGISTER_CONTEXT(raucContext);
-    DLT_UNREGISTER_CONTEXT(updateContext);
-    DLT_UNREGISTER_APP();
-
-    DLT_LOG(hawkbitContext, DLT_LOG_INFO, DLT_STRING("RAUC Hawkbit C++ Client stopped gracefully"));
+    std::cout << "RAUC Hawkbit C++ Client stopped gracefully" << std::endl;
 
     return 0;
 }
