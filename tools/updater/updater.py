@@ -175,8 +175,13 @@ class DLTManager(QThread):
         
         # Check if dlt-receive is available
         try:
-            subprocess.run(["dlt-receive", "--help"], capture_output=True, check=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Try to run dlt-receive with -h to check if it exists
+            # It will return non-zero exit code but that's expected
+            result = subprocess.run(["dlt-receive", "-h"], capture_output=True, text=True)
+            if "Usage:" not in result.stdout and "Usage:" not in result.stderr:
+                self.dlt_error.emit("dlt-receive not found. Install with: sudo apt install dlt-daemon")
+                return
+        except FileNotFoundError:
             self.dlt_error.emit("dlt-receive not found. Install with: sudo apt install dlt-daemon")
             return
         
