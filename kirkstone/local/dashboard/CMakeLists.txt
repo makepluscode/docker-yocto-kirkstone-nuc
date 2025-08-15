@@ -47,6 +47,7 @@ set(QML_FILES
     qml/Card28.qml
     qml/Card29.qml
     qml/Card30.qml
+    qml/UpdatePopup.qml
 )
 
 set(CPP_FILES
@@ -59,6 +60,8 @@ set(CPP_FILES
     src/rauc_system_manager.h
     src/grub_manager.cpp
     src/grub_manager.h
+    src/update_agent_manager.cpp
+    src/update_agent_manager.h
 )
 
 qt5_add_resources(QT_RESOURCES resources/dashboard_resources.qrc)

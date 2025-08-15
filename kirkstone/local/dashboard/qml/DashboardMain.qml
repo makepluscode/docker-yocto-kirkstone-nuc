@@ -6,6 +6,7 @@ import SystemInfo 1.0
 import Rauc 1.0
 import RaucSystem 1.0
 import Grub 1.0
+import UpdateAgent 1.0
 
 ApplicationWindow {
     id: mainWindow
@@ -227,12 +228,52 @@ ApplicationWindow {
         id: grubManager
     }
 
+    UpdateAgentManager {
+        id: updateAgentManager
+        
+        onUpdateStarted: {
+            systemInfo.logUIEvent("Update Agent", "Update started")
+            swUpdateInProgress = true
+            updateComplete = false
+            updateStatus = "Update-agent starting update process..."
+            updateProgress = 0.0
+        }
+        
+        onUpdateStatusChanged: {
+            if (updateAgentManager.isUpdateActive) {
+                systemInfo.logUIEvent("Update Agent Status", updateAgentManager.updateStatus)
+                updateStatus = updateAgentManager.updateStatus
+                swUpdateInProgress = true
+            }
+        }
+        
+        onUpdateProgressChanged: {
+            if (updateAgentManager.isUpdateActive) {
+                updateProgress = updateAgentManager.updateProgress / 100.0
+            }
+        }
+        
+        onUpdateCompleted: function(success, message) {
+            systemInfo.logUIEvent("Update Agent Completed", "Success: " + success + " - " + message)
+            updateComplete = true
+            swUpdateInProgress = false
+            updateStatus = success ? "Update completed successfully!" : "Update failed: " + message
+            updateProgress = success ? 1.0 : 0.0
+            
+            if (success) {
+                // Auto-reboot after successful update
+                rebootTimer.start()
+            }
+        }
+    }
+
     Component.onCompleted: {
         systemInfo.logUIEvent("Dashboard startup", "Initializing managers")
         
         // Initialize managers on startup
         raucManager.refresh()
         grubManager.refresh()
+        updateAgentManager.refresh()
         
         systemInfo.logUIEvent("Dashboard initialized", "All components loaded")
     }
@@ -409,6 +450,7 @@ ApplicationWindow {
 
             Card26 {
                 raucSystemManager: raucSystemManager
+                updateAgentManager: updateAgentManager
             }
 
             Card27 {}

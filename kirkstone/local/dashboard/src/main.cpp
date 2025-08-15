@@ -7,6 +7,7 @@
 #include "rauc_manager.h"
 #include "rauc_system_manager.h"
 #include "grub_manager.h"
+#include "update_agent_manager.h"
 #include <dlt/dlt.h>
 
 static DltContext ctxUI;
@@ -33,6 +34,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<RaucManager>("Rauc", 1, 0, "RaucManager");
     qmlRegisterType<RaucSystemManager>("RaucSystem", 1, 0, "RaucSystemManager");
     qmlRegisterType<GrubManager>("Grub", 1, 0, "GrubManager");
+    qmlRegisterType<UpdateAgentManager>("UpdateAgent", 1, 0, "UpdateAgentManager");
 
     QQmlApplicationEngine engine;
     

@@ -35,5 +35,6 @@
         <file>../qml/Card28.qml</file>
         <file>../qml/Card29.qml</file>
         <file>../qml/Card30.qml</file>
+        <file>../qml/UpdatePopup.qml</file>
     </qresource>
 </RCC> 
