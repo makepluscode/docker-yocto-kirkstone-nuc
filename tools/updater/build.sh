@@ -1,15 +1,13 @@
 #!/bin/bash
 
 # Updater Server Build Script
-# Builds both Python backend and Qt6 GUI application
+# Builds Python backend and manages certificates
 
 set -e  # Exit on any error
 
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
-GUI_DIR="$PROJECT_ROOT/gui"
-BUILD_DIR="$GUI_DIR/build"
 CERTS_DIR="$PROJECT_ROOT/certs"
 
 # Colors for output
@@ -46,7 +44,6 @@ Usage: $0 [COMMAND] [OPTIONS]
 Commands:
     all         Build everything (default)
     backend     Build Python backend only
-    gui         Build Qt6 GUI only
     certs       Generate SSL certificates
     clean       Clean build artifacts
     install     Install dependencies
@@ -57,13 +54,11 @@ Options:
     --debug         Build in debug mode
     --release       Build in release mode (default)
     --verbose       Show verbose output
-    --qt-path PATH  Specify Qt6 installation path
     --help          Show this help message
 
 Examples:
     $0                      # Build everything
     $0 backend              # Build backend only
-    $0 gui --debug          # Build GUI in debug mode
     $0 certs                # Generate certificates
     $0 clean                # Clean all build artifacts
     $0 install              # Install all dependencies
@@ -84,20 +79,6 @@ check_dependencies() {
     
     if ! command -v uv &> /dev/null; then
         log_warning "uv not found, will try pip instead"
-    fi
-    
-    # Check cmake for GUI
-    if [[ "$BUILD_GUI" == "true" ]]; then
-        if ! command -v cmake &> /dev/null; then
-            missing_deps+=("cmake")
-        fi
-        
-        # Check for Qt6
-        if [[ -z "$QT_PATH" ]]; then
-            if ! command -v qmake6 &> /dev/null && ! command -v qmake &> /dev/null; then
-                log_warning "Qt6 not found in PATH. You may need to specify --qt-path"
-            fi
-        fi
     fi
     
     # Check OpenSSL for certificates
@@ -175,99 +156,9 @@ generate_certificates() {
     log_success "SSL certificates generated"
 }
 
-# Install Qt6 dependencies (platform specific)
-install_qt_deps() {
-    log_info "Checking Qt6 installation..."
-    
-    # Try to detect Qt6 automatically
-    if [[ -n "$QT_PATH" ]]; then
-        export CMAKE_PREFIX_PATH="$QT_PATH:$CMAKE_PREFIX_PATH"
-        log_info "Using Qt6 from: $QT_PATH"
-    else
-        # Try common Qt6 locations
-        QT_LOCATIONS=(
-            "/usr/lib/x86_64-linux-gnu/cmake/Qt6"
-            "/usr/local/Qt/6.*/gcc_64/lib/cmake/Qt6"
-            "/opt/Qt/6.*/gcc_64/lib/cmake/Qt6"
-            "/usr/lib/cmake/Qt6"
-        )
-        
-        for qt_path in "${QT_LOCATIONS[@]}"; do
-            if [[ -d "$qt_path" ]]; then
-                export CMAKE_PREFIX_PATH="$qt_path:$CMAKE_PREFIX_PATH"
-                log_info "Found Qt6 at: $qt_path"
-                break
-            fi
-        done
-    fi
-    
-    # Provide installation hints if Qt6 not found
-    if ! command -v qmake6 &> /dev/null && [[ -z "$CMAKE_PREFIX_PATH" ]]; then
-        log_warning "Qt6 not detected. Install with:"
-        log_warning "  Ubuntu/Debian: sudo apt install qt6-base-dev qt6-declarative-dev"
-        log_warning "  Or download from: https://www.qt.io/download"
-        log_warning "  Or specify path: $0 gui --qt-path /path/to/qt6"
-    fi
-}
-
-# Build Qt6 GUI
-build_gui() {
-    log_info "Building Qt6 GUI application..."
-    
-    # Install Qt6 dependencies
-    install_qt_deps
-    
-    # Create build directory
-    mkdir -p "$BUILD_DIR"
-    cd "$BUILD_DIR"
-    
-    # Configure CMake
-    log_info "Configuring CMake..."
-    CMAKE_ARGS=(
-        "-DCMAKE_BUILD_TYPE=$BUILD_TYPE"
-    )
-    
-    if [[ -n "$QT_PATH" ]]; then
-        CMAKE_ARGS+=("-DQt6_DIR=$QT_PATH/lib/cmake/Qt6")
-    fi
-    
-    if [[ "$VERBOSE" == "true" ]]; then
-        CMAKE_ARGS+=("-DCMAKE_VERBOSE_MAKEFILE=ON")
-    fi
-    
-    cmake "${CMAKE_ARGS[@]}" ..
-    
-    # Build
-    log_info "Building GUI application..."
-    
-    if command -v nproc &> /dev/null; then
-        JOBS=$(nproc)
-    else
-        JOBS=4
-    fi
-    
-    make -j"$JOBS"
-    
-    # Verify build
-    if [[ -f "UpdaterGUI" ]]; then
-        log_success "GUI application built successfully: $BUILD_DIR/UpdaterGUI"
-    else
-        log_error "GUI build failed - executable not found"
-        exit 1
-    fi
-    
-    log_success "GUI build completed"
-}
-
 # Clean build artifacts
 clean_build() {
     log_info "Cleaning build artifacts..."
-    
-    # Clean GUI build
-    if [[ -d "$BUILD_DIR" ]]; then
-        log_info "Removing GUI build directory: $BUILD_DIR"
-        rm -rf "$BUILD_DIR"
-    fi
     
     # Clean Python cache
     log_info "Cleaning Python cache files..."
@@ -277,6 +168,10 @@ clean_build() {
     # Clean temporary files
     find "$PROJECT_ROOT" -type f -name "*.tmp" -delete 2>/dev/null || true
     find "$PROJECT_ROOT" -type f -name ".DS_Store" -delete 2>/dev/null || true
+    
+    # Clean logs
+    rm -f "$PROJECT_ROOT"/*.log 2>/dev/null || true
+    rm -rf "$PROJECT_ROOT/logs" 2>/dev/null || true
     
     log_success "Build artifacts cleaned"
 }
@@ -289,17 +184,18 @@ run_tests() {
     
     # Test backend
     log_info "Testing backend..."
-    if [[ -f "test_client.py" ]]; then
-        python3 test_client.py
+    if [[ -f "scripts/test_client.py" ]]; then
+        python3 scripts/test_client.py
     else
         log_warning "No backend tests found"
     fi
     
-    # Test GUI (if built)
-    if [[ -f "$BUILD_DIR/UpdaterGUI" ]]; then
-        log_info "Testing GUI application..."
-        # Could add GUI tests here
-        log_info "GUI tests not implemented yet"
+    # Test refactored components
+    if [[ -f "scripts/test_refactored.py" ]]; then
+        log_info "Testing refactored components..."
+        python3 scripts/test_refactored.py
+    else
+        log_warning "No refactored tests found"
     fi
     
     log_success "Tests completed"
@@ -318,14 +214,17 @@ create_package() {
     cp -r updater_server "$PACKAGE_DIR/$PACKAGE_NAME/"
     cp pyproject.toml "$PACKAGE_DIR/$PACKAGE_NAME/"
     cp server.sh "$PACKAGE_DIR/$PACKAGE_NAME/"
+    cp updater.py "$PACKAGE_DIR/$PACKAGE_NAME/"
+    cp run.sh "$PACKAGE_DIR/$PACKAGE_NAME/"
     cp generate_certs.sh "$PACKAGE_DIR/$PACKAGE_NAME/"
-    cp config.py "$PACKAGE_DIR/$PACKAGE_NAME/"
     cp README.md "$PACKAGE_DIR/$PACKAGE_NAME/"
+    cp REFACTORING_GUIDE.md "$PACKAGE_DIR/$PACKAGE_NAME/"
+    cp -r scripts "$PACKAGE_DIR/$PACKAGE_NAME/"
+    cp -r bundle "$PACKAGE_DIR/$PACKAGE_NAME/"
     
-    # Copy GUI if built
-    if [[ -f "$BUILD_DIR/UpdaterGUI" ]]; then
-        mkdir -p "$PACKAGE_DIR/$PACKAGE_NAME/gui"
-        cp "$BUILD_DIR/UpdaterGUI" "$PACKAGE_DIR/$PACKAGE_NAME/gui/"
+    # Copy certificates if they exist
+    if [[ -d "certs" ]]; then
+        cp -r certs "$PACKAGE_DIR/$PACKAGE_NAME/"
     fi
     
     # Create archive
@@ -342,19 +241,19 @@ install_system_deps() {
     if command -v apt &> /dev/null; then
         log_info "Detected Debian/Ubuntu system"
         sudo apt update
-        sudo apt install -y python3 python3-pip cmake build-essential qt6-base-dev qt6-declarative-dev openssl
+        sudo apt install -y python3 python3-pip python3-pyqt6 python3-requests openssl curl
     elif command -v yum &> /dev/null; then
         log_info "Detected RHEL/CentOS system"
-        sudo yum install -y python3 python3-pip cmake gcc-c++ qt6-qtbase-devel qt6-qtdeclarative-devel openssl
+        sudo yum install -y python3 python3-pip python3-pyqt6 python3-requests openssl curl
     elif command -v dnf &> /dev/null; then
         log_info "Detected Fedora system"
-        sudo dnf install -y python3 python3-pip cmake gcc-c++ qt6-qtbase-devel qt6-qtdeclarative-devel openssl
+        sudo dnf install -y python3 python3-pip python3-pyqt6 python3-requests openssl curl
     elif command -v brew &> /dev/null; then
         log_info "Detected macOS with Homebrew"
-        brew install python3 cmake qt6 openssl
+        brew install python3 pyqt6 openssl curl
     else
         log_warning "Unknown system - please install dependencies manually"
-        log_info "Required: python3, cmake, qt6, openssl"
+        log_info "Required: python3, python3-pyqt6, python3-requests, openssl, curl"
     fi
     
     # Install uv
@@ -369,18 +268,15 @@ install_system_deps() {
 
 # Parse command line arguments
 BUILD_BACKEND="false"
-BUILD_GUI="false"
 BUILD_CERTS="false"
 BUILD_TYPE="Release"
 VERBOSE="false"
-QT_PATH=""
 COMMAND=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         all)
             BUILD_BACKEND="true"
-            BUILD_GUI="true"
             BUILD_CERTS="true"
             COMMAND="all"
             shift
@@ -388,11 +284,6 @@ while [[ $# -gt 0 ]]; do
         backend)
             BUILD_BACKEND="true"
             COMMAND="backend"
-            shift
-            ;;
-        gui)
-            BUILD_GUI="true"
-            COMMAND="gui"
             shift
             ;;
         certs)
@@ -428,10 +319,6 @@ while [[ $# -gt 0 ]]; do
             VERBOSE="true"
             shift
             ;;
-        --qt-path)
-            QT_PATH="$2"
-            shift 2
-            ;;
         --help)
             show_help
             exit 0
@@ -447,7 +334,6 @@ done
 # Default to build all if no command specified
 if [[ -z "$COMMAND" ]]; then
     BUILD_BACKEND="true"
-    BUILD_GUI="true"
     BUILD_CERTS="true"
     COMMAND="all"
 fi
@@ -468,17 +354,10 @@ case $COMMAND in
         if [[ "$BUILD_BACKEND" == "true" ]]; then
             build_backend
         fi
-        if [[ "$BUILD_GUI" == "true" ]]; then
-            build_gui
-        fi
         ;;
     backend)
         check_dependencies
         build_backend
-        ;;
-    gui)
-        check_dependencies
-        build_gui
         ;;
     certs)
         check_dependencies
@@ -506,32 +385,21 @@ case $COMMAND in
     all|backend)
         echo
         log_info "=== Next Steps ==="
-        log_info "1. Start the server:"
-        log_info "   cd $PROJECT_ROOT"
+        log_info "1. Start the integrated application:"
+        log_info "   ./run.sh"
+        echo
+        log_info "2. Or start server only:"
         log_info "   ./server.sh"
         echo
-        log_info "2. Or with HTTPS:"
+        log_info "3. Or with HTTPS:"
         log_info "   export UPDATER_ENABLE_HTTPS=true"
         log_info "   ./server.sh"
-        if [[ "$BUILD_GUI" == "true" && -f "$BUILD_DIR/UpdaterGUI" ]]; then
-            echo
-            log_info "3. Run the GUI:"
-            log_info "   $BUILD_DIR/UpdaterGUI"
-        fi
-        ;;
-    gui)
-        if [[ -f "$BUILD_DIR/UpdaterGUI" ]]; then
-            echo
-            log_info "=== Next Steps ==="
-            log_info "Run the GUI application:"
-            log_info "   $BUILD_DIR/UpdaterGUI"
-        fi
         ;;
     certs)
         echo
         log_info "=== Next Steps ==="
-        log_info "Enable HTTPS and start server:"
+        log_info "Enable HTTPS and start application:"
         log_info "   export UPDATER_ENABLE_HTTPS=true"
-        log_info "   ./server.sh"
+        log_info "   ./run.sh"
         ;;
 esac
