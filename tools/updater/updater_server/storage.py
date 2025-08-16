@@ -2,7 +2,7 @@
 
 import os
 import hashlib
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Tuple
 from pathlib import Path
 from .models import DeploymentConfig
 
@@ -54,8 +54,8 @@ class DeploymentStorage:
     def get_active_deployments(self) -> List[DeploymentConfig]:
         """Get all active deployments."""
         active_deployments = [deployment for deployment in self.deployments.values() if deployment.active]
-        # Sort by size (largest first) to prioritize the main bundle
-        active_deployments.sort(key=lambda x: x.size, reverse=True)
+        # Sort by version (latest first) to prioritize the newest bundle
+        active_deployments.sort(key=lambda x: self._parse_version(x.version), reverse=True)
         return active_deployments
     
     def remove_deployment(self, execution_id: str) -> bool:
@@ -79,6 +79,15 @@ class DeploymentStorage:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_obj.update(chunk)
         return hash_obj.hexdigest()
+    
+    def _parse_version(self, version: str) -> Tuple[int, ...]:
+        """Parse version string into tuple of integers for comparison."""
+        try:
+            # Handle semantic versioning (e.g., "1.2.3" -> (1, 2, 3))
+            return tuple(int(x) for x in version.split('.'))
+        except (ValueError, AttributeError):
+            # Fallback for non-standard versions
+            return (0, 0, 0)
 
 
 # Global storage instance

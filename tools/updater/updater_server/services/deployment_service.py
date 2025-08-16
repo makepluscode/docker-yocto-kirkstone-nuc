@@ -52,7 +52,7 @@ class DeploymentService:
         controller_id: str
     ) -> Optional[DeploymentConfig]:
         """Select the best deployment for a device."""
-        # For now, return the first (largest) deployment
+        # Return the first (latest version) deployment
         # Future: Add device compatibility, targeting logic
         return deployments[0] if deployments else None
     

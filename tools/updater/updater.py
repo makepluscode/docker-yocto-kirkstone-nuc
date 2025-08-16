@@ -989,24 +989,45 @@ class UpdaterGUI(QMainWindow):
         self.deployments = deployments
         self.deployments_table.setRowCount(len(deployments))
         
+        # Find the selected deployment (first in list = latest version)
+        selected_deployment_id = deployments[0]["execution_id"] if deployments else None
+        
         for row, deployment in enumerate(deployments):
+            is_selected = deployment["execution_id"] == selected_deployment_id
+            
             # Execution ID
-            self.deployments_table.setItem(row, 0, QTableWidgetItem(deployment["execution_id"]))
+            exec_id_item = QTableWidgetItem(deployment["execution_id"])
+            if is_selected:
+                exec_id_item.setBackground(QColor("#fffacd"))  # Light yellow highlight
+                exec_id_item.setText(f"🎯 {deployment['execution_id']}")  # Add selection indicator
+            self.deployments_table.setItem(row, 0, exec_id_item)
             
             # Version
-            self.deployments_table.setItem(row, 1, QTableWidgetItem(deployment["version"]))
+            version_item = QTableWidgetItem(deployment["version"])
+            if is_selected:
+                version_item.setBackground(QColor("#fffacd"))
+                version_item.setText(f"🎯 {deployment['version']}")  # Add selection indicator
+            self.deployments_table.setItem(row, 1, version_item)
             
             # Size in MB
             size_mb = deployment["size"] / (1024 * 1024)
-            self.deployments_table.setItem(row, 2, QTableWidgetItem(f"{size_mb:.1f}"))
+            size_item = QTableWidgetItem(f"{size_mb:.1f}")
+            if is_selected:
+                size_item.setBackground(QColor("#fffacd"))
+            self.deployments_table.setItem(row, 2, size_item)
             
             # Filename
-            self.deployments_table.setItem(row, 3, QTableWidgetItem(deployment["filename"]))
+            filename_item = QTableWidgetItem(deployment["filename"])
+            if is_selected:
+                filename_item.setBackground(QColor("#fffacd"))
+            self.deployments_table.setItem(row, 3, filename_item)
             
             # Status
             status = "Active" if deployment.get("active", True) else "Disabled"
             status_item = QTableWidgetItem(status)
-            if status == "Active":
+            if is_selected:
+                status_item.setBackground(QColor("#fffacd"))
+            elif status == "Active":
                 status_item.setBackground(QColor("#d4edda"))
             else:
                 status_item.setBackground(QColor("#f8d7da"))
@@ -1016,6 +1037,10 @@ class UpdaterGUI(QMainWindow):
             actions_widget = QWidget()
             actions_layout = QHBoxLayout(actions_widget)
             actions_layout.setContentsMargins(2, 2, 2, 2)
+            
+            # Add selection indicator for actions column
+            if is_selected:
+                actions_widget.setStyleSheet("QWidget { background-color: #fffacd; }")
             
             if deployment.get("active", True):
                 disable_btn = QPushButton("Disable")
