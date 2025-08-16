@@ -34,11 +34,6 @@ app = FastAPI(
     version="0.2.0"
 )
 
-# Mount static files if GUI is enabled
-if config.ENABLE_GUI and config.STATIC_PATH_OBJ.exists():
-    app.mount("/static", StaticFiles(directory=str(config.STATIC_PATH_OBJ)), name="static")
-    logger.info(f"Static files mounted from: {config.STATIC_PATH_OBJ}")
-
 # Mount GUI files if available
 if config.ENABLE_GUI and config.GUI_PATH_OBJ.exists():
     app.mount("/gui", StaticFiles(directory=str(config.GUI_PATH_OBJ), html=True), name="gui")

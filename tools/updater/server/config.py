@@ -126,25 +126,18 @@ class GuiConfig:
     """GUI configuration settings."""
     enable_gui: bool = True
     gui_path: str = "gui"
-    static_files_path: str = "static"
     
     @property
     def gui_path_obj(self) -> Path:
         """Get GUI path as Path object."""
         return Path(self.gui_path)
     
-    @property
-    def static_path_obj(self) -> Path:
-        """Get static files path as Path object."""
-        return Path(self.static_files_path)
-    
     @classmethod
     def from_env(cls) -> 'GuiConfig':
         """Create config from environment variables."""
         return cls(
             enable_gui=os.getenv("UPDATER_ENABLE_GUI", "true").lower() == "true",
-            gui_path=os.getenv("UPDATER_GUI_PATH", "gui"),
-            static_files_path=os.getenv("UPDATER_STATIC_PATH", "static")
+            gui_path=os.getenv("UPDATER_GUI_PATH", "gui")
         )
 
 
@@ -230,7 +223,6 @@ class Config:
         # Create GUI directories if GUI is enabled
         if self.gui.enable_gui:
             self.gui.gui_path_obj.mkdir(parents=True, exist_ok=True)
-            self.gui.static_path_obj.mkdir(parents=True, exist_ok=True)
 
 
 # Global config instance - load from environment
@@ -263,9 +255,7 @@ SSL_CA_PATH = config.security.ssl_ca_path
 
 ENABLE_GUI = config.gui.enable_gui
 GUI_PATH = config.gui.gui_path
-STATIC_FILES_PATH = config.gui.static_files_path
 GUI_PATH_OBJ = config.gui.gui_path_obj
-STATIC_PATH_OBJ = config.gui.static_path_obj
 
 SERVER_NAME = config.SERVER_NAME
 SERVER_VERSION = config.SERVER_VERSION

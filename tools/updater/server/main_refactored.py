@@ -88,15 +88,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Mount static files if GUI is enabled
-    if config.gui.enable_gui:
-        if config.gui.static_path_obj.exists():
-            app.mount("/static", StaticFiles(directory=str(config.gui.static_path_obj)), name="static")
-            logger.info(f"Static files mounted from: {config.gui.static_path_obj}")
-        
-        if config.gui.gui_path_obj.exists():
-            app.mount("/gui", StaticFiles(directory=str(config.gui.gui_path_obj), html=True), name="gui")
-            logger.info(f"GUI files mounted from: {config.gui.gui_path_obj}")
+    # Mount GUI files if available
+    if config.gui.enable_gui and config.gui.gui_path_obj.exists():
+        app.mount("/gui", StaticFiles(directory=str(config.gui.gui_path_obj), html=True), name="gui")
+        logger.info(f"GUI files mounted from: {config.gui.gui_path_obj}")
     
     # Initialize services
     url_builder = URLBuilder.from_config(config.server)

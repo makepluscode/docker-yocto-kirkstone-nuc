@@ -1,0 +1,6 @@
+module Updater
+
+DeploymentItem 1.0 DeploymentItem.qml
+AddDeploymentDialog 1.0 AddDeploymentDialog.qml
+BundleInfo 1.0 bundleinfo.qml
+ServerLogViewer 1.0 serverlogviewer.qml 
