@@ -40,6 +40,7 @@ IMAGE_INSTALL = "\
     foonathan-memory \
     tinyxml2 \
     python3 \
+    nuc-version \
     "
 
 inherit core-image

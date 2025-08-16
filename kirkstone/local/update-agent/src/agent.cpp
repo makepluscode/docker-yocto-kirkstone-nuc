@@ -332,6 +332,11 @@ bool Agent::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info
 bool Agent::sendStartedFeedback(const std::string& execution_id) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending started feedback for execution: "), DLT_STRING(execution_id.c_str()));
     
+    if (!curl_handle_) {
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
+        return false;
+    }
+
     json_object* root = json_object_new_object();
     json_object* execution = json_object_new_object();
     json_object* result = json_object_new_object();
@@ -347,11 +352,15 @@ bool Agent::sendStartedFeedback(const std::string& execution_id) {
     const char* json_string = json_object_to_json_string(root);
     DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Started feedback JSON: "), DLT_STRING(json_string));
 
+    // Copy the JSON string before freeing the object
+    std::string json_copy(json_string);
+
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
+    // Minimal CURL configuration for POST request - avoid curl_easy_reset to prevent SEGFAULT
     curl_easy_setopt(curl_handle_, CURLOPT_URL, buildFeedbackUrl(execution_id).c_str());
-    curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_string);
+    curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_copy.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, 30L);
 
@@ -379,6 +388,11 @@ bool Agent::sendStartedFeedback(const std::string& execution_id) {
 bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending progress feedback for execution: "), DLT_STRING(execution_id.c_str()), DLT_STRING(" Progress: "), DLT_INT(progress), DLT_STRING("%"));
     
+    if (!curl_handle_) {
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
+        return false;
+    }
+
     json_object* root = json_object_new_object();
     json_object* execution = json_object_new_object();
     json_object* result = json_object_new_object();
@@ -405,6 +419,7 @@ bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, 
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
+    // Minimal CURL configuration for POST request - avoid curl_easy_reset to prevent SEGFAULT
     curl_easy_setopt(curl_handle_, CURLOPT_URL, buildFeedbackUrl(execution_id).c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_copy.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_HTTPHEADER, headers);
@@ -434,6 +449,11 @@ bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, 
 bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, const std::string& message) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending finished feedback for execution: "), DLT_STRING(execution_id.c_str()), DLT_STRING(" Success: "), DLT_BOOL(success));
     
+    if (!curl_handle_) {
+        DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
+        return false;
+    }
+
     json_object* root = json_object_new_object();
     json_object* execution = json_object_new_object();
     json_object* result = json_object_new_object();
@@ -454,11 +474,15 @@ bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, 
     const char* json_string = json_object_to_json_string(root);
     DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Finished feedback JSON: "), DLT_STRING(json_string));
 
+    // Copy the JSON string before freeing the object
+    std::string json_copy(json_string);
+
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
+    // Minimal CURL configuration for POST request - avoid curl_easy_reset to prevent SEGFAULT
     curl_easy_setopt(curl_handle_, CURLOPT_URL, buildFeedbackUrl(execution_id).c_str());
-    curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_string);
+    curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_copy.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, 30L);
 

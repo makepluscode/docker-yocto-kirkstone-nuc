@@ -3,6 +3,7 @@
 #include <chrono>
 #include <signal.h>
 #include <unistd.h>
+#include <cmath>
 #include "agent.h"
 #include "updater.h"
 #include "config.h"
@@ -47,6 +48,9 @@ bool performUpdate(Agent& agent, Updater& updater, const UpdateInfo& update_info
         return false;
     }
 
+    // Send initial progress - starting download (5%)
+    agent.sendProgressFeedback(update_info.execution_id, 5, "Starting bundle download...");
+
     // Download bundle
     std::string local_path = UPDATE_BUNDLE_PATH;
     if (!agent.downloadBundle(update_info.download_url, local_path, update_info.expected_size)) {
@@ -56,8 +60,11 @@ bool performUpdate(Agent& agent, Updater& updater, const UpdateInfo& update_info
         return false;
     }
 
-    // Send progress feedback
-    agent.sendProgressFeedback(update_info.execution_id, 50, "Bundle downloaded successfully");
+    // Send progress feedback - download completed (30%)
+    agent.sendProgressFeedback(update_info.execution_id, 30, "Bundle downloaded successfully");
+
+    // Send progress - starting installation (35%)
+    agent.sendProgressFeedback(update_info.execution_id, 35, "Starting RAUC installation...");
 
     // Install bundle using RAUC (non-blocking)
     DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Starting RAUC installation..."));
@@ -99,11 +106,30 @@ bool performUpdate(Agent& agent, Updater& updater, const UpdateInfo& update_info
             }
         }
 
-        // Send progress feedback based on config interval
+        // Send progress feedback based on config interval with improved algorithm
         if (timeout_counter % PROGRESS_FEEDBACK_INTERVAL_SECONDS == 0) {
-            int progress = 50 + (timeout_counter * 50 / MAX_TIMEOUT);
+            // Progress from 40% (installation started) to 95% (installation almost done)
+            // Use logarithmic curve for more realistic progress: fast initial progress, slower near end
+            float elapsed_ratio = (float)timeout_counter / MAX_TIMEOUT;
+            
+            // Apply logarithmic curve: progress = 40 + 55 * (1 - e^(-3*elapsed_ratio))
+            float progress_factor = 1.0f - expf(-3.0f * elapsed_ratio);
+            int progress = 40 + (int)(55.0f * progress_factor);
+            
+            // Cap at 95% until completion
             if (progress > 95) progress = 95;
-            agent.sendProgressFeedback(update_info.execution_id, progress, "Installation in progress...");
+            
+            // Add more descriptive messages based on progress
+            std::string message;
+            if (progress < 60) {
+                message = "Installing bundle - extracting files...";
+            } else if (progress < 80) {
+                message = "Installing bundle - updating partitions...";
+            } else {
+                message = "Installing bundle - finalizing installation...";
+            }
+            
+            agent.sendProgressFeedback(update_info.execution_id, progress, message);
         }
     }
 
