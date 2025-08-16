@@ -61,21 +61,49 @@ ApplicationWindow {
                 event.accepted = true
                 break
             case Qt.Key_F9:
-                // Test Update Agent popup functionality
-                systemInfo.logUIEvent("F9 pressed", "Testing Update Agent popup")
+                // Test Update Agent status changes
+                systemInfo.logUIEvent("F9 pressed", "Testing Update Agent status toggle")
                 if (updateAgentManager) {
-                    updateAgentManager.testProgressParsing("Update started: downloading bundle Progress: 25%")
+                    updateAgentManager.testStatusToggle()
                 }
                 event.accepted = true
                 break
             case Qt.Key_F10:
-                // Toggle popup for testing
-                swUpdateInProgress = !swUpdateInProgress
-                if (swUpdateInProgress) {
-                    updateStatus = "Testing popup functionality..."
-                    updateProgress = 0.5
+                // Simulate progressive update stages
+                if (!swUpdateInProgress) {
+                    // Start update simulation
+                    swUpdateInProgress = true
                     updateComplete = false
-                    systemInfo.logUIEvent("F10 pressed", "Manual popup test triggered")
+                    updateStatus = "Starting update simulation..."
+                    updateProgress = 0.1
+                    systemInfo.logUIEvent("F10 pressed", "Starting update progress simulation")
+                } else if (updateProgress < 0.9) {
+                    // Advance progress
+                    updateProgress += 0.2
+                    updateStatus = "Update in progress... " + Math.round(updateProgress * 100) + "%"
+                    systemInfo.logUIEvent("F10 pressed", "Advancing progress to " + Math.round(updateProgress * 100) + "%")
+                } else {
+                    // Complete update
+                    updateProgress = 1.0
+                    updateStatus = "Update completed successfully!"
+                    updateComplete = true
+                    systemInfo.logUIEvent("F10 pressed", "Completing update simulation")
+                }
+                event.accepted = true
+                break
+            case Qt.Key_F11:
+                // Test Update Agent progress parsing
+                systemInfo.logUIEvent("F11 pressed", "Testing Update Agent progress parsing")
+                if (updateAgentManager) {
+                    updateAgentManager.testProgressParsing("Update started: downloading bundle Progress: 30%")
+                }
+                event.accepted = true
+                break
+            case Qt.Key_F12:
+                // Toggle real-time journal monitoring
+                systemInfo.logUIEvent("F12 pressed", "Toggle real-time journal monitoring")
+                if (updateAgentManager) {
+                    updateAgentManager.testRealtimeMonitoring()
                 }
                 event.accepted = true
                 break
@@ -261,7 +289,18 @@ ApplicationWindow {
         onUpdateStatusChanged: {
             systemInfo.logUIEvent("Update Agent Status", updateAgentManager.updateStatus)
             updateStatus = updateAgentManager.updateStatus
+            
+            // Show popup for any active update or significant status changes
             if (updateAgentManager.isUpdateActive) {
+                swUpdateInProgress = true
+                updateComplete = false
+            } else if (updateAgentManager.updateStatus.includes("started") || 
+                      updateAgentManager.updateStatus.includes("progress") ||
+                      updateAgentManager.updateStatus.includes("downloading") ||
+                      updateAgentManager.updateStatus.includes("installing") ||
+                      updateAgentManager.updateStatus.includes("completed") ||
+                      updateAgentManager.updateStatus.includes("failed")) {
+                // Show popup for important status updates even if isUpdateActive is false
                 swUpdateInProgress = true
                 updateComplete = false
             }
@@ -269,10 +308,15 @@ ApplicationWindow {
         
         onUpdateProgressChanged: {
             systemInfo.logUIEvent("Update Agent Progress", "Progress: " + updateAgentManager.updateProgress + "%")
-            if (updateAgentManager.isUpdateActive) {
-                updateProgress = updateAgentManager.updateProgress / 100.0
+            updateProgress = updateAgentManager.updateProgress / 100.0
+            
+            // Show popup when progress changes, regardless of isUpdateActive
+            if (updateAgentManager.updateProgress > 0 && updateAgentManager.updateProgress < 100) {
                 swUpdateInProgress = true
                 updateComplete = false
+            } else if (updateAgentManager.updateProgress >= 100) {
+                updateComplete = true
+                // Keep popup visible to show completion
             }
         }
         

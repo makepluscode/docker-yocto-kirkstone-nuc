@@ -21,6 +21,8 @@ public:
     Q_INVOKABLE void startService();
     Q_INVOKABLE void stopService();
     Q_INVOKABLE void testProgressParsing(const QString& testLine);
+    Q_INVOKABLE void testStatusToggle();
+    Q_INVOKABLE void testRealtimeMonitoring();
 
     // Property getters
     bool isUpdateActive() const { return m_isUpdateActive; }
@@ -58,12 +60,15 @@ private:
     QFileSystemWatcher* m_logWatcher;
     QString m_logFilePath;
     qint64 m_lastLogPosition;
+    QProcess* m_journalFollowProcess;
     
     // Status parsing
     void parseLogContent();
     void parseLogLine(const QString& line);
     void checkServiceStatus();
     void setupLogMonitoring();
+    void startRealtimeJournalMonitoring();
+    void stopRealtimeJournalMonitoring();
     void updateProgressFromLog(const QString& line);
     void updateStatusFromLog(const QString& line);
 };
