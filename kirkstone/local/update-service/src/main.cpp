@@ -16,7 +16,7 @@ void signalHandler(int signal) {
 
 int main() {
     // Initialize DLT
-    DLT_REGISTER_APP("USVC", "Update Service Broker");
+    DLT_REGISTER_APP("UAGT", "Update Service Broker");
     DLT_REGISTER_CONTEXT(mainContext, "MAIN", "Main context for update service");
     
     // Register signal handlers for graceful shutdown

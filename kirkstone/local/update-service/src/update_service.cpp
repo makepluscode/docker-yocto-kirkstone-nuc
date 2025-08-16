@@ -23,7 +23,7 @@ UpdateService::UpdateService()
     , running_(false)
     , connected_to_rauc_(false) {
     
-    DLT_REGISTER_CONTEXT(dlt_context_service, "USVC", "Update Service Broker");
+    DLT_REGISTER_CONTEXT(dlt_context_service, "UAGT", "Update Service Broker");
     logInfo("Update Service initializing");
 }
 
