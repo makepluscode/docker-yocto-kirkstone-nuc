@@ -68,6 +68,7 @@ SystemInfo::SystemInfo(QObject *parent)
     updateSystemDetails();
     updateBuildInfo();
     updateRootDeviceInfo();
+    updateSoftwareVersion();
 
     // Setup timers
     m_updateTimer = new QTimer(this);
@@ -735,5 +736,21 @@ bool SystemInfo::testNetworkConnectivity() {
     } else {
         DLT_LOG_SYS_ERROR(QString("Network connectivity test: FAILED (cannot reach %1)").arg(testTarget).toUtf8().constData());
         return false;
+    }
+}
+
+void SystemInfo::updateSoftwareVersion()
+{
+    QString versionFile = "/etc/version";
+    QString newSoftwareVersion = readFileContent(versionFile).trimmed();
+    
+    if (newSoftwareVersion.isEmpty()) {
+        newSoftwareVersion = "Unknown";
+    }
+    
+    if (m_softwareVersion != newSoftwareVersion) {
+        m_softwareVersion = newSoftwareVersion;
+        emit softwareVersionChanged();
+        DLT_LOG_SYS_INFO(QString("Software version updated: %1").arg(m_softwareVersion).toUtf8().constData());
     }
 }

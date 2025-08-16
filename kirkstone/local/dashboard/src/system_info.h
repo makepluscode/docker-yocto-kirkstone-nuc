@@ -33,6 +33,7 @@ class SystemInfo : public QObject
     Q_PROPERTY(QString buildTime READ buildTime NOTIFY buildTimeChanged)
     Q_PROPERTY(QString yoctoVersion READ yoctoVersion NOTIFY yoctoVersionChanged)
     Q_PROPERTY(QString rootDevice READ rootDevice NOTIFY rootDeviceChanged)
+    Q_PROPERTY(QString softwareVersion READ softwareVersion NOTIFY softwareVersionChanged)
 
 public:
     explicit SystemInfo(QObject *parent = nullptr);
@@ -60,6 +61,7 @@ public:
     QString buildTime() const { return m_buildTime; }
     QString yoctoVersion() const { return m_yoctoVersion; }
     QString rootDevice() const { return m_rootDevice; }
+    QString softwareVersion() const { return m_softwareVersion; }
 
 public slots:
     void updateSystemInfo();
@@ -100,6 +102,7 @@ signals:
     void buildTimeChanged();
     void yoctoVersionChanged();
     void rootDeviceChanged();
+    void softwareVersionChanged();
     void hawkbitServiceStatusChanged(bool active);
     void hawkbitUpdateDetected();
     void hawkbitUpdateFailed(const QString &error);
@@ -115,6 +118,7 @@ private:
     void updateDiskInfo();
     void updateBuildInfo();
     void updateRootDeviceInfo();
+    void updateSoftwareVersion();
     QString readFileContent(const QString &filePath);
 
     // Member variables
@@ -140,6 +144,7 @@ private:
     QString m_buildTime;
     QString m_yoctoVersion;
     QString m_rootDevice;
+    QString m_softwareVersion;
 
     // Timers
     QTimer *m_updateTimer;
