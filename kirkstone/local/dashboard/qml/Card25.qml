@@ -23,7 +23,7 @@ DashboardCardBase {
         
         CardInfoRow {
             label: "Booted"
-            value: raucSystemManager ? ("Slot " + raucSystemManager.currentBootSlot + " (" + (raucSystemManager.currentBootSlot === "A" ? "/dev/sda2" : "/dev/sda3") + ")") : "Loading..."
+            value: raucSystemManager ? raucSystemManager.currentBootSlot : "Loading..."
             valueColor: "#44ff44"
             labelWidth: 80
         }
@@ -32,17 +32,23 @@ DashboardCardBase {
             label: "Status"
             value: {
                 if (!raucSystemManager) return "Loading..."
+                let currentSlot = raucSystemManager.currentBootSlot
                 let slotAStatus = raucSystemManager.slotAStatus
                 let slotBStatus = raucSystemManager.slotBStatus
-                if (slotAStatus === "good" && slotBStatus === "good") return "Good"
+                
+                if (currentSlot === "rootfs.0" && slotAStatus === "good") return "Good"
+                else if (currentSlot === "rootfs.1" && slotBStatus === "good") return "Good"
                 else if (slotAStatus === "good" || slotBStatus === "good") return "Good"
                 else return "Bad"
             }
             valueColor: {
                 if (!raucSystemManager) return "#ffffff"
+                let currentSlot = raucSystemManager.currentBootSlot
                 let slotAStatus = raucSystemManager.slotAStatus
                 let slotBStatus = raucSystemManager.slotBStatus
-                if (slotAStatus === "good" && slotBStatus === "good") return "#44ff44"
+                
+                if (currentSlot === "rootfs.0" && slotAStatus === "good") return "#44ff44"
+                else if (currentSlot === "rootfs.1" && slotBStatus === "good") return "#44ff44"
                 else if (slotAStatus === "good" || slotBStatus === "good") return "#44ff44"
                 else return "#ff4444"
             }

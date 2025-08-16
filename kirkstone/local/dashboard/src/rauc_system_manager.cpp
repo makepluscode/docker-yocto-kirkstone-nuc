@@ -81,26 +81,26 @@ void RaucSystemManager::refreshStatus()
 
 void RaucSystemManager::updateCurrentBootSlot()
 {
-    // Check which slot is currently booted by examining the root device
-    QProcess process;
-    process.start("readlink", QStringList() << "-f" << "/dev/root");
-    process.waitForFinished();
+    QString raucOutput = executeRaucCommand(QStringList() << "status");
+    QStringList lines = raucOutput.split('\n');
     
-    QString rootDevice = process.readAllStandardOutput().trimmed();
-    qDebug() << "Current root device:" << rootDevice;
+    QString newSlot = "Unknown";
     
-    QString newSlot;
-    if (rootDevice.contains("sda2")) {
-        newSlot = "A";
-    } else if (rootDevice.contains("sda3")) {
-        newSlot = "B";
-    } else {
-        newSlot = "Unknown";
+    for (const QString &line : lines) {
+        if (line.contains("Booted from:")) {
+            if (line.contains("rootfs.0")) {
+                newSlot = "rootfs.0";
+            } else if (line.contains("rootfs.1")) {
+                newSlot = "rootfs.1";
+            }
+            break;
+        }
     }
     
     if (m_currentBootSlot != newSlot) {
         m_currentBootSlot = newSlot;
         emit currentBootSlotChanged();
+        DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Current boot slot updated: "), DLT_STRING(m_currentBootSlot.toUtf8().constData()));
     }
 }
 
@@ -139,19 +139,19 @@ void RaucSystemManager::updateSlotStatus()
         const QString &line = lines[i];
         
         if (line.contains("bootname: A")) {
-            // Find the next line with boot status
-            if (i + 1 < lines.size()) {
-                QString statusLine = lines[i + 1];
-                if (statusLine.contains("boot status:")) {
-                    newSlotAStatus = statusLine.split("boot status:").last().trimmed();
+            // Look for boot status in the following lines
+            for (int j = i + 1; j < lines.size() && j < i + 5; ++j) {
+                if (lines[j].contains("boot status:")) {
+                    newSlotAStatus = lines[j].split("boot status:").last().trimmed();
+                    break;
                 }
             }
         } else if (line.contains("bootname: B")) {
-            // Find the next line with boot status
-            if (i + 1 < lines.size()) {
-                QString statusLine = lines[i + 1];
-                if (statusLine.contains("boot status:")) {
-                    newSlotBStatus = statusLine.split("boot status:").last().trimmed();
+            // Look for boot status in the following lines
+            for (int j = i + 1; j < lines.size() && j < i + 5; ++j) {
+                if (lines[j].contains("boot status:")) {
+                    newSlotBStatus = lines[j].split("boot status:").last().trimmed();
+                    break;
                 }
             }
         }

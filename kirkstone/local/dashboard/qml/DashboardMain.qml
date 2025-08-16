@@ -60,6 +60,25 @@ ApplicationWindow {
                 f8Button.clicked()
                 event.accepted = true
                 break
+            case Qt.Key_F9:
+                // Test Update Agent popup functionality
+                systemInfo.logUIEvent("F9 pressed", "Testing Update Agent popup")
+                if (updateAgentManager) {
+                    updateAgentManager.testProgressParsing("Update started: downloading bundle Progress: 25%")
+                }
+                event.accepted = true
+                break
+            case Qt.Key_F10:
+                // Toggle popup for testing
+                swUpdateInProgress = !swUpdateInProgress
+                if (swUpdateInProgress) {
+                    updateStatus = "Testing popup functionality..."
+                    updateProgress = 0.5
+                    updateComplete = false
+                    systemInfo.logUIEvent("F10 pressed", "Manual popup test triggered")
+                }
+                event.accepted = true
+                break
         }
     }
 
@@ -240,16 +259,20 @@ ApplicationWindow {
         }
         
         onUpdateStatusChanged: {
+            systemInfo.logUIEvent("Update Agent Status", updateAgentManager.updateStatus)
+            updateStatus = updateAgentManager.updateStatus
             if (updateAgentManager.isUpdateActive) {
-                systemInfo.logUIEvent("Update Agent Status", updateAgentManager.updateStatus)
-                updateStatus = updateAgentManager.updateStatus
                 swUpdateInProgress = true
+                updateComplete = false
             }
         }
         
         onUpdateProgressChanged: {
+            systemInfo.logUIEvent("Update Agent Progress", "Progress: " + updateAgentManager.updateProgress + "%")
             if (updateAgentManager.isUpdateActive) {
                 updateProgress = updateAgentManager.updateProgress / 100.0
+                swUpdateInProgress = true
+                updateComplete = false
             }
         }
         
@@ -404,7 +427,9 @@ ApplicationWindow {
             }
 
             // Row 2: System Info & Boot Management
-            Card07 {}
+            Card07 {
+                systemInfo: systemInfo
+            }
 
             Card08 {}
 

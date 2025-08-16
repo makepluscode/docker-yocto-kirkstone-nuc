@@ -405,15 +405,9 @@ void SystemInfo::updateRootDeviceInfo()
             QStringList parts = line.split(' ');
             if (parts.size() >= 2 && parts[1] == "/") {
                 QString device = parts[0];
-                // Extract base device name (e.g., /dev/sda2 -> /dev/sda)
+                // Keep the full device path including partition (e.g., /dev/sda2)
                 if (device.startsWith("/dev/")) {
-                    // Remove partition number to get base device
-                    QRegExp rx("(.*[a-z])\\d+$");  // Match letters followed by digits at end
-                    if (rx.indexIn(device) != -1) {
-                        newRootDevice = rx.cap(1);  // Get the base device without partition number
-                    } else {
-                        newRootDevice = device;  // Use as-is if no partition number found
-                    }
+                    newRootDevice = device;
                 } else {
                     newRootDevice = device;
                 }
@@ -741,7 +735,7 @@ bool SystemInfo::testNetworkConnectivity() {
 
 void SystemInfo::updateSoftwareVersion()
 {
-    QString versionFile = "/etc/version";
+    QString versionFile = "/etc/sw-version";
     QString newSoftwareVersion = readFileContent(versionFile).trimmed();
     
     if (newSoftwareVersion.isEmpty()) {

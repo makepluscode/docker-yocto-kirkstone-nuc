@@ -10,12 +10,14 @@ DashboardCardBase {
         anchors.right: parent.right
         anchors.margins: 15
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 8
+        spacing: 12
         
-        CardInfoRow {
-            label: "SW Version"
-            value: systemInfo ? systemInfo.softwareVersion : ""
-            labelWidth: 90
+        Text {
+            text: systemInfo ? systemInfo.softwareVersion : "Unknown"
+            color: "#ffffff"
+            font.pointSize: 16
+            font.bold: true
+            anchors.horizontalCenter: parent.horizontalCenter
         }
     }
 }
