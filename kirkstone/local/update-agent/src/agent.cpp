@@ -14,8 +14,7 @@ DLT_DECLARE_CONTEXT(dlt_context);
 
 Agent::Agent(const std::string& server_url, const std::string& tenant, const std::string& device_id)
     : server_url_(server_url), tenant_(tenant), device_id_(device_id), curl_handle_(nullptr) {
-    DLT_REGISTER_APP("UAGT", "Update Agent");
-    DLT_REGISTER_CONTEXT(dlt_context, "AGENT", "Update Agent Logic");
+    DLT_REGISTER_CONTEXT(dlt_context, "AGEN", "Update Agent Logic");
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Initializing update agent"));
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Server URL: "), DLT_STRING(server_url_.c_str()));
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Tenant: "), DLT_STRING(tenant_.c_str()));
@@ -39,7 +38,6 @@ Agent::~Agent() {
     }
     curl_global_cleanup();
     DLT_UNREGISTER_CONTEXT(dlt_context);
-    DLT_UNREGISTER_APP();
 }
 
 size_t Agent::writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {

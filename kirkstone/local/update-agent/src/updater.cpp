@@ -6,7 +6,7 @@
 DLT_DECLARE_CONTEXT(dlt_context_updater);
 
 Updater::Updater() : connection_(nullptr), connected_(false) {
-    DLT_REGISTER_CONTEXT(dlt_context_updater, "UPDATER", "Updater Logic");
+    DLT_REGISTER_CONTEXT(dlt_context_updater, "UPDT", "Updater Logic");
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Initializing updater"));
 }
 
