@@ -12,9 +12,9 @@ EXTERNALSRC_BUILD:pn-dashboard = "${WORKDIR}/build"
 EXTERNALSRC:pn-service-app = "${LOCAL}/service_app"
 EXTERNALSRC_BUILD:pn-service-app = "${WORKDIR}/build"
 
-# External source configuration for update-app
-EXTERNALSRC:pn-update-app = "${LOCAL}/update_app"
-EXTERNALSRC_BUILD:pn-update-app = "${WORKDIR}/build"
+# External source configuration for update-service
+EXTERNALSRC:pn-update-service = "${LOCAL}/update-service"
+EXTERNALSRC_BUILD:pn-update-service = "${WORKDIR}/build"
 
 # External source configuration for update-agent
 EXTERNALSRC:pn-update-agent = "${LOCAL}/update-agent"

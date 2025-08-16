@@ -1,11 +1,11 @@
 [Unit]
-Description=Update Application
+Description=Update Service (RAUC Broker)
 After=network.target
 Wants=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/update_app
+ExecStart=/usr/local/bin/update-service
 Restart=always
 RestartSec=5
 User=root

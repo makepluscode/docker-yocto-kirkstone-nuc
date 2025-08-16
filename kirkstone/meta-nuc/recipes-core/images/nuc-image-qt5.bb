@@ -21,7 +21,7 @@ IMAGE_INSTALL = "\
     qtgraphicaleffects \
     dashboard \
     service-app \
-    update-app \
+    update-service \
     update-agent \
     libdrm \
     libgbm \

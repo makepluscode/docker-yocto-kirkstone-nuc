@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.freedesktop.UpdateService
+Exec=/usr/local/bin/update-service
+User=root
+SystemdService=update-service.service
