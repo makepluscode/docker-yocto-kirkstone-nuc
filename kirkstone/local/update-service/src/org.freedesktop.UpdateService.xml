@@ -119,27 +119,25 @@
 
     <!--
          Completed:
-         @result: return code (0 for success)
+         @success: boolean indicating success (true) or failure (false)
+         @message: message describing the result
 
          This signal is emitted when installation completed, either
          successfully or with an error.
     -->
     <signal name="Completed">
-      <arg name="result" type="i"/>
+      <arg name="success" type="b"/>
+      <arg name="message" type="s"/>
     </signal>
 
     <!--
          Progress:
          @percentage: installation progress percentage
-         @message: progress description message
-         @nesting_depth: nesting depth
 
          This signal is emitted during installation progress.
     -->
     <signal name="Progress">
       <arg name="percentage" type="i"/>
-      <arg name="message" type="s"/>
-      <arg name="nesting_depth" type="i"/>
     </signal>
   </interface>
 </node>

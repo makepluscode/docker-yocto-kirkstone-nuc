@@ -6,9 +6,9 @@
 // Update Agent Configuration
 // These can be overridden by environment variables or config files in future versions
 
-// Update server configuration
-const std::string UPDATE_SERVER_URL = "http://192.168.1.101:8080";
-const std::string UPDATE_TENANT = "DEFAULT";
+// Host server configuration
+const std::string HOST_SERVER_URL = "http://192.168.1.101:8080";
+const std::string HOST_TENANT = "DEFAULT";
 const std::string DEVICE_ID = "nuc-device-001";
 
 // Timing configuration
@@ -18,7 +18,7 @@ const int INSTALLATION_TIMEOUT_SECONDS = 600;  // 10 minutes
 const int HTTP_TIMEOUT_SECONDS = 30;
 const int PROGRESS_FEEDBACK_INTERVAL_SECONDS = 3;  // Progress feedback cycle
 const int INSTALLATION_TIMEOUT_SECONDS_MAIN = 300;  // Installation timeout in main loop (5 minutes)
-const int RAUC_STATUS_CHECK_INTERVAL_SECONDS = 10;  // RAUC status check interval
+const int SERVICE_STATUS_CHECK_INTERVAL_SECONDS = 10;  // Update service status check interval
 const int MAIN_LOOP_SLEEP_SECONDS = 2;  // Main loop sleep interval
 const int REBOOT_DELAY_SECONDS = 2;  // Delay before reboot
 const int CLEANUP_DELAY_MS = 100;  // Cleanup delay in milliseconds
@@ -29,7 +29,7 @@ const std::string LOG_FILE_PATH = "/var/log/update-agent.log";
 const std::string START_SIGNAL_FILE = "/tmp/update-agent-start-signal";
 
 // Logging Configuration - Simplified
-const std::string LOG_APP_NAME = "UPDT";
+const std::string LOG_APP_NAME = "UAGT";
 const std::string LOG_SERVER_CONTEXT = "SRVR";
 const std::string LOG_SYSTEM_CONTEXT = "SYST";
 const std::string LOG_AGENT_CONTEXT = "AGNT";

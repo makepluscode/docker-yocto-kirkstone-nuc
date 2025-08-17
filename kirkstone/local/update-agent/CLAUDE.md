@@ -93,7 +93,7 @@ Configuration is currently hardcoded in `src/config.h`:
 ## Key Integration Points
 
 ### RAUC Integration
-- Uses D-Bus to communicate with RAUC service (`de.pengutronix.rauc`)
+- Uses D-Bus to communicate with update-service broker (`org.freedesktop.UpdateService`) which forwards to RAUC
 - Calls `InstallBundle()` method for updates
 - Monitors installation progress via D-Bus signals
 - Handles installation completion and error reporting

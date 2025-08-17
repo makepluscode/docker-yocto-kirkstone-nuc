@@ -1,5 +1,5 @@
 
-#include "agent.h"
+#include "server_agent.h"
 #include "config.h"
 #include <dlt/dlt.h>
 #include <fstream>
@@ -12,7 +12,7 @@
 
 DLT_DECLARE_CONTEXT(dlt_context);
 
-Agent::Agent(const std::string& server_url, const std::string& tenant, const std::string& device_id)
+ServerAgent::ServerAgent(const std::string& server_url, const std::string& tenant, const std::string& device_id)
     : server_url_(server_url), tenant_(tenant), device_id_(device_id), curl_handle_(nullptr) {
     DLT_REGISTER_CONTEXT(dlt_context, "AGEN", "Update Agent Logic");
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Initializing update agent"));
@@ -30,7 +30,7 @@ Agent::Agent(const std::string& server_url, const std::string& tenant, const std
     }
 }
 
-Agent::~Agent() {
+ServerAgent::~ServerAgent() {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Cleaning up update agent"));
     if (curl_handle_) {
         curl_easy_cleanup(curl_handle_);
@@ -40,7 +40,7 @@ Agent::~Agent() {
     DLT_UNREGISTER_CONTEXT(dlt_context);
 }
 
-size_t Agent::writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
+size_t ServerAgent::writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     if (!userp) {
         DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("writeCallback: userp is null"));
         return 0;
@@ -65,29 +65,29 @@ size_t Agent::writeCallback(void* contents, size_t size, size_t nmemb, std::stri
     }
 }
 
-size_t Agent::writeFileCallback(void* contents, size_t size, size_t nmemb, FILE* file) {
+size_t ServerAgent::writeFileCallback(void* contents, size_t size, size_t nmemb, FILE* file) {
     if (!contents || !file || size == 0 || nmemb == 0) {
         return 0;
     }
     return fwrite(contents, size, nmemb, file);
 }
 
-std::string Agent::buildPollUrl() const {
+std::string ServerAgent::buildPollUrl() const {
     std::string url = server_url_ + "/" + tenant_ + "/controller/v1/" + device_id_;
     DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Built poll URL: "), DLT_STRING(url.c_str()));
     return url;
 }
 
-std::string Agent::buildFeedbackUrl(const std::string& execution_id) const {
+std::string ServerAgent::buildFeedbackUrl(const std::string& execution_id) const {
     std::string url = server_url_ + "/" + tenant_ + "/controller/v1/" + device_id_ + "/deploymentBase/" + execution_id + "/feedback";
     DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Built feedback URL: "), DLT_STRING(url.c_str()));
     return url;
 }
 
-void Agent::setupDownloadCurlOptions() {
+void ServerAgent::setupDownloadCurlOptions() {
     if (!curl_handle_) return;
     
-    // Based on rauc-hawkbit-updater reference implementation
+    // Based on host-updater reference implementation
     
     // Basic options
     curl_easy_setopt(curl_handle_, CURLOPT_FOLLOWLOCATION, 1L);
@@ -106,7 +106,7 @@ void Agent::setupDownloadCurlOptions() {
     curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYHOST, ENABLE_SSL_VERIFICATION ? 2L : 0L);
     
     // User agent
-    curl_easy_setopt(curl_handle_, CURLOPT_USERAGENT, "rauc-hawkbit-cpp/1.0");
+    curl_easy_setopt(curl_handle_, CURLOPT_USERAGENT, "host-updater-cpp/1.0");
     
     // Accept ranges for resumable downloads
     curl_easy_setopt(curl_handle_, CURLOPT_RANGE, NULL); // Clear any previous range
@@ -122,7 +122,7 @@ void Agent::setupDownloadCurlOptions() {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("CURL download options configured"));
 }
 
-bool Agent::pollForUpdates(std::string& response) {
+bool ServerAgent::pollForUpdates(std::string& response) {
     if (!curl_handle_) {
         DLT_LOG(dlt_context, DLT_LOG_ERROR, DLT_STRING("CURL handle not initialized"));
         return false;
@@ -166,7 +166,7 @@ bool Agent::pollForUpdates(std::string& response) {
     }
 }
 
-bool Agent::parseUpdateResponse(const std::string& response, UpdateInfo& update_info) {
+bool ServerAgent::parseUpdateResponse(const std::string& response, UpdateInfo& update_info) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Parsing update response"));
     DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Response length: "), DLT_UINT(response.length()));
     DLT_LOG(dlt_context, DLT_LOG_DEBUG, DLT_STRING("Response content: "), DLT_STRING(response.c_str()));
@@ -207,7 +207,7 @@ bool Agent::parseUpdateResponse(const std::string& response, UpdateInfo& update_
     return update_info.is_available;
 }
 
-bool Agent::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info) {
+bool ServerAgent::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Parsing deployment info"));
     
     // Get execution ID
@@ -261,7 +261,7 @@ bool Agent::parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_
     return false;
 }
 
-bool Agent::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info) {
+bool ServerAgent::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Parsing artifact info"));
     
     // Get download URL - try both "_links" and "links" field names
@@ -329,7 +329,7 @@ bool Agent::parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info
     return success;
 }
 
-bool Agent::sendStartedFeedback(const std::string& execution_id) {
+bool ServerAgent::sendStartedFeedback(const std::string& execution_id) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending started feedback for execution: "), DLT_STRING(execution_id.c_str()));
     
     if (!curl_handle_) {
@@ -385,7 +385,7 @@ bool Agent::sendStartedFeedback(const std::string& execution_id) {
     }
 }
 
-bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message) {
+bool ServerAgent::sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending progress feedback for execution: "), DLT_STRING(execution_id.c_str()), DLT_STRING(" Progress: "), DLT_INT(progress), DLT_STRING("%"));
     
     if (!curl_handle_) {
@@ -446,7 +446,7 @@ bool Agent::sendProgressFeedback(const std::string& execution_id, int progress, 
     }
 }
 
-bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, const std::string& message) {
+bool ServerAgent::sendFinishedFeedback(const std::string& execution_id, bool success, const std::string& message) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending finished feedback for execution: "), DLT_STRING(execution_id.c_str()), DLT_STRING(" Success: "), DLT_BOOL(success));
     
     if (!curl_handle_) {
@@ -507,11 +507,11 @@ bool Agent::sendFinishedFeedback(const std::string& execution_id, bool success, 
     }
 }
 
-bool Agent::downloadBundle(const std::string& download_url, const std::string& local_path) {
+bool ServerAgent::downloadBundle(const std::string& download_url, const std::string& local_path) {
     return downloadBundle(download_url, local_path, 0); // Call with no expected size check
 }
 
-bool Agent::downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size) {
+bool ServerAgent::downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("=== Starting bundle download ==="));
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Download URL: "), DLT_STRING(download_url.c_str()));
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Local path: "), DLT_STRING(local_path.c_str()));
@@ -556,7 +556,7 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
     curl_easy_setopt(curl_handle_, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, 300L); // 5 minute timeout
     curl_easy_setopt(curl_handle_, CURLOPT_CONNECTTIMEOUT, 30L);
-    curl_easy_setopt(curl_handle_, CURLOPT_USERAGENT, "rauc-hawkbit-cpp/1.0");
+    curl_easy_setopt(curl_handle_, CURLOPT_USERAGENT, "host-updater-cpp/1.0");
     curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYPEER, 0L); // Disable for debugging
     curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(curl_handle_, CURLOPT_NOPROGRESS, 1L);
@@ -626,7 +626,7 @@ bool Agent::downloadBundle(const std::string& download_url, const std::string& l
     return true;
 }
 
-bool Agent::sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message) {
+bool ServerAgent::sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message) {
     DLT_LOG(dlt_context, DLT_LOG_INFO, DLT_STRING("Sending feedback for execution: "), DLT_STRING(execution_id.c_str()));
     
     if (!curl_handle_) {

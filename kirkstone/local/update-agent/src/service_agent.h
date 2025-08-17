@@ -1,14 +1,14 @@
-#ifndef UPDATER_H
-#define UPDATER_H
+#ifndef SERVICE_AGENT_H
+#define SERVICE_AGENT_H
 
 #include <string>
 #include <dbus/dbus.h>
 #include <functional>
 
-class Updater {
+class ServiceAgent {
 public:
-    Updater();
-    ~Updater();
+    ServiceAgent();
+    ~ServiceAgent();
 
     bool connect();
     void disconnect();
@@ -25,6 +25,7 @@ public:
 
     void setProgressCallback(std::function<void(int)> callback);
     void setCompletedCallback(std::function<void(bool, const std::string&)> callback);
+    void processMessages();
 
 private:
     DBusConnection* connection_;
@@ -38,4 +39,4 @@ private:
     void handleSignal(DBusMessage* message);
 };
 
-#endif // UPDATER_H 
+#endif // SERVICE_AGENT_H 

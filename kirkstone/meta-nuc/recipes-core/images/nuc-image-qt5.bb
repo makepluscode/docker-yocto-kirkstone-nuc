@@ -20,7 +20,6 @@ IMAGE_INSTALL = "\
     qtquickcontrols2 \
     qtgraphicaleffects \
     dashboard \
-    service-app \
     update-service \
     update-agent \
     libdrm \

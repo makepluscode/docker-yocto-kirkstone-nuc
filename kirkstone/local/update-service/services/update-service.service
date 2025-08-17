@@ -1,7 +1,8 @@
 [Unit]
 Description=Update Service (RAUC Broker)
-After=network.target
-Wants=network.target
+After=network.target rauc.service
+Wants=network.target rauc.service
+Requires=rauc.service
 
 [Service]
 Type=simple

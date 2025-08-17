@@ -49,6 +49,7 @@ complete_build() {
 
 complete_bundle_build() {
   echo "🧹 Cleaning sstate for dashboard, rauc, and bundles ..."
+  # Note: NOT cleaning nuc-version to preserve timestamp for bundle versioning
   for r in dashboard rauc nuc-image-qt5-bundle; do
     if bitbake-layers show-recipes "$r" | grep -q "^$r"; then
       bitbake -c cleansstate "$r" || true
@@ -56,6 +57,11 @@ complete_bundle_build() {
       echo "ℹ️  Recipe $r not found (layer missing?) – skipping cleansstate"
     fi
   done
+  
+  echo "🕐 Ensuring nuc-version timestamp is available..."
+  # Build nuc-version first to establish timestamp
+  if ! bitbake nuc-version; then
+    echo "❌ Failed to build nuc-version"; exec bash; fi
 
   echo "📦 Building nuc-image-qt5-bundle ..."
   if ! bitbake nuc-image-qt5-bundle; then

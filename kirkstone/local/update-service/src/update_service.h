@@ -124,9 +124,10 @@ private:
     /**
      * @brief Get property from RAUC
      * @param property_name The RAUC property name
+     * @param original_message The original D-Bus message to create reply for
      * @return D-Bus reply message
      */
-    DBusMessage* getRaucProperty(const std::string& property_name);
+    DBusMessage* getRaucProperty(const std::string& property_name, DBusMessage* original_message);
 
     /**
      * @brief Create error reply

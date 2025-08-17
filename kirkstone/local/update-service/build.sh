@@ -1,38 +1,30 @@
-#!/usr/bin/env bash
-# Build update-service with cross-compilation toolchain
-# Usage: ./build.sh
+#!/bin/bash
 
 set -e
 
-echo "🔨 Building update-service..."
+echo "Building update-agent with Yocto SDK..."
 
-# Check if toolchain is sourced
-if [[ -z "$OECORE_SDK_VERSION" ]]; then
-    echo "❌ Yocto SDK toolchain not sourced."
-    echo "Please run:"
-    echo "  unset LD_LIBRARY_PATH"
-    echo "  source /usr/local/oecore-x86_64/environment-setup-corei7-64-oe-linux"
-    exit 1
-fi
+# Unset LD_LIBRARY_PATH as required by Yocto SDK
+unset LD_LIBRARY_PATH
 
-echo "✅ Using Yocto SDK: $OECORE_SDK_VERSION"
-echo "✅ Target: $OECORE_TARGET_ARCH"
+# Source Yocto SDK environment
+source /usr/local/oecore-x86_64/environment-setup-corei7-64-oe-linux
+
+# Print environment info for debugging
+echo "CC: $CC"
+echo "CXX: $CXX"
+echo "SYSROOT: $SDKTARGETSYSROOT"
+echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
 
 # Create build directory
 mkdir -p build
 cd build
 
-echo "🔧 Configuring with CMake..."
+# Configure with CMake using Yocto SDK toolchain
 cmake .. -DCMAKE_TOOLCHAIN_FILE="/usr/local/oecore-x86_64/sysroots/x86_64-oesdk-linux/usr/share/cmake/OEToolchainConfig.cmake"
 
-echo "🔨 Building..."
+# Build
 make -j$(nproc)
 
-echo "✅ Build completed successfully"
-echo "📦 Binaries:"
-ls -la update-service test-client 2>/dev/null || true
-
-echo ""
-echo "Next steps:"
-echo "  ./deploy.sh          - Deploy to target device"
-echo "  ./test-client        - Test D-Bus broker (on target)"
+echo "Build completed successfully!"
+echo "Binary location: build/update-agent"

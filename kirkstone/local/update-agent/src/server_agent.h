@@ -1,5 +1,5 @@
-#ifndef UPDATE_AGENT_H
-#define UPDATE_AGENT_H
+#ifndef SERVER_AGENT_H
+#define SERVER_AGENT_H
 
 #include <string>
 #include <memory>
@@ -23,10 +23,10 @@ struct UpdateInfo {
     UpdateInfo() : expected_size(0), is_available(false) {}
 };
 
-class Agent {
+class ServerAgent {
 public:
-    Agent(const std::string& server_url, const std::string& tenant, const std::string& device_id);
-    ~Agent();
+    ServerAgent(const std::string& server_url, const std::string& tenant, const std::string& device_id);
+    ~ServerAgent();
 
     bool pollForUpdates(std::string& response);
     bool downloadBundle(const std::string& download_url, const std::string& local_path);
@@ -54,4 +54,4 @@ private:
     bool parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info);
 };
 
-#endif // UPDATE_AGENT_H 
+#endif // SERVER_AGENT_H 

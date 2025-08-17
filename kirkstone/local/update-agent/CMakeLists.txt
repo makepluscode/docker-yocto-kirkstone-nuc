@@ -11,9 +11,9 @@ pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(JSON REQUIRED json-c)
 
 add_executable(update-agent
-    src/update_agent.cpp
-    src/agent.cpp
-    src/updater.cpp
+    src/main.cpp
+    src/server_agent.cpp
+    src/service_agent.cpp
 )
 
 target_include_directories(update-agent PRIVATE

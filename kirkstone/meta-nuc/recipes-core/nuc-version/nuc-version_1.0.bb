@@ -26,6 +26,14 @@ python do_install:prepend() {
         # Set the version timestamp
         d.setVar('NUC_VERSION_TIMESTAMP', kst_time)
         bb.note(f"Generated NUC version timestamp: {kst_time}")
+        
+        # Persist timestamp to file for bundle recipe access
+        workdir = d.getVar('WORKDIR')
+        timestamp_file = os.path.join(workdir, 'temp', 'nuc_version_timestamp')
+        os.makedirs(os.path.dirname(timestamp_file), exist_ok=True)
+        with open(timestamp_file, 'w') as f:
+            f.write(kst_time)
+        bb.note(f"Saved timestamp to: {timestamp_file}")
 }
 
 python do_install() {

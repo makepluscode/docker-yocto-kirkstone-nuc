@@ -1,7 +1,8 @@
 [Unit]
 Description=Update Agent
-After=network.target rauc.service
-Wants=network.target rauc.service
+After=network.target update-service.service
+Wants=network.target update-service.service
+Requires=update-service.service
 
 [Service]
 Type=simple
