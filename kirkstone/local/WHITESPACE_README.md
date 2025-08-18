@@ -15,10 +15,28 @@ The primary script that performs whitespace cleanup on all relevant files in the
 - Provides colored output for better visibility
 - Supports dry-run mode for testing
 
-### 2. `.git/hooks/pre-commit` - Git Hook
+### 2. `check_whitespace.sh` - Check Script
+A script to check for whitespace issues without modifying files.
+
+**Features:**
+- Detects trailing whitespace
+- Identifies files without final newlines
+- Finds files with Windows line endings
+- Provides detailed reporting
+- Safe to run anytime
+
+### 3. `clean_all_whitespace.sh` - Comprehensive Cleanup
+Alternative script for comprehensive whitespace cleanup.
+
+**Features:**
+- Processes all files in one pass
+- Simple and fast execution
+- Includes verification step
+
+### 4. `.git/hooks/pre-commit` - Git Hook
 Automatically runs the whitespace removal script before each commit, ensuring all committed code is properly formatted.
 
-### 3. `.whitespace-config` - Configuration File
+### 5. `.whitespace-config` - Configuration File
 Configurable settings for the whitespace removal process.
 
 ## Usage
@@ -36,6 +54,12 @@ Run the script manually to clean up whitespace:
 
 # Verbose output
 ./remove_whitespace.sh --verbose
+
+# Check for whitespace issues without modifying files
+./check_whitespace.sh
+
+# Comprehensive cleanup (alternative script)
+./clean_all_whitespace.sh
 ```
 
 ### Automatic Execution (Git Pre-commit Hook)
