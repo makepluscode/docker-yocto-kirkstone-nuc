@@ -48,9 +48,8 @@ complete_build() {
 }
 
 complete_bundle_build() {
-  echo "🧹 Cleaning sstate for dashboard, rauc, and bundles ..."
-  # Note: NOT cleaning nuc-version to preserve timestamp for bundle versioning
-  for r in dashboard rauc nuc-image-qt5-bundle; do
+  echo "🧹 Cleaning sstate for dashboard, rauc, nuc-version, and bundles ..."
+  for r in dashboard rauc nuc-version nuc-image-qt5-bundle; do
     if bitbake-layers show-recipes "$r" | grep -q "^$r"; then
       bitbake -c cleansstate "$r" || true
     else
