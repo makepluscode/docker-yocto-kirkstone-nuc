@@ -1,57 +1,69 @@
-#!/usr/bin/env bash
-# Deploy update-service binary and configuration to target device
-# Usage: ./deploy.sh [user@]TARGET_IP
+#!/bin/bash
+
+# Network and target configuration (from connect.sh)
+IFACE="enp42s0"
+HOST_IP="192.168.1.101"
+NETMASK="255.255.255.0"
+TARGET_IP="192.168.1.100"
+TARGET_USER="root"
 
 set -e
-TARGET=${1:-root@192.168.1.100}
 
-# Find built binary
-BIN_PATH="build/update-service"
-if [[ ! -f "$BIN_PATH" ]]; then
-  echo "❌ update-service binary not found. Build it first."
-  exit 1
+echo "Deploying update-service to target device $TARGET_USER@$TARGET_IP..."
+
+# Build the application
+echo "[1] Building update-service..."
+./build.sh
+
+# Remote deployment
+echo "[2] Checking network configuration..."
+CURRENT_IP=$(ip addr show $IFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+if [ "$CURRENT_IP" != "$HOST_IP" ]; then
+    echo "Setting IP address for $IFACE..."
+    sudo ifconfig $IFACE $HOST_IP netmask $NETMASK up
+else
+    echo "Network interface $IFACE already configured with IP $HOST_IP"
 fi
 
-echo "📦 Found binary: $BIN_PATH"
-echo "🚀 Copying to $TARGET ..."
+echo "[3] Testing SSH connection to target..."
+if ! ssh -o BatchMode=yes -o ConnectTimeout=5 $TARGET_USER@$TARGET_IP exit 2>/dev/null; then
+    echo "SSH connection failed. Please run ./connect.sh first to set up SSH keys."
+    exit 1
+fi
+echo "SSH connection successful"
 
-# Copy binary
-scp "$BIN_PATH" "$TARGET:/usr/local/bin/update-service.new"
+echo "[4] Copying binary to target device..."
+scp build/update-service $TARGET_USER@$TARGET_IP:/tmp/update-service-new
 
-# Copy service files
-scp "services/update-service.service" "$TARGET:/tmp/"
-scp "dbus-service/org.freedesktop.UpdateService.conf" "$TARGET:/tmp/"
-scp "dbus-service/org.freedesktop.UpdateService.service" "$TARGET:/tmp/"
+echo "[5] Copying service file to target device..."
+scp services/update-service.service $TARGET_USER@$TARGET_IP:/tmp/update-service.service-new
 
-ssh "$TARGET" <<'EOF'
-# Stop existing service if running
-systemctl stop update-service 2>/dev/null || true
+echo "[6] Deploying on target device..."
+ssh $TARGET_USER@$TARGET_IP << 'EOF'
+    echo "Stopping update-service service..."
+    systemctl stop update-service || true
 
-# Install binary
-mv /usr/local/bin/update-service.new /usr/local/bin/update-service
-chmod +x /usr/local/bin/update-service
+    echo "Installing new binary..."
+    cp /tmp/update-service-new /usr/local/bin/update-service
+    chmod +x /usr/local/bin/update-service
 
-# Install systemd service
-mv /tmp/update-service.service /etc/systemd/system/
-chmod 644 /etc/systemd/system/update-service.service
+    echo "Installing service file..."
+    cp /tmp/update-service.service-new /etc/systemd/system/update-service.service
 
-# Install D-Bus configuration
-mv /tmp/org.freedesktop.UpdateService.conf /etc/dbus-1/system.d/
-chmod 644 /etc/dbus-1/system.d/org.freedesktop.UpdateService.conf
+    echo "Reloading systemd..."
+    systemctl daemon-reload
+    systemctl enable update-service.service
 
-mv /tmp/org.freedesktop.UpdateService.service /usr/share/dbus-1/system-services/
-chmod 644 /usr/share/dbus-1/system-services/org.freedesktop.UpdateService.service
+    echo "Starting service..."
+    systemctl start update-service.service
 
-# Reload systemd and D-Bus
-systemctl daemon-reload
-systemctl reload dbus 2>/dev/null || systemctl restart dbus
+    echo "Cleaning up temporary files..."
+    rm -f /tmp/update-service-new /tmp/update-service.service-new
 
-# Enable and start service
-systemctl enable update-service
-systemctl start update-service
-
-echo "Update Service installed and started"
-systemctl status update-service --no-pager
+    echo "Checking service status..."
+    systemctl status update-service --no-pager -l
 EOF
 
-echo "✅ Deployment done."
+echo "Remote deployment completed!"
+echo "Check target status with: ssh $TARGET_USER@$TARGET_IP systemctl status update-service"
+echo "View target logs with: ssh $TARGET_USER@$TARGET_IP journalctl -u update-service -f"
