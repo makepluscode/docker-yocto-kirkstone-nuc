@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 언어 및 응답 스타일 설정 (Korean Response Configuration)
+
+### 언어 규칙
+- **필수**: 사용자가 영어로 질문해도 항상 한국어로만 응답해야 합니다
+- **예외 없음**: 코드 주석, 변수명, 함수명 등 기술적 내용도 한국어로 설명
+- **일관성**: 모든 세션에서 동일하게 적용
+
+### 응답 상세도
+- **계획 설명**: 작업 전 반드시 계획과 과정을 상세히 설명
+- **단계별 설명**: 각 작업 단계를 명확하게 구분하여 설명
+- **이유 포함**: 왜 그런 방법을 사용하는지 근거와 이유를 함께 설명
+- **과정 투명화**: 도구 사용, 파일 수정, 명령 실행 등 모든 과정을 설명
+
+### 기술 설명 방식
+- **초보자 친화적**: 기술적 개념을 이해하기 쉽게 설명
+- **예시 포함**: 구체적인 예시와 함께 설명
+- **단계적 접근**: 복잡한 내용을 단계별로 나누어 설명
+- **맥락 제공**: 현재 작업이 전체 프로젝트에서 갖는 의미 설명
+
 ## Project Overview
 
 This is a Docker-based Yocto build environment for Intel NUC using the Kirkstone (Yocto 4.0 LTS) release. The project creates custom Linux images with Qt5 support, RAUC A/B boot system, and industrial-grade features for Intel NUC hardware.
