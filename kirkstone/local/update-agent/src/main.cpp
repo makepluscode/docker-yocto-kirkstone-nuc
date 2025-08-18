@@ -83,8 +83,14 @@ private:
     ServiceAgent service_agent_;
     std::string current_execution_id_;
     bool installation_in_progress_ = false;
+    bool installation_started_ = false; // Flag to stop polling after installation starts
 
     void checkForUpdates() {
+        if (installation_started_) {
+            DLT_LOG(dlt_context_main, DLT_LOG_DEBUG, DLT_STRING("Installation has started, polling disabled until reset"));
+            return;
+        }
+
         if (installation_in_progress_) {
             DLT_LOG(dlt_context_main, DLT_LOG_DEBUG, DLT_STRING("Installation in progress, skipping poll"));
             return;
@@ -119,6 +125,9 @@ private:
     void processUpdate(const UpdateInfo& update_info) {
         current_execution_id_ = update_info.execution_id;
         installation_in_progress_ = true;
+        installation_started_ = true; // Disable polling permanently once installation starts
+
+        DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Installation started - polling disabled until system reset"));
 
         // Send started feedback
         server_agent_.sendStartedFeedback(current_execution_id_);
@@ -169,7 +178,8 @@ private:
             current_execution_id_.clear();
         }
 
-        installation_in_progress_ = false;
+        // Note: installation_in_progress_ remains true to prevent any further operations
+        // installation_started_ flag ensures polling remains disabled until reset
 
         if (success) {
             DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update completed successfully"));
