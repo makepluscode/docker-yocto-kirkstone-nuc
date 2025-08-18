@@ -36,6 +36,7 @@ Rectangle {
                 readOnly: true
                 font.family: "Monospace"
                 font.pixelSize: 12
+                color: "#2c3e50"  // Dark blue-gray text for good contrast
                 background: Rectangle {
                     color: "#ecf0f1"
                     radius: 4
