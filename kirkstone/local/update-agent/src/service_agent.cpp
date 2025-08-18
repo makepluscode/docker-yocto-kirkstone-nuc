@@ -18,7 +18,7 @@ ServiceAgent::~ServiceAgent() {
 
 bool ServiceAgent::connect() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Connecting to update service broker (org.freedesktop.UpdateService)"));
-    
+
     DBusError error;
     dbus_error_init(&error);
 
@@ -43,10 +43,10 @@ bool ServiceAgent::connect() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Update service broker is available"));
 
     // Add message filter for update service broker signals
-    dbus_bus_add_match(connection_, 
-        "type='signal',interface='org.freedesktop.UpdateService'", 
+    dbus_bus_add_match(connection_,
+        "type='signal',interface='org.freedesktop.UpdateService'",
         &error);
-    
+
     if (dbus_error_is_set(&error)) {
         DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("DBus match error: "), DLT_STRING(error.message));
         dbus_error_free(&error);
@@ -186,7 +186,7 @@ bool ServiceAgent::checkService() {
         return true;
     } else {
         DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("First status check failed, attempting to reconnect..."));
-        
+
         // Try to reconnect and retry once
         disconnect();
         if (connect()) {
@@ -196,7 +196,7 @@ bool ServiceAgent::checkService() {
                 return true;
             }
         }
-        
+
         DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Update service is not responding even after reconnect"));
         return false;
     }
@@ -204,34 +204,34 @@ bool ServiceAgent::checkService() {
 
 bool ServiceAgent::installBundle(const std::string& bundle_path) {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Installing bundle: "), DLT_STRING(bundle_path.c_str()));
-    
+
     // Check if file exists and is readable
     if (access(bundle_path.c_str(), F_OK) != 0) {
         DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle file does not exist: "), DLT_STRING(bundle_path.c_str()));
         return false;
     }
-    
+
     if (access(bundle_path.c_str(), R_OK) != 0) {
         DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle file is not readable: "), DLT_STRING(bundle_path.c_str()));
         return false;
     }
-    
+
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Bundle file exists and is readable"));
-    
+
     // Check update service status before attempting installation
     if (!checkService()) {
         DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Update service is not available, cannot install bundle"));
         return false;
     }
-    
+
     bool result = sendMethodCallWithPath("Install", bundle_path, "org.freedesktop.UpdateService");
-    
+
     if (result) {
         DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Bundle installation started successfully"));
     } else {
         DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle installation failed to start"));
     }
-    
+
     return result;
 }
 
@@ -257,7 +257,7 @@ bool ServiceAgent::getStatus(std::string& status) {
 
     DBusMessageIter iter;
     dbus_message_iter_init_append(message, &iter);
-    
+
     // Add interface name
     const char* interface_name = "org.freedesktop.UpdateService";
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &interface_name)) {
@@ -265,7 +265,7 @@ bool ServiceAgent::getStatus(std::string& status) {
         dbus_message_unref(message);
         return false;
     }
-    
+
     // Add property name
     const char* property_name = "Operation";
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &property_name)) {
@@ -278,12 +278,12 @@ bool ServiceAgent::getStatus(std::string& status) {
 
     DBusError error;
     dbus_error_init(&error);
-    
+
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("=== Sending Properties.Get call to update-service ==="));
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Service: org.freedesktop.UpdateService"));
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Interface: org.freedesktop.DBus.Properties"));
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Property: Operation"));
-    
+
     DBusMessage* reply = dbus_connection_send_with_reply_and_block(connection_, message, 5000, &error); // Reduced to 5 seconds
     dbus_message_unref(message);
 
@@ -299,7 +299,7 @@ bool ServiceAgent::getStatus(std::string& status) {
         DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to get status after 30 second timeout"));
         return false;
     }
-    
+
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("=== Properties.Get call succeeded ==="));
 
     // Parse the variant response
@@ -308,7 +308,7 @@ bool ServiceAgent::getStatus(std::string& status) {
         if (DBUS_TYPE_VARIANT == dbus_message_iter_get_arg_type(&reply_iter)) {
             DBusMessageIter variant_iter;
             dbus_message_iter_recurse(&reply_iter, &variant_iter);
-            
+
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&variant_iter)) {
                 const char* status_str;
                 dbus_message_iter_get_basic(&variant_iter, &status_str);
@@ -358,7 +358,7 @@ bool ServiceAgent::getBootSlot(std::string& boot_slot) {
 
 bool ServiceAgent::markGood() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Marking current slot as good"));
-    
+
     if (!connected_) {
         DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to DBus"));
         return false;
@@ -378,7 +378,7 @@ bool ServiceAgent::markGood() {
 
     DBusMessageIter iter;
     dbus_message_iter_init_append(message, &iter);
-    
+
     // Add state parameter
     const char* state = "good";
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &state)) {
@@ -386,7 +386,7 @@ bool ServiceAgent::markGood() {
         dbus_message_unref(message);
         return false;
     }
-    
+
     // Add slot_identifier parameter
     const char* slot_identifier = "booted";
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &slot_identifier)) {
@@ -410,7 +410,7 @@ bool ServiceAgent::markGood() {
 
 bool ServiceAgent::markBad() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Marking current slot as bad"));
-    
+
     if (!connected_) {
         DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to DBus"));
         return false;
@@ -430,7 +430,7 @@ bool ServiceAgent::markBad() {
 
     DBusMessageIter iter;
     dbus_message_iter_init_append(message, &iter);
-    
+
     // Add state parameter
     const char* state = "bad";
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &state)) {
@@ -438,7 +438,7 @@ bool ServiceAgent::markBad() {
         dbus_message_unref(message);
         return false;
     }
-    
+
     // Add slot_identifier parameter
     const char* slot_identifier = "booted";
     if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &slot_identifier)) {
@@ -485,15 +485,15 @@ void ServiceAgent::handleSignal(DBusMessage* message) {
     const char* interface = dbus_message_get_interface(message);
     const char* member = dbus_message_get_member(message);
     const char* sender = dbus_message_get_sender(message);
-    
+
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("=== SIGNAL RECEIVED ==="));
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Interface: "), DLT_STRING(interface ? interface : "null"));
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Member: "), DLT_STRING(member ? member : "null"));
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Sender: "), DLT_STRING(sender ? sender : "null"));
-    
+
     if (strcmp(interface, "org.freedesktop.UpdateService") == 0) {
         DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Processing UpdateService signal: "), DLT_STRING(member));
-        
+
         if (strcmp(member, "Progress") == 0) {
             DBusMessageIter iter;
             if (dbus_message_iter_init(message, &iter)) {
@@ -501,7 +501,7 @@ void ServiceAgent::handleSignal(DBusMessage* message) {
                     int progress;
                     dbus_message_iter_get_basic(&iter, &progress);
                     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Progress signal received: "), DLT_INT(progress), DLT_STRING("%"));
-                    
+
                     if (progress_callback_) {
                         DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Calling progress callback"));
                         progress_callback_(progress);
@@ -518,7 +518,7 @@ void ServiceAgent::handleSignal(DBusMessage* message) {
             DBusMessageIter iter;
             bool success = false;
             std::string message_text;
-            
+
             if (dbus_message_iter_init(message, &iter)) {
                 if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(&iter)) {
                     dbus_bool_t result;
@@ -528,7 +528,7 @@ void ServiceAgent::handleSignal(DBusMessage* message) {
                 } else {
                     DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Completed signal has wrong first argument type"));
                 }
-                
+
                 if (dbus_message_iter_next(&iter)) {
                     if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&iter)) {
                         const char* msg;
@@ -544,9 +544,9 @@ void ServiceAgent::handleSignal(DBusMessage* message) {
             } else {
                 DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to get Completed signal arguments"));
             }
-            
+
             DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Completed signal: Success="), DLT_BOOL(success), DLT_STRING(", Message: "), DLT_STRING(message_text.c_str()));
-            
+
             if (completed_callback_) {
                 DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Calling completed callback"));
                 completed_callback_(success, message_text);
@@ -565,19 +565,19 @@ void ServiceAgent::processMessages() {
     if (!connected_ || !connection_) {
         return;
     }
-    
+
     // Process pending D-Bus messages (non-blocking)
     int dispatch_count = 0;
     while (dbus_connection_get_dispatch_status(connection_) == DBUS_DISPATCH_DATA_REMAINS) {
         dbus_connection_dispatch(connection_);
         dispatch_count++;
     }
-    
+
     // Read new messages from the socket (non-blocking)
     dbus_connection_read_write(connection_, 0);
-    
+
     // Log message processing periodically
     if (dispatch_count > 0) {
         DLT_LOG(dlt_context_updater, DLT_LOG_DEBUG, DLT_STRING("Processed "), DLT_INT(dispatch_count), DLT_STRING(" D-Bus messages"));
     }
-} 
+}

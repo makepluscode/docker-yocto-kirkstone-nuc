@@ -5,20 +5,20 @@ import SystemInfo 1.0
 DashboardCardBase {
     title: "CPU Load"
     property SystemInfo systemInfo: null
-    
+
     // Timer as a property, not in content
     property Timer refreshTimer: Timer {
         interval: 1000; running: true; repeat: true
         onTriggered: if (systemInfo) systemInfo.refresh()
     }
-    
+
     Column {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 15
         anchors.verticalCenter: parent.verticalCenter
         spacing: 10
-        
+
         Text {
             text: systemInfo ? (systemInfo.cpuUsage.toFixed(1) + "%") : "0.0%"
             color: {
@@ -33,18 +33,18 @@ DashboardCardBase {
             font.bold: true
             anchors.horizontalCenter: parent.horizontalCenter
         }
-        
+
         ProgressBar {
             width: parent.width
             from: 0
             to: 100
             value: systemInfo ? systemInfo.cpuUsage : 0
-            
+
             background: Rectangle {
                 color: "#333333"
                 radius: 3
             }
-            
+
             contentItem: Rectangle {
                 color: {
                     if (!systemInfo) return "#44ff44"
@@ -54,30 +54,30 @@ DashboardCardBase {
                 radius: 3
             }
         }
-        
+
         // CPU cores usage - compact layout for 6-column grid
         Column {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 8
-            
+
             // First row - cores 1-4
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 10
-                
+
                 Repeater {
                     model: Math.min(4, systemInfo ? systemInfo.cpuCoreUsage.length : 0)
-                    
+
                     Column {
                         spacing: 2
-                        
+
                         Text {
                             text: "C" + (index + 1)
                             color: "#cccccc"
                             font.pointSize: 7
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
-                        
+
                         Text {
                             text: systemInfo ? systemInfo.cpuCoreUsage[index] + "%" : "0%"
                             color: "#ffffff"
@@ -88,26 +88,26 @@ DashboardCardBase {
                     }
                 }
             }
-            
+
             // Second row - cores 5-8 (if available)
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 10
                 visible: systemInfo && systemInfo.cpuCoreUsage.length > 4
-                
+
                 Repeater {
                     model: Math.min(4, Math.max(0, (systemInfo ? systemInfo.cpuCoreUsage.length : 0) - 4))
-                    
+
                     Column {
                         spacing: 2
-                        
+
                         Text {
                             text: "C" + (index + 5)
                             color: "#cccccc"
                             font.pointSize: 7
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
-                        
+
                         Text {
                             text: systemInfo ? systemInfo.cpuCoreUsage[index + 4] + "%" : "0%"
                             color: "#ffffff"

@@ -17,8 +17,8 @@ update-agent  <--D-Bus-->  update-service  <--D-Bus-->  RAUC
 
 ## D-Bus Interface
 
-**Service Name:** `org.freedesktop.UpdateService`  
-**Object Path:** `/org/freedesktop/UpdateService`  
+**Service Name:** `org.freedesktop.UpdateService`
+**Object Path:** `/org/freedesktop/UpdateService`
 **Interface:** `org.freedesktop.UpdateService`
 
 ### Methods
@@ -26,7 +26,7 @@ update-agent  <--D-Bus-->  update-service  <--D-Bus-->  RAUC
 All methods have the same signature as RAUC:
 
 - `Install(path: string)` → forwards to RAUC `Install`
-- `InstallBundle(source: string, args: dict)` → forwards to RAUC `InstallBundle` 
+- `InstallBundle(source: string, args: dict)` → forwards to RAUC `InstallBundle`
 - `Info(bundle: string)` → forwards to RAUC `Info`
 - `Mark(state: string, slot: string)` → forwards to RAUC `Mark`
 - `GetSlotStatus()` → forwards to RAUC `GetSlotStatus`
@@ -120,12 +120,12 @@ Example change in update-agent:
 ```cpp
 // Old RAUC direct connection
 connection = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
-dbus_message_new_method_call("de.pengutronix.rauc", "/", 
+dbus_message_new_method_call("de.pengutronix.rauc", "/",
                            "de.pengutronix.rauc.Installer", "Install");
 
-// New update-service connection  
+// New update-service connection
 connection = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
-dbus_message_new_method_call("org.freedesktop.UpdateService", 
+dbus_message_new_method_call("org.freedesktop.UpdateService",
                            "/org/freedesktop/UpdateService",
                            "org.freedesktop.UpdateService", "Install");
 ```

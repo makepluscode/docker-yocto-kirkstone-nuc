@@ -19,7 +19,7 @@ struct UpdateInfo {
     std::string sha1_hash;
     std::string sha256_hash;
     bool is_available;
-    
+
     UpdateInfo() : expected_size(0), is_available(false) {}
 };
 
@@ -32,7 +32,7 @@ public:
     bool downloadBundle(const std::string& download_url, const std::string& local_path);
     bool downloadBundle(const std::string& download_url, const std::string& local_path, long expected_size);
     bool sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message = "");
-    
+
     bool parseUpdateResponse(const std::string& response, UpdateInfo& update_info);
     bool sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message = "");
     bool sendStartedFeedback(const std::string& execution_id);
@@ -49,9 +49,9 @@ private:
     std::string buildPollUrl() const;
     std::string buildFeedbackUrl(const std::string& execution_id) const;
     void setupDownloadCurlOptions();
-    
+
     bool parseDeploymentInfo(json_object* deployment_obj, UpdateInfo& update_info);
     bool parseArtifactInfo(json_object* artifact_obj, UpdateInfo& update_info);
 };
 
-#endif // SERVER_AGENT_H 
+#endif // SERVER_AGENT_H

@@ -4,16 +4,16 @@ import QtQuick.Layouts 1.15
 
 Rectangle {
     id: updatePopup
-    
+
     // Popup properties
     property bool isVisible: false
     property string status: "Initializing..."
     property double progress: 0.0
     property bool showProgress: true
-    
+
     // Animation properties
     property int animationDuration: 300
-    
+
     // Popup styling
     width: 400
     height: 200
@@ -21,23 +21,23 @@ Rectangle {
     border.color: "#4a9eff"
     border.width: 2
     radius: 10
-    
+
     // Center the popup
     anchors.centerIn: parent
-    
+
     // Show/hide animation
     visible: opacity > 0
     opacity: isVisible ? 1.0 : 0.0
     scale: isVisible ? 1.0 : 0.8
-    
+
     Behavior on opacity {
         NumberAnimation { duration: animationDuration }
     }
-    
+
     Behavior on scale {
         NumberAnimation { duration: animationDuration }
     }
-    
+
     // Background shadow effect
     Rectangle {
         anchors.fill: parent
@@ -47,31 +47,31 @@ Rectangle {
         radius: parent.radius + 5
         z: -1
     }
-    
+
     // Content layout
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 20
         spacing: 15
-        
+
         // Header
         Row {
             Layout.fillWidth: true
             spacing: 10
-            
+
             Rectangle {
                 width: 24
                 height: 24
                 color: "#4a9eff"
                 radius: 12
-                
+
                 Text {
                     anchors.centerIn: parent
                     text: "⟳"
                     color: "white"
                     font.pixelSize: 16
                     font.bold: true
-                    
+
                     RotationAnimation on rotation {
                         running: updatePopup.showProgress && updatePopup.progress < 100
                         from: 0
@@ -81,7 +81,7 @@ Rectangle {
                     }
                 }
             }
-            
+
             Text {
                 text: "Software Update"
                 color: "#ffffff"
@@ -90,7 +90,7 @@ Rectangle {
                 verticalAlignment: Text.AlignVCenter
             }
         }
-        
+
         // Status text
         Text {
             Layout.fillWidth: true
@@ -99,7 +99,7 @@ Rectangle {
             font.pixelSize: 14
             wrapMode: Text.WordWrap
         }
-        
+
         // Progress bar
         Rectangle {
             Layout.fillWidth: true
@@ -109,7 +109,7 @@ Rectangle {
             border.width: 1
             radius: 10
             visible: updatePopup.showProgress
-            
+
             Rectangle {
                 id: progressFill
                 height: parent.height - 2
@@ -119,12 +119,12 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: 1
-                
+
                 Behavior on width {
                     NumberAnimation { duration: 200 }
                 }
             }
-            
+
             Text {
                 anchors.centerIn: parent
                 text: Math.round(updatePopup.progress) + "%"
@@ -133,13 +133,13 @@ Rectangle {
                 font.bold: true
             }
         }
-        
+
         // Action buttons (optional)
         Row {
             Layout.alignment: Qt.AlignCenter
             spacing: 10
             visible: !updatePopup.showProgress || updatePopup.progress >= 100
-            
+
             Button {
                 text: "Details"
                 background: Rectangle {
@@ -152,13 +152,13 @@ Rectangle {
                     font.pixelSize: 12
                     horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 onClicked: {
                     // Show detailed update information
                     console.log("Show update details")
                 }
             }
-            
+
             Button {
                 text: updatePopup.progress >= 100 ? "Close" : "Hide"
                 background: Rectangle {
@@ -171,14 +171,14 @@ Rectangle {
                     font.pixelSize: 12
                     horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 onClicked: {
                     updatePopup.isVisible = false
                 }
             }
         }
     }
-    
+
     // Auto-hide after completion (optional)
     Timer {
         id: autoHideTimer
@@ -190,7 +190,7 @@ Rectangle {
             }
         }
     }
-    
+
     // Watch for completion to start auto-hide timer
     onProgressChanged: {
         if (progress >= 100 && isVisible) {

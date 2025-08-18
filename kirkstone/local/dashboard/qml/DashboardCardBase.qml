@@ -3,16 +3,16 @@ import QtQuick.Layouts 1.15
 
 Rectangle {
     id: cardBase
-    
+
     // Public properties
     property string title: ""
     property bool isEmpty: false
     property string emptyText: "Empty"
     property var cardData: null
-    
+
     // Default content properties - can be overridden
     default property alias content: contentArea.children
-    
+
     // Card styling - consistent across all cards
     Layout.fillWidth: true
     Layout.fillHeight: true
@@ -20,11 +20,11 @@ Rectangle {
     border.color: isEmpty ? "#222222" : "#444444"
     border.width: isEmpty ? 1 : 2
     radius: 8
-    
+
     Column {
         anchors.fill: parent
         spacing: 0
-        
+
         // Title bar
         Rectangle {
             id: titleBar
@@ -32,7 +32,7 @@ Rectangle {
             height: 35
             color: isEmpty ? "#1a1a1a" : "#2a2a2a"
             radius: cardBase.radius
-            
+
             // Bottom corners should be square
             Rectangle {
                 anchors.bottom: parent.bottom
@@ -41,7 +41,7 @@ Rectangle {
                 height: cardBase.radius
                 color: parent.color
             }
-            
+
             Text {
                 anchors.left: parent.left
                 anchors.leftMargin: 15
@@ -52,13 +52,13 @@ Rectangle {
                 font.bold: true
             }
         }
-        
+
         // Content area
         Item {
             id: contentArea
             width: parent.width
             height: parent.height - titleBar.height
-            
+
             // Default empty content
             Text {
                 anchors.centerIn: parent
@@ -69,7 +69,7 @@ Rectangle {
             }
         }
     }
-    
+
     // Subtle glow effect for active cards
     Rectangle {
         anchors.fill: parent

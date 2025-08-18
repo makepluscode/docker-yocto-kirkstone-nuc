@@ -112,11 +112,11 @@ ApplicationWindow {
 
     SystemInfo {
         id: systemInfo
-        
+
         // Connect to Hawkbit service status signals
         onHawkbitServiceStatusChanged: function(active) {
             systemInfo.logUIEvent("Hawkbit service status changed", "Active: " + active)
-            
+
             if (!active && swUpdateInProgress) {
                 // Service stopped unexpectedly during update
                 systemInfo.logUIEvent("Hawkbit service failure", "Service stopped during update")
@@ -128,7 +128,7 @@ ApplicationWindow {
                 hawkbitMonitorTimer.checkCount = 0
             }
         }
-        
+
         onHawkbitUpdateFailed: function(error) {
             systemInfo.logUIEvent("Hawkbit update failed", "Error: " + error)
             updateStatus = "Update failed: " + error
@@ -179,7 +179,7 @@ ApplicationWindow {
                 updateProgress = 1.0
                 swUpdateInProgress = false
             }
-            
+
             // Stop Hawkbit monitoring if it was running
             if (hawkbitMonitorTimer.running) {
                 hawkbitMonitorTimer.running = false
@@ -204,11 +204,11 @@ ApplicationWindow {
             if (swUpdateInProgress) {
                 // Check actual service status
                 var serviceActive = systemInfo.checkHawkbitServiceStatus()
-                
+
                 if (serviceActive) {
                     // Service is running, check logs for progress
                     var logs = systemInfo.getHawkbitServiceLogs(10)
-                    
+
                     // Parse logs to determine actual status
                     if (logs.includes("Connected to server") || logs.includes("connection established")) {
                         updateStatus = "Connected to Hawkbit server, polling for updates..."
@@ -219,11 +219,11 @@ ApplicationWindow {
                     } else if (logs.includes("Installing") || logs.includes("rauc install")) {
                         updateStatus = "Installing update bundle via RAUC..."
                         updateProgress = 0.7
-                        
+
                         // Start RAUC D-Bus monitoring when installation begins
                         systemInfo.logUIEvent("RAUC installation detected", "Starting D-Bus monitoring, stopping Hawkbit monitoring")
                         raucSystemManager.monitorRaucDBus()
-                        
+
                         // Stop Hawkbit monitoring, let RAUC monitoring take over
                         hawkbitMonitorTimer.running = false
                         hawkbitMonitorTimer.checkCount = 0
@@ -277,7 +277,7 @@ ApplicationWindow {
 
     UpdateAgentManager {
         id: updateAgentManager
-        
+
         onUpdateStarted: {
             systemInfo.logUIEvent("Update Agent", "Update started")
             swUpdateInProgress = true
@@ -285,16 +285,16 @@ ApplicationWindow {
             updateStatus = "Update-agent starting update process..."
             updateProgress = 0.0
         }
-        
+
         onUpdateStatusChanged: {
             systemInfo.logUIEvent("Update Agent Status", updateAgentManager.updateStatus)
             updateStatus = updateAgentManager.updateStatus
-            
+
             // Show popup for any active update or significant status changes
             if (updateAgentManager.isUpdateActive) {
                 swUpdateInProgress = true
                 updateComplete = false
-            } else if (updateAgentManager.updateStatus.includes("started") || 
+            } else if (updateAgentManager.updateStatus.includes("started") ||
                       updateAgentManager.updateStatus.includes("progress") ||
                       updateAgentManager.updateStatus.includes("downloading") ||
                       updateAgentManager.updateStatus.includes("installing") ||
@@ -305,11 +305,11 @@ ApplicationWindow {
                 updateComplete = false
             }
         }
-        
+
         onUpdateProgressChanged: {
             systemInfo.logUIEvent("Update Agent Progress", "Progress: " + updateAgentManager.updateProgress + "%")
             updateProgress = updateAgentManager.updateProgress / 100.0
-            
+
             // Show popup when progress changes, regardless of isUpdateActive
             if (updateAgentManager.updateProgress > 0 && updateAgentManager.updateProgress < 100) {
                 swUpdateInProgress = true
@@ -319,14 +319,14 @@ ApplicationWindow {
                 // Keep popup visible to show completion
             }
         }
-        
+
         onUpdateCompleted: function(success, message) {
             systemInfo.logUIEvent("Update Agent Completed", "Success: " + success + " - " + message)
             updateComplete = true
             swUpdateInProgress = false
             updateStatus = success ? "Update completed successfully!" : "Update failed: " + message
             updateProgress = success ? 1.0 : 0.0
-            
+
             if (success) {
                 // Auto-reboot after successful update
                 rebootTimer.start()
@@ -336,12 +336,12 @@ ApplicationWindow {
 
     Component.onCompleted: {
         systemInfo.logUIEvent("Dashboard startup", "Initializing managers")
-        
+
         // Initialize managers on startup
         raucManager.refresh()
         grubManager.refresh()
         updateAgentManager.refresh()
-        
+
         systemInfo.logUIEvent("Dashboard initialized", "All components loaded")
     }
 
@@ -581,7 +581,7 @@ ApplicationWindow {
 
                 onClicked: {
                     systemInfo.logUIEvent("F1 button clicked", "Software update initiated by user")
-                    
+
                     swUpdateInProgress = true
                     updateStatus = "Running pre-flight checks..."
                     updateProgress = 0.0
@@ -590,14 +590,14 @@ ApplicationWindow {
                     // Pre-flight checks
                     systemInfo.logUIEvent("Pre-flight check", "Testing network connectivity")
                     var networkOk = systemInfo.testNetworkConnectivity()
-                    
+
                     if (networkOk) {
                         updateStatus = "Network OK, checking Hawkbit configuration..."
                         systemInfo.logUIEvent("Pre-flight check", "Network connectivity passed")
-                        
+
                         var configStatus = systemInfo.checkHawkbitConfiguration()
                         systemInfo.logUIEvent("Configuration check", "Config validation completed")
-                        
+
                         if (configStatus.includes("hawkbit_server")) {
                             updateStatus = "Configuration OK, starting Hawkbit service..."
                             // Start the RAUC Hawkbit C++ updater service
@@ -651,13 +651,13 @@ ApplicationWindow {
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
+
                 onClicked: {
                     systemInfo.logUIEvent("F2 button clicked", "Software update cancellation requested by user")
-                    
+
                     // Stop the Hawkbit update process
                     systemInfo.stopHawkbitUpdater()
-                    
+
                     // Stop monitoring and reset UI
                     hawkbitMonitorTimer.running = false
                     hawkbitMonitorTimer.checkCount = 0
@@ -698,21 +698,21 @@ ApplicationWindow {
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
+
                 onClicked: {
                     systemInfo.logUIEvent("F3 button clicked", "Hawkbit diagnostics requested by user")
-                    
+
                     // Show diagnostic info in update popup
                     swUpdateInProgress = true
                     updateComplete = false
                     updateProgress = 0.0
-                    
+
                     var diagResult = "=== HAWKBIT DIAGNOSTICS ===\n\n"
-                    
+
                     diagResult += "1. Network Test:\n"
                     var networkOk = systemInfo.testNetworkConnectivity()
                     diagResult += networkOk ? "✓ PASS - Internet reachable\n\n" : "✗ FAIL - No internet access\n\n"
-                    
+
                     diagResult += "2. Configuration Check:\n"
                     var configInfo = systemInfo.checkHawkbitConfiguration()
                     if (configInfo.includes("hawkbit_server")) {
@@ -720,7 +720,7 @@ ApplicationWindow {
                     } else {
                         diagResult += "✗ FAIL - No server config\n\n"
                     }
-                    
+
                     diagResult += "3. Service Status:\n"
                     var serviceStatus = systemInfo.getHawkbitServiceStatus()
                     if (serviceStatus.includes("Active: active")) {
@@ -730,15 +730,15 @@ ApplicationWindow {
                     } else {
                         diagResult += "✗ FAIL - Service error\n\n"
                     }
-                    
+
                     diagResult += "4. Recent Logs:\n"
                     var recentLogs = systemInfo.getHawkbitServiceLogs(5)
                     diagResult += recentLogs.split('\n').slice(-5).join('\n')
-                    
+
                     updateStatus = diagResult
                     updateProgress = 1.0
                     updateComplete = true
-                    
+
                     // Auto-close diagnostic after 10 seconds
                     diagnosticTimer.start()
                 }
@@ -927,7 +927,7 @@ ApplicationWindow {
             systemInfo.rebootSystem()
         }
     }
-    
+
     // Diagnostic display timer
     Timer {
         id: diagnosticTimer

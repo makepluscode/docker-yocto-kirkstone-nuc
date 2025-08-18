@@ -209,4 +209,4 @@ ssh root@192.168.1.100 "echo 'Connection OK'"
 
 # 서비스 로그 확인
 ssh root@192.168.1.100 "journalctl -u dashboard-eglfs.service --no-pager -n 20"
-``` 
+```

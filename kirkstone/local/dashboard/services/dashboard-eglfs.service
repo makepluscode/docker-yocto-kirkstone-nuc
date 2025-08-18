@@ -12,4 +12,4 @@ ExecStart=/usr/bin/dashboard --platform eglfs
 Restart=no
 
 [Install]
-WantedBy=multi-user.target 
+WantedBy=multi-user.target

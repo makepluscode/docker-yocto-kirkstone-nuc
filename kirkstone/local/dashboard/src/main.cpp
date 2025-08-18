@@ -18,9 +18,9 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     // DLT initialization
-    DLT_REGISTER_APP("DBO", "Dashboard Application");
-    DLT_REGISTER_CONTEXT(ctxUI, "UIF", "UI Flow");
-    
+    DLT_REGISTER_APP("DBRD", "Dashboard Application");
+    DLT_REGISTER_CONTEXT(ctxUI, "MAIN", "Dashboard Main");
+
     DLT_LOG(ctxUI, DLT_LOG_INFO, DLT_STRING("Dashboard application starting"));
     DLT_LOG(ctxUI, DLT_LOG_INFO, DLT_STRING("Qt version: "), DLT_STRING(QT_VERSION_STR));
 
@@ -37,10 +37,10 @@ int main(int argc, char *argv[])
     qmlRegisterType<UpdateAgentManager>("UpdateAgent", 1, 0, "UpdateAgentManager");
 
     QQmlApplicationEngine engine;
-    
+
     // Load main QML file with fallback strategy
     bool loaded = false;
-    
+
     // First try Qt resources
     DLT_LOG(ctxUI, DLT_LOG_INFO, DLT_STRING("Attempting to load QML from Qt resources"));
     qDebug() << "Trying to load QML from resources...";
@@ -73,13 +73,13 @@ int main(int argc, char *argv[])
             qDebug() << "File does not exist:" << qmlPath;
         }
     }
-    
+
     if (!loaded) {
         DLT_LOG(ctxUI, DLT_LOG_FATAL, DLT_STRING("Critical: Failed to load QML from all sources"));
         qDebug() << "Failed to load QML from both resources and file system";
         return -1;
     }
-    
+
     if (engine.rootObjects().isEmpty()) {
         DLT_LOG(ctxUI, DLT_LOG_FATAL, DLT_STRING("Critical: No QML root objects found"));
         return -1;
@@ -93,4 +93,4 @@ int main(int argc, char *argv[])
     DLT_UNREGISTER_CONTEXT(ctxUI);
     DLT_UNREGISTER_APP();
     return ret;
-} 
+}

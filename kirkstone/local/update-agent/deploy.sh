@@ -42,28 +42,28 @@ echo "[6] Deploying on target device..."
 ssh $TARGET_USER@$TARGET_IP << 'EOF'
     echo "Stopping update-agent service..."
     systemctl stop update-agent || true
-    
+
     echo "Installing new binary..."
     cp /tmp/update-agent-new /usr/local/bin/update-agent
     chmod +x /usr/local/bin/update-agent
-    
+
     echo "Installing service file..."
     cp /tmp/update-agent.service-new /etc/systemd/system/update-agent.service
-    
+
     echo "Reloading systemd..."
     systemctl daemon-reload
     systemctl enable update-agent.service
-    
+
     echo "Starting service..."
     systemctl start update-agent.service
-    
+
     echo "Cleaning up temporary files..."
     rm -f /tmp/update-agent-new /tmp/update-agent.service-new
-    
+
     echo "Checking service status..."
     systemctl status update-agent --no-pager -l
 EOF
 
 echo "Remote deployment completed!"
 echo "Check target status with: ssh $TARGET_USER@$TARGET_IP systemctl status update-agent"
-echo "View target logs with: ssh $TARGET_USER@$TARGET_IP journalctl -u update-agent -f" 
+echo "View target logs with: ssh $TARGET_USER@$TARGET_IP journalctl -u update-agent -f"

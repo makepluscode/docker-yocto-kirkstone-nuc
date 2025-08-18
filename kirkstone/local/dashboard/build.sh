@@ -111,4 +111,4 @@ fi
 
 echo ""
 print_success "Build process completed!"
-print_status "You can now run the dashboard with: ./build/dashboard" 
+print_status "You can now run the dashboard with: ./build/dashboard"

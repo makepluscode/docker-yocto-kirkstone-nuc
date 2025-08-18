@@ -18,7 +18,7 @@ The base component that provides consistent styling for all cards.
 DashboardCardBase {
     title: "My Card"
     isEmpty: false
-    
+
     // Your content here
     Column {
         anchors.centerIn: parent
@@ -95,19 +95,19 @@ import SystemInfo 1.0
 DashboardCardBase {
     title: "New Card"
     property SystemInfo systemInfo: null
-    
+
     Column {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 15
         anchors.verticalCenter: parent.verticalCenter
         spacing: 8
-        
+
         CardInfoRow {
             label: "Status"
             value: systemInfo ? systemInfo.someProperty : "N/A"
         }
-        
+
         // Add more rows or custom content
     }
 }
@@ -138,11 +138,11 @@ Rectangle {
     color: "#1a1a1a"
     border.color: "#444444"
     // ... manual styling
-    
+
     Column {
         // Title bar rectangle
         Rectangle { /* ... */ }
-        
+
         // Content with manual rows
         Row {
             Text { text: "Label:" }
@@ -156,10 +156,10 @@ Rectangle {
 ```qml
 DashboardCardBase {
     title: "Card Title"
-    
+
     Column {
         anchors.centerIn: parent
-        
+
         CardInfoRow {
             label: "Label"
             value: value

@@ -1,0 +1,29 @@
+# Whitespace Removal Configuration
+# This file configures the automatic whitespace removal script
+
+# File extensions to process
+FILE_EXTENSIONS="*.cpp *.h *.c *.qml *.sh *.md *.xml *.conf *.service"
+
+# File names to process (without extension)
+FILE_NAMES="CMakeLists.txt"
+
+# Directories to exclude
+EXCLUDE_DIRS="build oe-workdir oe-logs .git .claude"
+
+# Maximum number of consecutive blank lines to keep
+MAX_BLANK_LINES=2
+
+# Whether to remove trailing whitespace
+REMOVE_TRAILING_WHITESPACE=true
+
+# Whether to normalize line endings
+NORMALIZE_LINE_ENDINGS=true
+
+# Whether to normalize blank lines
+NORMALIZE_BLANK_LINES=true
+
+# Whether to skip binary files
+SKIP_BINARY_FILES=true
+
+# Verbose output (true/false)
+VERBOSE=false 

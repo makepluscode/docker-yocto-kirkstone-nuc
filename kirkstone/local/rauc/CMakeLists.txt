@@ -135,11 +135,11 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
 # D-Bus code generation (if service enabled)
 if(ENABLE_SERVICE AND DBUS_FOUND)
     find_program(GDBUS_CODEGEN gdbus-codegen)
-    
+
     set(DBUS_INTERFACE_XML "${CMAKE_CURRENT_SOURCE_DIR}/src/de.pengutronix.rauc.Installer.xml")
     set(DBUS_GENERATED_H "${CMAKE_CURRENT_BINARY_DIR}/rauc-installer-generated.h")
     set(DBUS_GENERATED_C "${CMAKE_CURRENT_BINARY_DIR}/rauc-installer-generated.c")
-    
+
     if(GDBUS_CODEGEN)
         add_custom_command(
             OUTPUT ${DBUS_GENERATED_H} ${DBUS_GENERATED_C}
@@ -152,7 +152,7 @@ if(ENABLE_SERVICE AND DBUS_FOUND)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             COMMENT "Generating D-Bus interface code"
         )
-        
+
         set(DBUS_SOURCES ${DBUS_GENERATED_H} ${DBUS_GENERATED_C})
     else()
         message(WARNING "gdbus-codegen not found, D-Bus service support may be limited")
@@ -204,7 +204,7 @@ endif()
 # Create static library (only add DBUS_SOURCES if they exist)
 # Always create dummy dbus sources if not available
 if(NOT DBUS_SOURCES)
-    set(DBUS_SOURCES 
+    set(DBUS_SOURCES
         ${CMAKE_CURRENT_BINARY_DIR}/rauc-installer-generated.h
         ${CMAKE_CURRENT_BINARY_DIR}/rauc-installer-generated.c
     )
@@ -305,6 +305,6 @@ install(TARGETS rauc DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES rauc.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
 if(ENABLE_SERVICE)
-    install(FILES src/de.pengutronix.rauc.Installer.xml 
+    install(FILES src/de.pengutronix.rauc.Installer.xml
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/dbus-1/interfaces)
 endif()

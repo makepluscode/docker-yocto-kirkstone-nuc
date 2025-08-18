@@ -106,7 +106,7 @@ Configuration is currently hardcoded in `src/config.h`:
 
 ### Logging Strategy
 - Uses DLT with separate contexts for different subsystems
-- HAWK context: Hawkbit communication and HTTP operations  
+- HAWK context: Hawkbit communication and HTTP operations
 - RAUC context: RAUC D-Bus operations and bundle installation
 - UPDT context: Update orchestration and state management
 

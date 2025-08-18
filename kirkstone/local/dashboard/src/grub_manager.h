@@ -54,4 +54,4 @@ private:
     void updateStatus(const QString &output);
     void parseGrubEnv(const QString &output);
     void parseGrubVersion(const QString &output);
-}; 
+};

@@ -17,12 +17,12 @@ static const char* RAUC_OBJECT_PATH = "/";
 static const char* RAUC_INTERFACE_NAME = "de.pengutronix.rauc.Installer";
 static const char* RAUC_PROPERTIES_INTERFACE = "org.freedesktop.DBus.Properties";
 
-UpdateService::UpdateService() 
+UpdateService::UpdateService()
     : service_connection_(nullptr)
-    , rauc_connection_(nullptr) 
+    , rauc_connection_(nullptr)
     , running_(false)
     , connected_to_rauc_(false) {
-    
+
     DLT_REGISTER_CONTEXT(dlt_context_service, "USVC", "Update Service");
     logInfo("Update Service initializing");
 }
@@ -85,10 +85,10 @@ bool UpdateService::connectToRauc() {
     }
 
     // Add signal filter for RAUC signals - EXACTLY like the working version
-    dbus_bus_add_match(rauc_connection_, 
-        "type='signal',interface='de.pengutronix.rauc.Installer'", 
+    dbus_bus_add_match(rauc_connection_,
+        "type='signal',interface='de.pengutronix.rauc.Installer'",
         &error);
-    
+
     if (dbus_error_is_set(&error)) {
         logError("Failed to add RAUC signal filter: " + std::string(error.message));
         dbus_error_free(&error);
@@ -126,7 +126,7 @@ bool UpdateService::registerService() {
     int result = dbus_bus_request_name(service_connection_, SERVICE_NAME,
                                       DBUS_NAME_FLAG_REPLACE_EXISTING,
                                       &error);
-    
+
     if (dbus_error_is_set(&error)) {
         logError("Failed to request service name: " + std::string(error.message));
         dbus_error_free(&error);
@@ -141,13 +141,13 @@ bool UpdateService::registerService() {
     // Add object path handler
     static const DBusObjectPathVTable vtable = {
         nullptr,        // unregister function
-        messageHandler, // message function  
+        messageHandler, // message function
         nullptr,        // dbus_internal_pad1
         nullptr,        // dbus_internal_pad2
         nullptr,        // dbus_internal_pad3
         nullptr         // dbus_internal_pad4
     };
-    
+
     if (!dbus_connection_register_object_path(service_connection_, OBJECT_PATH,
                                             &vtable, this)) {
         logError("Failed to register object path");
@@ -176,7 +176,7 @@ void UpdateService::run() {
     while (running_) {
         // Handle D-Bus messages for our service
         dbus_connection_read_write_dispatch(service_connection_, 100);
-        
+
         // Handle RAUC signals with more detailed logging
         if (connected_to_rauc_) {
             // Process RAUC messages more frequently
@@ -185,10 +185,10 @@ void UpdateService::run() {
                 dbus_connection_dispatch(rauc_connection_);
                 rauc_dispatch_count++;
             }
-            
+
             // Read new RAUC messages
             dbus_connection_read_write(rauc_connection_, 10);
-            
+
             // Log RAUC message processing periodically
             if (rauc_dispatch_count > 0 && loop_count % 100 == 0) {
                 logInfo("RAUC messages processed: " + std::to_string(rauc_dispatch_count));
@@ -226,18 +226,18 @@ void UpdateService::run() {
 void UpdateService::stop() {
     logInfo("Stopping Update Service");
     running_ = false;
-    
+
     disconnectFromRauc();
     unregisterService();
-    
+
     if (service_connection_) {
         dbus_connection_unref(service_connection_);
         service_connection_ = nullptr;
     }
 }
 
-DBusHandlerResult UpdateService::messageHandler(DBusConnection* connection, 
-                                               DBusMessage* message, 
+DBusHandlerResult UpdateService::messageHandler(DBusConnection* connection,
+                                               DBusMessage* message,
                                                void* user_data) {
     UpdateService* service = static_cast<UpdateService*>(user_data);
     service->logInfo("=== MESSAGE HANDLER CALLED ===");
@@ -287,7 +287,7 @@ DBusHandlerResult UpdateService::handleMethodCall(DBusMessage* message) {
             logError("Failed to create reply for method: " + std::string(member ? member : "unknown"));
         }
     }
-    
+
     // Handle properties interface
     if (interface && strcmp(interface, "org.freedesktop.DBus.Properties") == 0) {
         logInfo("=== PROCESSING PROPERTIES INTERFACE ===");
@@ -307,26 +307,26 @@ DBusHandlerResult UpdateService::handleMethodCall(DBusMessage* message) {
 
 DBusMessage* UpdateService::handlePropertyCall(DBusMessage* message) {
     const char* member = dbus_message_get_member(message);
-    
+
     if (strcmp(member, "Get") == 0) {
         DBusMessageIter iter;
         const char* interface_name;
         const char* property_name;
-        
+
         if (!dbus_message_iter_init(message, &iter) ||
             dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING) {
             return createErrorReply(message, "org.freedesktop.DBus.Error.InvalidArgs", "Invalid arguments");
         }
-        
+
         dbus_message_iter_get_basic(&iter, &interface_name);
-        
+
         if (!dbus_message_iter_next(&iter) ||
             dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING) {
             return createErrorReply(message, "org.freedesktop.DBus.Error.InvalidArgs", "Invalid arguments");
         }
-        
+
         dbus_message_iter_get_basic(&iter, &property_name);
-        
+
         // Handle our properties
         if (strcmp(interface_name, INTERFACE_NAME) == 0) {
             if (strcmp(property_name, "Operation") == 0) {
@@ -344,7 +344,7 @@ DBusMessage* UpdateService::handlePropertyCall(DBusMessage* message) {
             }
         }
     }
-    
+
     return createErrorReply(message, "org.freedesktop.DBus.Error.UnknownProperty", "Unknown property");
 }
 
@@ -352,43 +352,43 @@ DBusHandlerResult UpdateService::raucSignalHandler(DBusConnection* connection,
                                                   DBusMessage* message,
                                                   void* user_data) {
     UpdateService* service = static_cast<UpdateService*>(user_data);
-    
+
     if (dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL) {
         const char* interface = dbus_message_get_interface(message);
         const char* member = dbus_message_get_member(message);
         const char* sender = dbus_message_get_sender(message);
-        
+
         service->logInfo("=== RAUC SIGNAL RECEIVED ===");
         service->logInfo("Interface: " + std::string(interface ? interface : "null"));
         service->logInfo("Member: " + std::string(member ? member : "null"));
         service->logInfo("Sender: " + std::string(sender ? sender : "null"));
-        
+
         service->forwardRaucSignal(message);
         return DBUS_HANDLER_RESULT_HANDLED;
     }
-    
+
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
 void UpdateService::forwardRaucSignal(DBusMessage* message) {
     const char* interface = dbus_message_get_interface(message);
     const char* member = dbus_message_get_member(message);
-    
+
     logInfo("=== FORWARDING RAUC SIGNAL ===");
     logInfo("Original interface: " + std::string(interface ? interface : "null"));
     logInfo("Original member: " + std::string(member ? member : "null"));
-    
+
     // Check if this is a RAUC signal - EXACTLY like the working version
     if (!interface || strcmp(interface, "de.pengutronix.rauc.Installer") != 0) {
         logDebug("Not a RAUC Installer signal, ignoring: " + std::string(interface ? interface : "unknown"));
         return;
     }
-    
+
     logInfo("Processing RAUC signal: " + std::string(member));
-    
+
     // Create new signal with our interface name and updated member name
     DBusMessage* signal = nullptr;
-    
+
     if (strcmp(member, "Completed") == 0) {
         signal = dbus_message_new_signal(OBJECT_PATH, INTERFACE_NAME, "Completed");
         logInfo("Creating Completed signal for UPDATE-AGENT");
@@ -399,38 +399,38 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
         logDebug("Unknown RAUC signal member, not forwarding: " + std::string(member));
         return;
     }
-    
+
     if (signal) {
         // Copy and convert arguments from original message - EXACTLY like the working version
         DBusMessageIter src_iter, dst_iter;
         if (dbus_message_iter_init(message, &src_iter)) {
             dbus_message_iter_init_append(signal, &dst_iter);
-            
+
             if (strcmp(member, "Completed") == 0) {
                 // RAUC Completed: (bs) -> Our Completed: (bs) - EXACTLY like working version
                 bool success = false;
                 std::string message_text;
-                
+
                 // Debug: Log the actual argument type we received
                 int arg_type = dbus_message_iter_get_arg_type(&src_iter);
                 logInfo("Completed signal - Received argument type: " + std::to_string(arg_type));
                 logInfo("Completed signal - DBUS_TYPE_BOOLEAN is: " + std::to_string(DBUS_TYPE_BOOLEAN));
                 logInfo("Completed signal - DBUS_TYPE_INT32 is: " + std::to_string(DBUS_TYPE_INT32));
-                
+
                 // Parse boolean success - EXACTLY like working version
                 if (dbus_message_iter_get_arg_type(&src_iter) == DBUS_TYPE_BOOLEAN) {
                     dbus_bool_t result;
                     dbus_message_iter_get_basic(&src_iter, &result);
                     success = result;
                     dbus_message_iter_append_basic(&dst_iter, DBUS_TYPE_BOOLEAN, &result);
-                    
+
                     logInfo("Completed signal - success: " + std::string(success ? "true" : "false"));
                 } else {
                     logError("Completed signal: Expected boolean argument, got different type");
                     dbus_message_unref(signal);
                     return;
                 }
-                
+
                 // Parse message string - EXACTLY like working version
                 if (dbus_message_iter_next(&src_iter)) {
                     if (dbus_message_iter_get_arg_type(&src_iter) == DBUS_TYPE_STRING) {
@@ -438,7 +438,7 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
                         dbus_message_iter_get_basic(&src_iter, &msg);
                         message_text = msg ? msg : "";
                         dbus_message_iter_append_basic(&dst_iter, DBUS_TYPE_STRING, &msg);
-                        
+
                         logInfo("Completed signal - message: " + message_text);
                     } else {
                         logError("Completed signal: Expected string argument, got different type");
@@ -450,20 +450,20 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
                     dbus_message_unref(signal);
                     return;
                 }
-                
+
                 logInfo("Completed signal parsed successfully: success=" + std::string(success ? "true" : "false") + ", message='" + message_text + "'");
-                
+
             } else if (strcmp(member, "Progress") == 0) {
                 // RAUC Progress: (i) -> Our Progress: (i) - EXACTLY like working version
                 int arg_type = dbus_message_iter_get_arg_type(&src_iter);
                 logInfo("Progress signal - Received argument type: " + std::to_string(arg_type));
                 logInfo("Progress signal - DBUS_TYPE_INT32 is: " + std::to_string(DBUS_TYPE_INT32));
-                
+
                 if (dbus_message_iter_get_arg_type(&src_iter) == DBUS_TYPE_INT32) {
                     dbus_int32_t percentage;
                     dbus_message_iter_get_basic(&src_iter, &percentage);
                     dbus_message_iter_append_basic(&dst_iter, DBUS_TYPE_INT32, &percentage);
-                    
+
                     logInfo("Progress signal - percentage: " + std::to_string(percentage));
                 } else {
                     logError("Progress signal: Expected integer argument, got different type");
@@ -476,11 +476,11 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
             dbus_message_unref(signal);
             return;
         }
-        
+
         // Send the signal
         dbus_bool_t sent = dbus_connection_send(service_connection_, signal, nullptr);
         dbus_message_unref(signal);
-        
+
         if (sent) {
             logInfo("Signal successfully forwarded to update-agent: " + std::string(member));
         } else {
@@ -595,12 +595,12 @@ DBusMessage* UpdateService::handleGetBootSlot(DBusMessage* message) {
 
 DBusMessage* UpdateService::forwardToRauc(const std::string& rauc_method_name, DBusMessage* message) {
     logDebug("Forwarding to RAUC: " + rauc_method_name);
-    
+
     if (!connected_to_rauc_) {
         logError("Not connected to RAUC service");
         return createErrorReply(message, "de.makepluscode.updateservice.Error", "Not connected to RAUC");
     }
-    
+
     // Create method call to RAUC
     DBusMessage* rauc_call = dbus_message_new_method_call(
         RAUC_SERVICE_NAME,
@@ -608,24 +608,24 @@ DBusMessage* UpdateService::forwardToRauc(const std::string& rauc_method_name, D
         RAUC_INTERFACE_NAME,
         rauc_method_name.c_str()
     );
-    
+
     if (!rauc_call) {
         logError("Failed to create D-Bus method call for RAUC");
         return createErrorReply(message, "de.makepluscode.updateservice.Error", "Failed to create RAUC call");
     }
-    
+
     logDebug("Created RAUC method call: " + std::string(RAUC_SERVICE_NAME) + "." + rauc_method_name);
-    
+
     // Copy arguments from original message
     DBusMessageIter src_iter, dst_iter;
     if (dbus_message_iter_init(message, &src_iter)) {
         dbus_message_iter_init_append(rauc_call, &dst_iter);
-        
+
         // Copy all arguments
         do {
             int arg_type = dbus_message_iter_get_arg_type(&src_iter);
             if (arg_type == DBUS_TYPE_INVALID) break;
-            
+
             // Copy basic types and variants
             if (arg_type == DBUS_TYPE_STRING) {
                 const char* value;
@@ -633,24 +633,24 @@ DBusMessage* UpdateService::forwardToRauc(const std::string& rauc_method_name, D
                 dbus_message_iter_append_basic(&dst_iter, DBUS_TYPE_STRING, &value);
             }
             // Add more argument copying as needed for complex types
-            
+
         } while (dbus_message_iter_next(&src_iter));
     }
-    
+
     // Send call to RAUC and wait for reply
-    
+
     DBusMessage* rauc_reply = dbus_connection_send_with_reply_and_block(
         rauc_connection_, rauc_call, 30000, nullptr);
-    
+
     dbus_message_unref(rauc_call);
-    
+
     if (!rauc_reply) {
         logError("RAUC method call failed: " + rauc_method_name);
         return createErrorReply(message, "de.makepluscode.updateservice.Error", "RAUC call failed");
     }
-    
+
     logDebug("RAUC method completed: " + rauc_method_name);
-    
+
     // Create reply with same content as RAUC reply
     DBusMessage* reply = dbus_message_new_method_return(message);
     if (reply) {
@@ -658,35 +658,35 @@ DBusMessage* UpdateService::forwardToRauc(const std::string& rauc_method_name, D
         DBusMessageIter reply_src_iter, reply_dst_iter;
         if (dbus_message_iter_init(rauc_reply, &reply_src_iter)) {
             dbus_message_iter_init_append(reply, &reply_dst_iter);
-            
+
             // Copy all reply arguments
             do {
                 int arg_type = dbus_message_iter_get_arg_type(&reply_src_iter);
                 if (arg_type == DBUS_TYPE_INVALID) break;
-                
+
                 if (arg_type == DBUS_TYPE_STRING) {
                     const char* value;
                     dbus_message_iter_get_basic(&reply_src_iter, &value);
                     dbus_message_iter_append_basic(&reply_dst_iter, DBUS_TYPE_STRING, &value);
                 }
                 // Add more types as needed
-                
+
             } while (dbus_message_iter_next(&reply_src_iter));
         }
     }
-    
+
     dbus_message_unref(rauc_reply);
     return reply;
 }
 
 DBusMessage* UpdateService::getRaucProperty(const std::string& property_name, DBusMessage* original_message) {
     logDebug("Getting RAUC property: " + property_name);
-    
+
     if (!connected_to_rauc_) {
         logError("Not connected to RAUC service for property: " + property_name);
         return nullptr;
     }
-    
+
     // Create property get call to RAUC
     DBusMessage* prop_call = dbus_message_new_method_call(
         RAUC_SERVICE_NAME,
@@ -694,33 +694,33 @@ DBusMessage* UpdateService::getRaucProperty(const std::string& property_name, DB
         RAUC_PROPERTIES_INTERFACE,
         "Get"
     );
-    
+
     if (!prop_call) {
         logError("Failed to create property call message for: " + property_name);
         return nullptr;
     }
-    
+
     // Add arguments (interface name and property name)
     DBusMessageIter iter;
     dbus_message_iter_init_append(prop_call, &iter);
-    
+
     const char* interface_name = RAUC_INTERFACE_NAME;
     const char* prop_name = property_name.c_str();
-    
+
     dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &interface_name);
     dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop_name);
-    
+
     // Send call and get reply
     DBusMessage* rauc_reply = dbus_connection_send_with_reply_and_block(
         rauc_connection_, prop_call, 30000, nullptr);
-    
+
     dbus_message_unref(prop_call);
-    
+
     if (!rauc_reply) {
         logError("RAUC property call failed: " + property_name);
         return nullptr;
     }
-    
+
     // Check if reply is an error
     if (dbus_message_get_type(rauc_reply) == DBUS_MESSAGE_TYPE_ERROR) {
         logError("RAUC returned error for property: " + property_name);
@@ -729,7 +729,7 @@ DBusMessage* UpdateService::getRaucProperty(const std::string& property_name, DB
         dbus_message_unref(rauc_reply);
         return nullptr;
     }
-    
+
     // Create a proper Properties.Get reply that wraps the RAUC property value in a variant
     DBusMessage* reply = dbus_message_new_method_return(original_message);
     if (!reply) {
@@ -737,16 +737,16 @@ DBusMessage* UpdateService::getRaucProperty(const std::string& property_name, DB
         dbus_message_unref(rauc_reply);
         return nullptr;
     }
-    
+
     // Parse the RAUC reply and wrap it in a variant
     DBusMessageIter rauc_iter, reply_iter, variant_iter;
     if (dbus_message_iter_init(rauc_reply, &rauc_iter)) {
         dbus_message_iter_init_append(reply, &reply_iter);
-        
+
         // Start a variant
         const char* variant_signature = nullptr;
         int arg_type = dbus_message_iter_get_arg_type(&rauc_iter);
-        
+
         if (arg_type == DBUS_TYPE_VARIANT) {
             // RAUC already returns a variant, so we can copy it directly
             DBusMessageIter rauc_variant_iter;
@@ -756,15 +756,15 @@ DBusMessage* UpdateService::getRaucProperty(const std::string& property_name, DB
             // RAUC returns a direct value, we need to wrap it in a variant
             variant_signature = dbus_message_iter_get_signature(&rauc_iter);
         }
-        
+
         if (variant_signature) {
             dbus_message_iter_open_container(&reply_iter, DBUS_TYPE_VARIANT, variant_signature, &variant_iter);
-            
+
             if (arg_type == DBUS_TYPE_VARIANT) {
                 // Copy the variant content directly by iterating through it
                 DBusMessageIter rauc_variant_iter;
                 dbus_message_iter_recurse(&rauc_iter, &rauc_variant_iter);
-                
+
                 // Copy the variant content manually
                 int variant_arg_type = dbus_message_iter_get_arg_type(&rauc_variant_iter);
                 if (variant_arg_type == DBUS_TYPE_STRING) {
@@ -798,7 +798,7 @@ DBusMessage* UpdateService::getRaucProperty(const std::string& property_name, DB
                 }
                 // Add more types as needed
             }
-            
+
             dbus_message_iter_close_container(&reply_iter, &variant_iter);
         } else {
             logError("Failed to get variant signature for property: " + property_name);
@@ -812,14 +812,14 @@ DBusMessage* UpdateService::getRaucProperty(const std::string& property_name, DB
         dbus_message_unref(rauc_reply);
         return nullptr;
     }
-    
+
     dbus_message_unref(rauc_reply);
     logDebug("Successfully created Properties.Get reply for: " + property_name);
     return reply;
 }
 
-DBusMessage* UpdateService::createErrorReply(DBusMessage* message, 
-                                           const std::string& error_name, 
+DBusMessage* UpdateService::createErrorReply(DBusMessage* message,
+                                           const std::string& error_name,
                                            const std::string& error_message) {
     DBusMessage* reply = dbus_message_new_error(message, error_name.c_str(), error_message.c_str());
     logError("Returning error: " + error_name + " - " + error_message);

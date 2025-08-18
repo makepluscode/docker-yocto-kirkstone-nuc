@@ -64,4 +64,4 @@ private:
     void updateStatus(const QString &output);
     void parseStatus(const QString &output);
     void parseJsonStatus(const QString &jsonOutput);
-}; 
+};

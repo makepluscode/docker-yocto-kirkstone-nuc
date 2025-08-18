@@ -61,9 +61,9 @@ SystemInfo::SystemInfo(QObject *parent)
         dltContextRegistered = true;
         DLT_LOG_SYS_INFO("SystemInfo DLT context registered");
     }
-    
+
     DLT_LOG_SYS_INFO("SystemInfo manager initialized");
-    
+
     // Initialize system details that don't change frequently
     updateSystemDetails();
     updateBuildInfo();
@@ -543,25 +543,25 @@ bool SystemInfo::checkHawkbitServiceStatus() {
     QProcess process;
     process.start("systemctl", QStringList() << "is-active" << "rauc-hawkbit-cpp.service");
     process.waitForFinished(3000);
-    
+
     QString status = process.readAllStandardOutput().trimmed();
     bool isActive = (status == "active");
-    
+
     DLT_LOG_SYS_INFO(QString("Hawkbit service status check: %1 (active=%2)").arg(status).arg(isActive).toUtf8().constData());
     qDebug() << "Hawkbit service status:" << status << "Active:" << isActive;
     emit hawkbitServiceStatusChanged(isActive);
-    
+
     return isActive;
 }
 
 void SystemInfo::stopHawkbitUpdater() {
     DLT_LOG_SYS_INFO("F2 Button pressed - Stopping Hawkbit updater service...");
     qDebug() << "Stopping Hawkbit updater service...";
-    
+
     QProcess process;
     process.start("systemctl", QStringList() << "stop" << "rauc-hawkbit-cpp.service");
     process.waitForFinished(5000);
-    
+
     if (process.exitCode() == 0) {
         DLT_LOG_SYS_INFO("Hawkbit updater service stopped successfully");
         qDebug() << "Hawkbit updater service stopped successfully";
@@ -571,7 +571,7 @@ void SystemInfo::stopHawkbitUpdater() {
         DLT_LOG_SYS_WARN(QString("Failed to stop Hawkbit service: %1").arg(error).toUtf8().constData());
         qDebug() << "Failed to stop Hawkbit updater service:" << error;
     }
-    
+
     // Clean up signal file
     DLT_LOG_SYS_INFO("Removing start signal file");
     QFile::remove("/tmp/rauc-hawkbit-start-signal");
@@ -581,10 +581,10 @@ QString SystemInfo::getHawkbitServiceLogs(int lines) {
     QProcess process;
     process.start("journalctl", QStringList() << "-u" << "rauc-hawkbit-cpp.service" << "-n" << QString::number(lines) << "--no-pager");
     process.waitForFinished(5000);
-    
+
     if (process.exitCode() == 0) {
         QString logs = process.readAllStandardOutput();
-        
+
         // Log key events found in service logs
         if (logs.contains("Connected to server", Qt::CaseInsensitive)) {
             DLT_LOG_SYS_INFO("Hawkbit service connected to server");
@@ -598,7 +598,7 @@ QString SystemInfo::getHawkbitServiceLogs(int lines) {
         if (logs.contains("error", Qt::CaseInsensitive)) {
             DLT_LOG_SYS_WARN("Hawkbit service reported errors - check journalctl");
         }
-        
+
         return logs;
     } else {
         DLT_LOG_SYS_ERROR("Failed to retrieve Hawkbit service logs");
@@ -618,22 +618,22 @@ QString SystemInfo::getHawkbitServiceStatus() {
     QProcess statusProcess;
     statusProcess.start("systemctl", QStringList() << "status" << "rauc-hawkbit-cpp.service" << "--no-pager");
     statusProcess.waitForFinished(5000);
-    
+
     QString output = statusProcess.readAllStandardOutput();
     QString error = statusProcess.readAllStandardError();
-    
+
     QString fullStatus = "=== Service Status ===\n" + output;
     if (!error.isEmpty()) {
         fullStatus += "\n=== Errors ===\n" + error;
     }
-    
+
     DLT_LOG_SYS_INFO("Hawkbit service detailed status requested");
     return fullStatus;
 }
 
 QString SystemInfo::checkHawkbitConfiguration() {
     QString configInfo = "=== Hawkbit Configuration Check ===\n";
-    
+
     // Check configuration file
     QFile configFile("/etc/rauc-hawkbit-cpp/config.json");
     if (configFile.exists()) {
@@ -642,7 +642,7 @@ QString SystemInfo::checkHawkbitConfiguration() {
             QString config = stream.readAll();
             configInfo += "Configuration file found:\n" + config + "\n\n";
             configFile.close();
-            
+
             // Parse for server URL
             if (config.contains("hawkbit_server")) {
                 DLT_LOG_SYS_INFO("Hawkbit configuration file found and contains server URL");
@@ -657,7 +657,7 @@ QString SystemInfo::checkHawkbitConfiguration() {
         configInfo += "Configuration file not found: /etc/rauc-hawkbit-cpp/config.json\n\n";
         DLT_LOG_SYS_ERROR("Hawkbit configuration file not found");
     }
-    
+
     // Check signal file
     QFile signalFile("/tmp/rauc-hawkbit-start-signal");
     if (signalFile.exists()) {
@@ -667,12 +667,12 @@ QString SystemInfo::checkHawkbitConfiguration() {
         configInfo += "Start signal file exists: NO\n";
         DLT_LOG_SYS_WARN("Hawkbit start signal file missing");
     }
-    
+
     // Check RAUC status
     QProcess raucProcess;
     raucProcess.start("rauc", QStringList() << "status");
     raucProcess.waitForFinished(3000);
-    
+
     if (raucProcess.exitCode() == 0) {
         configInfo += "RAUC is accessible: YES\n";
         DLT_LOG_SYS_INFO("RAUC service is accessible");
@@ -681,17 +681,17 @@ QString SystemInfo::checkHawkbitConfiguration() {
         configInfo += "RAUC Error: " + raucProcess.readAllStandardError() + "\n";
         DLT_LOG_SYS_ERROR("RAUC service is not accessible");
     }
-    
+
     return configInfo;
 }
 
 bool SystemInfo::testNetworkConnectivity() {
     DLT_LOG_SYS_INFO("Testing network connectivity for Hawkbit");
-    
+
     // First check if Hawkbit server is configured
     QString config = checkHawkbitConfiguration();
     QString hawkbitServer;
-    
+
     // Extract server from config
     QStringList lines = config.split('\n');
     for (const QString &line : lines) {
@@ -709,15 +709,15 @@ bool SystemInfo::testNetworkConnectivity() {
             }
         }
     }
-    
+
     QString testTarget = hawkbitServer.isEmpty() ? "8.8.8.8" : hawkbitServer;
     DLT_LOG_SYS_INFO(QString("Testing connectivity to: %1").arg(testTarget).toUtf8().constData());
-    
+
     // Test connectivity to Hawkbit server or fallback to Google DNS
     QProcess pingProcess;
     pingProcess.start("ping", QStringList() << "-c" << "1" << "-W" << "3" << testTarget);
     pingProcess.waitForFinished(5000);
-    
+
     if (pingProcess.exitCode() == 0) {
         if (hawkbitServer.isEmpty()) {
             DLT_LOG_SYS_INFO("Network connectivity test: PASSED (can reach internet)");
@@ -737,11 +737,11 @@ void SystemInfo::updateSoftwareVersion()
 {
     QString versionFile = "/etc/sw-version";
     QString newSoftwareVersion = readFileContent(versionFile).trimmed();
-    
+
     if (newSoftwareVersion.isEmpty()) {
         newSoftwareVersion = "Unknown";
     }
-    
+
     if (m_softwareVersion != newSoftwareVersion) {
         m_softwareVersion = newSoftwareVersion;
         emit softwareVersionChanged();

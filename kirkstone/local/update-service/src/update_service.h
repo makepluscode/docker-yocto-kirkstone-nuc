@@ -7,7 +7,7 @@
 
 /**
  * @brief Update Service D-Bus Broker
- * 
+ *
  * This class implements a D-Bus broker service that acts as an abstraction layer
  * between update-agent and RAUC. It provides the same interface as RAUC but with
  * different method names (prefixed with "Update").
@@ -36,10 +36,10 @@ public:
 private:
     // D-Bus connection for serving our interface
     DBusConnection* service_connection_;
-    
+
     // D-Bus connection for communicating with RAUC
     DBusConnection* rauc_connection_;
-    
+
     // Service state
     bool running_;
     bool connected_to_rauc_;
@@ -69,8 +69,8 @@ private:
     /**
      * @brief D-Bus message handler for incoming method calls
      */
-    static DBusHandlerResult messageHandler(DBusConnection* connection, 
-                                          DBusMessage* message, 
+    static DBusHandlerResult messageHandler(DBusConnection* connection,
+                                          DBusMessage* message,
                                           void* user_data);
 
     /**

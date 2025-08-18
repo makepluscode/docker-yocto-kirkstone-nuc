@@ -113,4 +113,4 @@ journalctl -u rauc-hawkbit-cpp -f
 2. **Error Handling**: Improve error handling and recovery mechanisms
 3. **Testing**: Add unit tests and integration tests
 4. **Documentation**: Add API documentation and usage examples
-5. **Security**: Implement proper authentication and security measures 
+5. **Security**: Implement proper authentication and security measures

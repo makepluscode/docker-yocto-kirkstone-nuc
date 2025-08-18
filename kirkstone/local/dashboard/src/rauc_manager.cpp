@@ -9,7 +9,7 @@ static void ensureDltContext()
 {
     static bool initialized = false;
     if (!initialized) {
-        DLT_REGISTER_CONTEXT(RaucManager::m_ctx, "RUC", "RAUC Manager");
+        DLT_REGISTER_CONTEXT(RaucManager::m_ctx, "RAUM", "RAUC Manager");
         initialized = true;
     }
 }
@@ -66,22 +66,22 @@ void RaucManager::parseJsonStatus(const QString &jsonOutput) {
     QRegExp variantPattern("\"variant\":\"([^\"]*)\"");
     QRegExp bootedPattern("\"booted\":\"([^\"]+)\"");
     QRegExp bootPrimaryPattern("\"boot_primary\":([^,}]+)");
-    
+
     // Parse compatible
     if (compatiblePattern.indexIn(jsonOutput) != -1) {
         m_compatible = compatiblePattern.cap(1);
     }
-    
+
     // Parse variant
     if (variantPattern.indexIn(jsonOutput) != -1) {
         m_variant = variantPattern.cap(1);
     }
-    
+
     // Parse booted
     if (bootedPattern.indexIn(jsonOutput) != -1) {
         m_booted = bootedPattern.cap(1);
     }
-    
+
     // Parse boot_primary
     if (bootPrimaryPattern.indexIn(jsonOutput) != -1) {
         QString bootPrimary = bootPrimaryPattern.cap(1).trimmed();
@@ -89,7 +89,7 @@ void RaucManager::parseJsonStatus(const QString &jsonOutput) {
             m_bootPrimary = bootPrimary;
         }
     }
-    
+
     // Parse slots using regex - updated for actual JSON structure
     // The slots are in an array, so we need to find them within the array
     // More flexible patterns that can handle the compact JSON format
@@ -98,22 +98,22 @@ void RaucManager::parseJsonStatus(const QString &jsonOutput) {
     if (slotsArrayPattern.indexIn(jsonOutput) != -1) {
         QString slotsArray = slotsArrayPattern.cap(1);
         RUC_LOG(QString("Found slots array: %1").arg(slotsArray).toUtf8().constData());
-        
+
         // Parse slot A (rootfs.0) - search in the entire JSON for the slot
         QRegExp slotAPattern("\"rootfs\\.0\":\\s*\\{[^}]*\"state\":\"([^\"]+)\"[^}]*\"boot_status\":\"([^\"]+)\"[^}]*\"device\":\"([^\"]+)\"[^}]*\"bootname\":\"([^\"]+)\"");
         // Parse slot B (rootfs.1) - search in the entire JSON for the slot
         QRegExp slotBPattern("\"rootfs\\.1\":\\s*\\{[^}]*\"state\":\"([^\"]+)\"[^}]*\"boot_status\":\"([^\"]+)\"[^}]*\"device\":\"([^\"]+)\"[^}]*\"bootname\":\"([^\"]+)\"");
-    
+
         // Parse slot A
         if (slotAPattern.indexIn(jsonOutput) != -1) {
             m_slotAState = slotAPattern.cap(1);
             m_slotAStatus = slotAPattern.cap(2);
             m_slotADevice = slotAPattern.cap(3);
             QString bootname = slotAPattern.cap(4);
-            
+
             RUC_LOG(QString("Slot A parsed - State: %1, Status: %2, Device: %3, Bootname: %4")
                     .arg(m_slotAState).arg(m_slotAStatus).arg(m_slotADevice).arg(bootname).toUtf8().constData());
-            
+
             if (m_slotAState == "booted") {
                 m_bootSlot = "rootfs.0";
             }
@@ -123,17 +123,17 @@ void RaucManager::parseJsonStatus(const QString &jsonOutput) {
         } else {
             RUC_LOG("Failed to parse Slot A");
         }
-        
+
         // Parse slot B
         if (slotBPattern.indexIn(jsonOutput) != -1) {
             m_slotBState = slotBPattern.cap(1);
             m_slotBStatus = slotBPattern.cap(2);
             m_slotBDevice = slotBPattern.cap(3);
             QString bootname = slotBPattern.cap(4);
-            
+
             RUC_LOG(QString("Slot B parsed - State: %1, Status: %2, Device: %3, Bootname: %4")
                     .arg(m_slotBState).arg(m_slotBStatus).arg(m_slotBDevice).arg(bootname).toUtf8().constData());
-            
+
             if (m_slotBState == "booted") {
                 m_bootSlot = "rootfs.1";
             }
@@ -146,7 +146,7 @@ void RaucManager::parseJsonStatus(const QString &jsonOutput) {
     } else {
         RUC_LOG("Failed to find slots array in JSON");
     }
-    
+
     // Update status text for backward compatibility
     m_status = QString("Compatible: %1\nBooted: %2\nSlot A: %3 (%4)\nSlot B: %5 (%6)")
                .arg(m_compatible)
@@ -176,6 +176,6 @@ void RaucManager::bootSlotB() {
     RUC_LOG("Boot Slot B button pressed");
     setBootOrder("B A");
     refresh();
-} 
+}
 
-#undef RUC_LOG 
+#undef RUC_LOG

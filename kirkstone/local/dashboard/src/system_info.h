@@ -153,7 +153,7 @@ private:
     // CPU usage calculation
     qint64 m_lastCpuTotal;
     qint64 m_lastCpuIdle;
-    
+
     // DLT context
     static DltContext m_dltCtx;
 };

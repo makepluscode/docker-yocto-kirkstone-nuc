@@ -9,7 +9,7 @@ static void ensureDltContext()
 {
     static bool initialized = false;
     if (!initialized) {
-        DLT_REGISTER_CONTEXT(GrubManager::m_ctx, "GRB", "GRUB Manager");
+        DLT_REGISTER_CONTEXT(GrubManager::m_ctx, "GRBM", "GRUB Manager");
         initialized = true;
     }
 }
@@ -46,7 +46,7 @@ void GrubManager::parseGrubEnv(const QString &output) {
     QRegExp timeoutPattern("timeout=([^\\s]+)");
     QRegExp nextPattern("next_entry=([^\\s]+)");
     QRegExp savedPattern("saved_entry=([^\\s]+)");
-    
+
     if (orderPattern.indexIn(output) != -1) {
         m_bootOrder = orderPattern.cap(1);
         // Parse slot order from ORDER value
@@ -56,23 +56,23 @@ void GrubManager::parseGrubEnv(const QString &output) {
             m_slotBOrder = orders[1];
         }
     }
-    
+
     if (defaultPattern.indexIn(output) != -1) {
         m_defaultEntry = defaultPattern.cap(1);
     }
-    
+
     if (timeoutPattern.indexIn(output) != -1) {
         m_timeout = timeoutPattern.cap(1);
     }
-    
+
     if (nextPattern.indexIn(output) != -1) {
         m_nextEntry = nextPattern.cap(1);
     }
-    
+
     if (savedPattern.indexIn(output) != -1) {
         m_savedEntry = savedPattern.cap(1);
     }
-    
+
     m_grubEnv = output;
 }
 
@@ -85,10 +85,10 @@ void GrubManager::parseGrubVersion(const QString &output) {
 
 void GrubManager::refresh() {
     GRB_LOG("Refresh GRUB status requested");
-    
+
     // Get grubenv information
     runProcess("/usr/bin/grub-editenv", {"/grubenv/grubenv", "list"});
-    
+
     // Get GRUB version
     QProcess versionProc;
     versionProc.start("/usr/bin/grub-install", {"--version"});
@@ -102,4 +102,4 @@ void GrubManager::setBootOrder(const QString &order) {
     refresh();
 }
 
-#undef GRB_LOG 
+#undef GRB_LOG

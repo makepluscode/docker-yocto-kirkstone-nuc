@@ -5,19 +5,19 @@ import SystemInfo 1.0
 DashboardCardBase {
     title: "Memory"
     property SystemInfo systemInfo: null
-    
+
     property Timer refreshTimer: Timer {
         interval: 1000; running: true; repeat: true
         onTriggered: if (systemInfo) systemInfo.refresh()
     }
-    
+
     Column {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 15
         anchors.verticalCenter: parent.verticalCenter
         spacing: 10
-        
+
         Text {
             text: systemInfo ? (systemInfo.memoryUsage.toFixed(1) + "%") : "0.0%"
             color: "#ffffff"
@@ -25,18 +25,18 @@ DashboardCardBase {
             font.bold: true
             anchors.horizontalCenter: parent.horizontalCenter
         }
-        
+
         ProgressBar {
             width: parent.width
             from: 0
             to: 100
             value: systemInfo ? systemInfo.memoryUsage : 0
-            
+
             background: Rectangle {
                 color: "#333333"
                 radius: 3
             }
-            
+
             contentItem: Rectangle {
                 color: {
                     if (!systemInfo) return "#44ff44"
@@ -46,7 +46,7 @@ DashboardCardBase {
                 radius: 3
             }
         }
-        
+
         Text {
             text: systemInfo ? (systemInfo.formatBytes(systemInfo.usedMemory) + " / " + systemInfo.formatBytes(systemInfo.totalMemory)) : "0 B / 0 B"
             color: "#cccccc"

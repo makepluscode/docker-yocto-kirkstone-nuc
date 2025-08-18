@@ -8,7 +8,7 @@ Previously, all functionality was combined in `SystemInfo` class:
 ```cpp
 // system_info.h/.cpp contained:
 - System monitoring (CPU, memory, network, temperature)
-- RAUC boot management 
+- RAUC boot management
 - Software update functionality
 - Boot slot switching
 - Application control
@@ -163,15 +163,15 @@ raucSystemManager.slotAStatus
 ```qml
 DashboardCard01 {
     title: "CPU Load"
-    
+
     Column {
         anchors.centerIn: parent
-        
+
         Text {
             text: systemInfo.cpuUsage.toFixed(1) + "%"
             color: systemInfo.cpuUsage > 80 ? "#ff4444" : "#44ff44"
         }
-        
+
         // CPU core usage display
         Repeater {
             model: systemInfo.cpuCoreUsage
@@ -185,20 +185,20 @@ DashboardCard01 {
 ```qml
 DashboardCard30 {
     title: "Boot Info"
-    
+
     Column {
         anchors.centerIn: parent
-        
+
         CardInfoRow {
             label: "Current Slot"
             value: raucSystemManager.currentBootSlot
         }
-        
+
         CardInfoRow {
             label: "Boot Order"
             value: raucSystemManager.bootOrder
         }
-        
+
         Button {
             text: "Switch to Slot A"
             enabled: !raucSystemManager.updateInProgress
@@ -210,7 +210,7 @@ DashboardCard30 {
 
 ## Build Status
 ✅ **Successfully builds** with no errors
-✅ **All functionality preserved** 
+✅ **All functionality preserved**
 ✅ **Clean separation** achieved
 ✅ **QML integration** updated
 ⚠️ Only deprecation warnings (non-breaking)

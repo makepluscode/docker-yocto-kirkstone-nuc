@@ -89,4 +89,4 @@ target_compile_definitions(dashboard PRIVATE HAVE_DLT=1)
 # Install target
 install(TARGETS dashboard
     RUNTIME DESTINATION bin
-) 
+)

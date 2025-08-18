@@ -39,4 +39,4 @@ private:
     void handleSignal(DBusMessage* message);
 };
 
-#endif // SERVICE_AGENT_H 
+#endif // SERVICE_AGENT_H

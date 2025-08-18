@@ -56,4 +56,4 @@ systemctl status rauc-hawkbit-cpp
 The application consists of:
 - `main.cpp`: Main application loop and integration
 - `hawkbit_client.h/cpp`: Hawkbit server communication
-- `rauc_client.h/cpp`: RAUC DBus communication 
+- `rauc_client.h/cpp`: RAUC DBus communication

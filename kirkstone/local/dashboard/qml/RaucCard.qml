@@ -55,4 +55,4 @@ Item {
     RaucManager { id: raucManager }
 
     Component.onCompleted: raucManager.refresh()
-} 
+}

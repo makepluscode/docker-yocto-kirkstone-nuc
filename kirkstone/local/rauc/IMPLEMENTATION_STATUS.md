@@ -27,7 +27,7 @@
 
 5. **Library Dependencies**: Successfully detected and configured
    - GLib 2.72.3 ✅
-   - GIO 2.72.3 ✅  
+   - GIO 2.72.3 ✅
    - OpenSSL 3.0.17 ✅
    - D-Bus 1.14.8 ✅
    - libfdisk 2.37.4 ✅
@@ -57,7 +57,7 @@
 
 ### Build Compilation: ✅ SUCCESS
 - All source files compile without errors
-- Static library (librauc_lib.a) builds successfully 
+- Static library (librauc_lib.a) builds successfully
 - Object files properly created with cross-compilation flags
 
 ### Linking Status: ⚠️ TOOLCHAIN ISSUE
@@ -84,7 +84,7 @@ Since the Yocto build already produces a working RAUC 1.13 binary with identical
    ```bash
    # Copy working binary to target
    scp /kirkstone/build/tmp-glibc/work/x86_64-linux/rauc-native/1.13-r0/build/rauc root@TARGET_IP:/tmp/rauc_test
-   
+
    # Test on target
    ssh root@TARGET_IP '/tmp/rauc_test --version'
    ssh root@TARGET_IP '/tmp/rauc_test status'

@@ -2,7 +2,7 @@ import QtQuick 2.15
 
 Row {
     id: infoRow
-    
+
     property string label: ""
     property string value: ""
     property int labelWidth: 100
@@ -11,9 +11,9 @@ Row {
     property color labelColor: "#cccccc"
     property color valueColor: "#ffffff"
     property bool valueBold: true
-    
+
     spacing: 10
-    
+
     Text {
         text: label + ":"
         color: labelColor
@@ -21,7 +21,7 @@ Row {
         width: labelWidth
         horizontalAlignment: Text.AlignRight
     }
-    
+
     Text {
         text: value
         color: valueColor

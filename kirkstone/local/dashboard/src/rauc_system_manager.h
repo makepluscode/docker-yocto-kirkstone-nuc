@@ -25,7 +25,7 @@ class RaucSystemManager : public QObject
 
 public:
     explicit RaucSystemManager(QObject *parent = nullptr);
-    
+
     // Getters
     QString currentBootSlot() const { return m_currentBootSlot; }
     QString bootOrder() const { return m_bootOrder; }
@@ -50,7 +50,7 @@ public slots:
     Q_INVOKABLE void startSoftwareUpdate();
     Q_INVOKABLE void monitorRaucDBus();
     Q_INVOKABLE bool isRaucInstallationRunning();
-    
+
     // System operations
     Q_INVOKABLE void rebootSystem();
 
@@ -83,30 +83,30 @@ private:
     void setUpdateInProgress(bool inProgress);
     QString formatBytes(qint64 bytes);
     void checkRaucDBusProgress();
-    
+
     // Member variables
     QString m_currentBootSlot;
     QString m_bootOrder;
     QString m_slotAStatus;
     QString m_slotBStatus;
     bool m_updateInProgress;
-    
+
     // Bundle information
     bool m_bundleExists;
     QString m_bundlePath;
     qint64 m_bundleSize;
     QString m_bundleSizeFormatted;
     QString m_bundleModified;
-    
+
     // Process management
     QProcess *m_raucProcess;
     QTimer *m_statusTimer;
     QTimer *m_dbusMonitorTimer;
-    
+
     // Constants
     static const QString RAUC_BUNDLE_PATH;
     static const QString GRUB_CONFIG_PATH;
-    
+
     // DLT context accessible from helper functions
     static DltContext m_ctx;
 };

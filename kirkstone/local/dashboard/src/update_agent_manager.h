@@ -11,7 +11,7 @@ class UpdateAgentManager : public QObject {
     Q_PROPERTY(QString updateStatus READ updateStatus NOTIFY updateStatusChanged)
     Q_PROPERTY(int updateProgress READ updateProgress NOTIFY updateProgressChanged)
     Q_PROPERTY(bool isServiceRunning READ isServiceRunning NOTIFY serviceStatusChanged)
-    
+
 public:
     explicit UpdateAgentManager(QObject *parent = nullptr);
     ~UpdateAgentManager();
@@ -50,18 +50,18 @@ private:
     bool m_isServiceRunning;
     QProcess* m_serviceStatusProcess;
     QTimer* m_refreshTimer;
-    
-    // Update monitoring  
+
+    // Update monitoring
     bool m_isUpdateActive;
     QString m_updateStatus;
     int m_updateProgress;
-    
+
     // Log monitoring
     QFileSystemWatcher* m_logWatcher;
     QString m_logFilePath;
     qint64 m_lastLogPosition;
     QProcess* m_journalFollowProcess;
-    
+
     // Status parsing
     void parseLogContent();
     void parseLogLine(const QString& line);
