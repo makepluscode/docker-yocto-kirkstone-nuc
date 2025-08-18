@@ -21,7 +21,9 @@ UpdateService::UpdateService()
     : service_connection_(nullptr)
     , rauc_connection_(nullptr)
     , running_(false)
-    , connected_to_rauc_(false) {
+    , connected_to_rauc_(false)
+    , installation_active_(false)
+    , last_progress_percentage_(-1) {
 
     DLT_REGISTER_CONTEXT(dlt_context_service, "USVC", "Update Service");
     logInfo("Update Service initializing");
@@ -205,12 +207,18 @@ void UpdateService::run() {
             }
         }
 
+        // Poll Progress property if installation is active (every 100ms = every 10 loops)
+        if (connected_to_rauc_ && installation_active_ && loop_count % 10 == 0) {
+            pollAndForwardProgress();
+        }
+
         // Periodic status logging (every ~10 seconds for debugging)
         if (loop_count % 1000 == 0) {
             logInfo("=== Update Service Status ===");
             logInfo("Service running: " + std::string(running_ ? "YES" : "NO"));
             logInfo("Service connection: " + std::string(service_connection_ ? "ACTIVE" : "INACTIVE"));
             logInfo("RAUC connection: " + std::string(connected_to_rauc_ ? "ACTIVE" : "INACTIVE"));
+            logInfo("Installation active: " + std::string(installation_active_ ? "YES" : "NO"));
             logInfo("Loop count: " + std::to_string(loop_count));
             logInfo("=== WAITING FOR D-BUS MESSAGES ===");
         }
@@ -461,6 +469,11 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
 
                 logInfo("Completed signal parsed successfully: success=" + std::string(success ? "true" : "false") + ", message='" + message_text + "'");
 
+                // Mark installation as completed - stop Progress polling
+                installation_active_ = false;
+                last_progress_percentage_ = -1;
+                logInfo("Installation completed - Progress polling stopped");
+
             } else if (strcmp(member, "Progress") == 0) {
                 // RAUC Progress: (i) -> Our Progress: (i) - EXACTLY like working version
                 int arg_type = dbus_message_iter_get_arg_type(&src_iter);
@@ -502,6 +515,12 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
 // Method implementations - forward to RAUC with original method names
 DBusMessage* UpdateService::handleInstall(DBusMessage* message) {
     logInfo("Install called - forwarding to RAUC Install");
+
+    // Mark installation as active for Progress polling
+    installation_active_ = true;
+    last_progress_percentage_ = -1;
+    logInfo("Installation started - Progress polling activated");
+
     return forwardToRauc("Install", message);
 }
 
@@ -844,4 +863,125 @@ void UpdateService::logError(const std::string& message) {
 
 void UpdateService::logDebug(const std::string& message) {
     DLT_LOG(dlt_context_service, DLT_LOG_DEBUG, DLT_STRING(message.c_str()));
+}
+
+void UpdateService::pollAndForwardProgress() {
+    if (!connected_to_rauc_) {
+        return;
+    }
+
+    // Get Progress property from RAUC
+    DBusMessage* prop_call = dbus_message_new_method_call(
+        RAUC_SERVICE_NAME,
+        RAUC_OBJECT_PATH,
+        RAUC_PROPERTIES_INTERFACE,
+        "Get"
+    );
+
+    if (!prop_call) {
+        logError("Failed to create Progress property call");
+        return;
+    }
+
+    // Add arguments (interface name and property name)
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(prop_call, &iter);
+
+    const char* interface_name = RAUC_INTERFACE_NAME;
+    const char* prop_name = "Progress";
+
+    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &interface_name);
+    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop_name);
+
+    // Send call and get reply (with short timeout to avoid blocking)
+    DBusMessage* rauc_reply = dbus_connection_send_with_reply_and_block(
+        rauc_connection_, prop_call, 1000, nullptr);
+
+    dbus_message_unref(prop_call);
+
+    if (!rauc_reply) {
+        // Don't spam logs - Progress polling failing is expected when idle
+        return;
+    }
+
+    // Check if reply is an error
+    if (dbus_message_get_type(rauc_reply) == DBUS_MESSAGE_TYPE_ERROR) {
+        dbus_message_unref(rauc_reply);
+        return;
+    }
+
+    // Parse Progress property: variant containing (isi) struct
+    DBusMessageIter reply_iter, variant_iter, struct_iter;
+    if (!dbus_message_iter_init(rauc_reply, &reply_iter)) {
+        dbus_message_unref(rauc_reply);
+        return;
+    }
+
+    if (dbus_message_iter_get_arg_type(&reply_iter) != DBUS_TYPE_VARIANT) {
+        dbus_message_unref(rauc_reply);
+        return;
+    }
+
+    dbus_message_iter_recurse(&reply_iter, &variant_iter);
+
+    if (dbus_message_iter_get_arg_type(&variant_iter) != DBUS_TYPE_STRUCT) {
+        dbus_message_unref(rauc_reply);
+        return;
+    }
+
+    dbus_message_iter_recurse(&variant_iter, &struct_iter);
+
+    // Extract first int32 (percentage)
+    if (dbus_message_iter_get_arg_type(&struct_iter) != DBUS_TYPE_INT32) {
+        dbus_message_unref(rauc_reply);
+        return;
+    }
+
+    dbus_int32_t percentage;
+    dbus_message_iter_get_basic(&struct_iter, &percentage);
+
+    // Extract string (message)
+    std::string progress_message = "";
+    if (dbus_message_iter_next(&struct_iter)) {
+        if (dbus_message_iter_get_arg_type(&struct_iter) == DBUS_TYPE_STRING) {
+            const char* msg;
+            dbus_message_iter_get_basic(&struct_iter, &msg);
+            progress_message = msg ? msg : "";
+        }
+    }
+
+    dbus_message_unref(rauc_reply);
+
+    // Only forward if percentage changed
+    if (percentage != last_progress_percentage_) {
+        last_progress_percentage_ = percentage;
+        sendProgressSignal(percentage, progress_message);
+        logInfo("Progress updated: " + std::to_string(percentage) + "% - " + progress_message);
+    }
+}
+
+void UpdateService::sendProgressSignal(int percentage, const std::string& message) {
+    // Create Progress signal for UPDATE-AGENT
+    DBusMessage* signal = dbus_message_new_signal(OBJECT_PATH, INTERFACE_NAME, "Progress");
+    if (!signal) {
+        logError("Failed to create Progress signal");
+        return;
+    }
+
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(signal, &iter);
+
+    // Send percentage as int32
+    dbus_int32_t progress = percentage;
+    dbus_message_iter_append_basic(&iter, DBUS_TYPE_INT32, &progress);
+
+    // Send the signal
+    dbus_bool_t sent = dbus_connection_send(service_connection_, signal, nullptr);
+    dbus_message_unref(signal);
+
+    if (sent) {
+        logInfo("Progress signal sent to update-agent: " + std::to_string(percentage) + "%");
+    } else {
+        logError("Failed to send Progress signal to update-agent");
+    }
 }

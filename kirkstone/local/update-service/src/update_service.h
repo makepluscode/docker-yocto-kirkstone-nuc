@@ -43,6 +43,8 @@ private:
     // Service state
     bool running_;
     bool connected_to_rauc_;
+    bool installation_active_;
+    int last_progress_percentage_;
 
     /**
      * @brief Connect to RAUC D-Bus service
@@ -133,6 +135,16 @@ private:
      * @brief Create error reply
      */
     DBusMessage* createErrorReply(DBusMessage* message, const std::string& error_name, const std::string& error_message);
+
+    /**
+     * @brief Poll RAUC Progress property and forward if changed
+     */
+    void pollAndForwardProgress();
+
+    /**
+     * @brief Send Progress signal to update-agent
+     */
+    void sendProgressSignal(int percentage, const std::string& message);
 
     /**
      * @brief Log messages with DLT
