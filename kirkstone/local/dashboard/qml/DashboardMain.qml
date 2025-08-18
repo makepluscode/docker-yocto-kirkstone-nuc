@@ -18,7 +18,7 @@ ApplicationWindow {
     // Property to control UI state during SW Update
     property bool swUpdateInProgress: false
     property string updateStatus: "Initializing..."
-    property double updateProgress: 0.0
+    property int updateProgress: 0
     property bool updateComplete: false
 
     // Keyboard shortcuts
@@ -75,16 +75,16 @@ ApplicationWindow {
                     swUpdateInProgress = true
                     updateComplete = false
                     updateStatus = "Starting update simulation..."
-                    updateProgress = 0.1
+                    updateProgress = 10
                     systemInfo.logUIEvent("F10 pressed", "Starting update progress simulation")
-                } else if (updateProgress < 0.9) {
+                } else if (updateProgress < 90) {
                     // Advance progress
-                    updateProgress += 0.2
-                    updateStatus = "Update in progress... " + Math.round(updateProgress * 100) + "%"
-                    systemInfo.logUIEvent("F10 pressed", "Advancing progress to " + Math.round(updateProgress * 100) + "%")
+                    updateProgress += 20
+                    updateStatus = "Update in progress... " + updateProgress + "%"
+                    systemInfo.logUIEvent("F10 pressed", "Advancing progress to " + updateProgress + "%")
                 } else {
                     // Complete update
-                    updateProgress = 1.0
+                    updateProgress = 100
                     updateStatus = "Update completed successfully!"
                     updateComplete = true
                     systemInfo.logUIEvent("F10 pressed", "Completing update simulation")
@@ -308,7 +308,7 @@ ApplicationWindow {
 
         onUpdateProgressChanged: {
             systemInfo.logUIEvent("Update Agent Progress", "Progress: " + updateAgentManager.updateProgress + "%")
-            updateProgress = updateAgentManager.updateProgress / 100.0
+            updateProgress = updateAgentManager.updateProgress
 
             // Show popup when progress changes, regardless of isUpdateActive
             if (updateAgentManager.updateProgress > 0 && updateAgentManager.updateProgress < 100) {
@@ -325,7 +325,7 @@ ApplicationWindow {
             updateComplete = true
             swUpdateInProgress = false
             updateStatus = success ? "Update completed successfully!" : "Update failed: " + message
-            updateProgress = success ? 1.0 : 0.0
+            updateProgress = success ? 100 : 0
 
             if (success) {
                 // Auto-reboot after successful update
@@ -352,14 +352,14 @@ ApplicationWindow {
 
         isVisible: swUpdateInProgress
         status: updateStatus
-        progress: updateProgress * 100
+        progress: updateProgress
         showProgress: !updateComplete
 
         onIsVisibleChanged: {
             if (!isVisible) {
                 swUpdateInProgress = false
                 updateComplete = false
-                updateProgress = 0.0
+                updateProgress = 0
                 updateStatus = "Initializing..."
             }
         }

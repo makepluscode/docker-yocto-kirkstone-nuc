@@ -4,6 +4,9 @@
 #include <QTextStream>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusConnectionInterface>
 
 // DLT context definition
 DltContext UpdateAgentManager::m_ctx;
@@ -18,6 +21,8 @@ UpdateAgentManager::UpdateAgentManager(QObject *parent)
     , m_logFilePath("/var/log/update-agent.log")
     , m_lastLogPosition(0)
     , m_journalFollowProcess(nullptr)
+    , m_dbusConnection(QDBusConnection::systemBus())
+    , m_dbusConnected(false)
 {
     // Initialize DLT
     DLT_REGISTER_CONTEXT(m_ctx, "UPDM", "Update Agent Manager");
@@ -31,6 +36,9 @@ UpdateAgentManager::UpdateAgentManager(QObject *parent)
 
     // Setup log monitoring
     setupLogMonitoring();
+
+    // Setup D-Bus monitoring
+    setupDBusMonitoring();
 
     // Initial status check
     refresh();
@@ -100,27 +108,59 @@ void UpdateAgentManager::setupLogMonitoring()
     connect(m_logWatcher, &QFileSystemWatcher::fileChanged,
             this, &UpdateAgentManager::onLogFileChanged);
 
-    // Watch systemd journal for update-agent service
-    // Note: We'll monitor journalctl output instead of a file since update-agent uses DLT
-
-    // Try to find the log file, fallback to monitoring systemd journal
-    QStringList possibleLogPaths = {
-        "/var/log/update-agent.log",
-        "/tmp/update-agent.log",
-        "/var/log/dlt.log"
-    };
-
-    for (const QString& path : possibleLogPaths) {
-        QFile file(path);
-        if (file.exists()) {
-            m_logFilePath = path;
-            m_logWatcher->addPath(path);
-            DLT_LOG(m_ctx, DLT_LOG_INFO,
-                    DLT_STRING("Monitoring log file:"),
-                    DLT_STRING(path.toUtf8().constData()));
-            break;
-        }
+    // Watch the update-agent log file
+    if (QFile::exists(m_logFilePath)) {
+        m_logWatcher->addPath(m_logFilePath);
+        DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Log file monitoring started"));
+    } else {
+        DLT_LOG(m_ctx, DLT_LOG_WARN, DLT_STRING("Log file not found, monitoring disabled"));
     }
+}
+
+void UpdateAgentManager::setupDBusMonitoring()
+{
+    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Setting up D-Bus monitoring"));
+
+    // Connect to system D-Bus
+    if (!m_dbusConnection.isConnected()) {
+        DLT_LOG(m_ctx, DLT_LOG_ERROR, DLT_STRING("Failed to connect to system D-Bus"));
+        return;
+    }
+
+    // Connect to update service signals
+    bool connected = m_dbusConnection.connect(
+        "org.freedesktop.UpdateService",  // service
+        "/org/freedesktop/UpdateService", // path
+        "org.freedesktop.UpdateService",  // interface
+        "Progress",                       // signal
+        this,                            // receiver
+        SLOT(onDBusSignal(QDBusMessage)) // slot
+    );
+
+    if (connected) {
+        DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Connected to UpdateService Progress signal"));
+    } else {
+        DLT_LOG(m_ctx, DLT_LOG_ERROR, DLT_STRING("Failed to connect to UpdateService Progress signal"));
+    }
+
+    // Connect to Completed signal
+    connected = m_dbusConnection.connect(
+        "org.freedesktop.UpdateService",  // service
+        "/org/freedesktop/UpdateService", // path
+        "org.freedesktop.UpdateService",  // interface
+        "Completed",                      // signal
+        this,                            // receiver
+        SLOT(onDBusSignal(QDBusMessage)) // slot
+    );
+
+    if (connected) {
+        DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Connected to UpdateService Completed signal"));
+    } else {
+        DLT_LOG(m_ctx, DLT_LOG_ERROR, DLT_STRING("Failed to connect to UpdateService Completed signal"));
+    }
+
+    m_dbusConnected = true;
+    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("D-Bus monitoring setup completed"));
 }
 
 void UpdateAgentManager::onLogFileChanged(const QString& path)
@@ -402,8 +442,110 @@ void UpdateAgentManager::testProgressParsing(const QString& testLine)
 
     DLT_LOG(m_ctx, DLT_LOG_INFO,
             DLT_STRING("Test results - Progress:"), DLT_INT(m_updateProgress),
-            DLT_STRING("Status:"), DLT_STRING(m_updateStatus.toUtf8().constData()),
-            DLT_STRING("Active:"), DLT_BOOL(m_isUpdateActive));
+            DLT_STRING(", Status:"), DLT_STRING(m_updateStatus.toUtf8().constData()));
+}
+
+void UpdateAgentManager::onDBusSignal(const QDBusMessage& message)
+{
+    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("=== D-BUS SIGNAL RECEIVED ==="));
+    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Interface:"), DLT_STRING(message.interface().toUtf8().constData()));
+    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Member:"), DLT_STRING(message.member().toUtf8().constData()));
+    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Sender:"), DLT_STRING(message.service().toUtf8().constData()));
+
+    if (message.interface() == "org.freedesktop.UpdateService") {
+        DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Processing UpdateService signal:"), DLT_STRING(message.member().toUtf8().constData()));
+
+        if (message.member() == "Progress") {
+            QList<QVariant> arguments = message.arguments();
+            if (arguments.size() >= 1) {
+                bool ok;
+                int progress = arguments[0].toInt(&ok);
+                if (ok) {
+                    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Progress signal received:"), DLT_INT(progress), DLT_STRING("%"));
+                    handleProgressSignal(progress);
+                } else {
+                    DLT_LOG(m_ctx, DLT_LOG_ERROR, DLT_STRING("Progress signal has wrong argument type"));
+                }
+            } else {
+                DLT_LOG(m_ctx, DLT_LOG_ERROR, DLT_STRING("Progress signal missing arguments"));
+            }
+        } else if (message.member() == "Completed") {
+            QList<QVariant> arguments = message.arguments();
+            if (arguments.size() >= 2) {
+                bool success = arguments[0].toBool();
+                QString message_text = arguments[1].toString();
+                DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Completed signal - Success:"), DLT_BOOL(success), DLT_STRING(", Message:"), DLT_STRING(message_text.toUtf8().constData()));
+                handleCompletedSignal(success, message_text);
+            } else {
+                DLT_LOG(m_ctx, DLT_LOG_ERROR, DLT_STRING("Completed signal missing arguments"));
+            }
+        } else {
+            DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Unknown UpdateService signal:"), DLT_STRING(message.member().toUtf8().constData()));
+        }
+    } else {
+        DLT_LOG(m_ctx, DLT_LOG_DEBUG, DLT_STRING("Ignoring signal from interface:"), DLT_STRING(message.interface().toUtf8().constData()));
+    }
+}
+
+void UpdateAgentManager::handleProgressSignal(int percentage)
+{
+    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Handling progress signal:"), DLT_INT(percentage), DLT_STRING("%"));
+
+    // Update progress
+    if (percentage != m_updateProgress && percentage >= 0 && percentage <= 100) {
+        m_updateProgress = percentage;
+        emit updateProgressChanged();
+    }
+
+    // Update status based on progress
+    if (percentage > 0 && !m_isUpdateActive) {
+        m_isUpdateActive = true;
+        m_updateStatus = "Update in progress...";
+        emit updateStarted();
+        emit updateStatusChanged();
+    }
+
+    // Update status text based on progress with descriptive phases
+    QString newStatus = m_updateStatus;
+    if (percentage <= 10) {
+        newStatus = "Initializing update...";
+    } else if (percentage <= 30) {
+        newStatus = "Downloading update bundle...";
+    } else if (percentage <= 50) {
+        newStatus = "Verifying update bundle...";
+    } else if (percentage <= 70) {
+        newStatus = "Installing update...";
+    } else if (percentage <= 90) {
+        newStatus = "Finalizing installation...";
+    } else if (percentage < 100) {
+        newStatus = "Preparing to reboot...";
+    } else {
+        newStatus = "Update completed successfully!";
+    }
+
+    if (newStatus != m_updateStatus) {
+        m_updateStatus = newStatus;
+        emit updateStatusChanged();
+    }
+}
+
+void UpdateAgentManager::handleCompletedSignal(bool success, const QString& message)
+{
+    DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Handling completed signal - Success:"), DLT_BOOL(success), DLT_STRING(", Message:"), DLT_STRING(message.toUtf8().constData()));
+
+    m_isUpdateActive = false;
+
+    if (success) {
+        m_updateProgress = 100;
+        m_updateStatus = "Update completed successfully!\n\nSystem will reboot in 5 seconds...";
+    } else {
+        m_updateProgress = 0;
+        m_updateStatus = "Update failed: " + message;
+    }
+
+    emit updateCompleted(success, message);
+    emit updateStatusChanged();
+    emit updateProgressChanged();
 }
 
 void UpdateAgentManager::startRealtimeJournalMonitoring()

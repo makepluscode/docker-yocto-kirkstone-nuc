@@ -43,13 +43,6 @@ Item {
                 wrapMode: TextArea.Wrap
             }
         }
-
-        Row {
-            spacing: 12
-            Button { text: "Boot Slot A"; onClicked: manager.bootSlotA() }
-            Button { text: "Boot Slot B"; onClicked: manager.bootSlotB() }
-            Button { text: "Refresh";   onClicked: manager.refresh() }
-        }
     }
 
     RaucManager { id: raucManager }

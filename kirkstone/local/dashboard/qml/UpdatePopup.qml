@@ -14,9 +14,9 @@ Rectangle {
     // Animation properties
     property int animationDuration: 300
 
-    // Popup styling
-    width: 400
-    height: 200
+    // Popup styling (1.2x size)
+    width: 480
+    height: 240
     color: "#2a2a2a"
     border.color: "#4a9eff"
     border.width: 2

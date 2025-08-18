@@ -3,6 +3,9 @@
 #include <QProcess>
 #include <QTimer>
 #include <QFileSystemWatcher>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusConnectionInterface>
 #include <dlt/dlt.h>
 
 class UpdateAgentManager : public QObject {
@@ -44,6 +47,7 @@ private slots:
     void onServiceStatusProcessFinished(int exitCode);
     void onLogFileChanged(const QString& path);
     void onRefreshTimer();
+    void onDBusSignal(const QDBusMessage& message);
 
 private:
     // Service monitoring
@@ -62,13 +66,20 @@ private:
     qint64 m_lastLogPosition;
     QProcess* m_journalFollowProcess;
 
+    // D-Bus monitoring
+    QDBusConnection m_dbusConnection;
+    bool m_dbusConnected;
+
     // Status parsing
     void parseLogContent();
     void parseLogLine(const QString& line);
     void checkServiceStatus();
     void setupLogMonitoring();
+    void setupDBusMonitoring();
     void startRealtimeJournalMonitoring();
     void stopRealtimeJournalMonitoring();
     void updateProgressFromLog(const QString& line);
     void updateStatusFromLog(const QString& line);
+    void handleProgressSignal(int percentage);
+    void handleCompletedSignal(bool success, const QString& message);
 };
