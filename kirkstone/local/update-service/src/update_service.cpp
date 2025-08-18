@@ -378,9 +378,9 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
     logInfo("Original interface: " + std::string(interface ? interface : "null"));
     logInfo("Original member: " + std::string(member ? member : "null"));
 
-    // Check if this is a RAUC signal - EXACTLY like the working version
+    // Check if this is a RAUC signal
     if (!interface || strcmp(interface, "de.pengutronix.rauc.Installer") != 0) {
-        logDebug("Not a RAUC Installer signal, ignoring: " + std::string(interface ? interface : "unknown"));
+        logInfo("Not a RAUC Installer signal, ignoring: " + std::string(interface ? interface : "unknown"));
         return;
     }
 
@@ -396,7 +396,7 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
         signal = dbus_message_new_signal(OBJECT_PATH, INTERFACE_NAME, "Progress");
         logInfo("Creating Progress signal for UPDATE-AGENT");
     } else {
-        logDebug("Unknown RAUC signal member, not forwarding: " + std::string(member));
+        logInfo("Unknown RAUC signal member, not forwarding: " + std::string(member));
         return;
     }
 
@@ -417,28 +417,34 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
                 logInfo("Completed signal - DBUS_TYPE_BOOLEAN is: " + std::to_string(DBUS_TYPE_BOOLEAN));
                 logInfo("Completed signal - DBUS_TYPE_INT32 is: " + std::to_string(DBUS_TYPE_INT32));
 
-                // Parse boolean success - EXACTLY like working version
-                if (dbus_message_iter_get_arg_type(&src_iter) == DBUS_TYPE_BOOLEAN) {
+                // Parse success argument - handle both boolean and int32 types
+                if (arg_type == DBUS_TYPE_BOOLEAN) {
                     dbus_bool_t result;
                     dbus_message_iter_get_basic(&src_iter, &result);
                     success = result;
                     dbus_message_iter_append_basic(&dst_iter, DBUS_TYPE_BOOLEAN, &result);
-
-                    logInfo("Completed signal - success: " + std::string(success ? "true" : "false"));
+                    logInfo("Completed signal - success (boolean): " + std::string(success ? "true" : "false"));
+                } else if (arg_type == DBUS_TYPE_INT32) {
+                    // RAUC sometimes sends int32 where 0 = success, non-zero = failure
+                    dbus_int32_t result;
+                    dbus_message_iter_get_basic(&src_iter, &result);
+                    success = (result == 0);  // 0 means success in RAUC
+                    dbus_bool_t bool_result = success;
+                    dbus_message_iter_append_basic(&dst_iter, DBUS_TYPE_BOOLEAN, &bool_result);
+                    logInfo("Completed signal - success (int32->boolean): " + std::string(success ? "true" : "false") + " (code: " + std::to_string(result) + ")");
                 } else {
-                    logError("Completed signal: Expected boolean argument, got different type");
+                    logError("Completed signal: Expected boolean or int32 argument, got type: " + std::to_string(arg_type));
                     dbus_message_unref(signal);
                     return;
                 }
 
-                // Parse message string - EXACTLY like working version
+                // Parse message string - handle optional message
                 if (dbus_message_iter_next(&src_iter)) {
                     if (dbus_message_iter_get_arg_type(&src_iter) == DBUS_TYPE_STRING) {
                         const char* msg;
                         dbus_message_iter_get_basic(&src_iter, &msg);
                         message_text = msg ? msg : "";
                         dbus_message_iter_append_basic(&dst_iter, DBUS_TYPE_STRING, &msg);
-
                         logInfo("Completed signal - message: " + message_text);
                     } else {
                         logError("Completed signal: Expected string argument, got different type");
@@ -446,9 +452,11 @@ void UpdateService::forwardRaucSignal(DBusMessage* message) {
                         return;
                     }
                 } else {
-                    logError("Completed signal: Missing second argument (message)");
-                    dbus_message_unref(signal);
-                    return;
+                    // No message provided - use default
+                    message_text = success ? "Installation completed" : "Installation failed";
+                    const char* default_msg = message_text.c_str();
+                    dbus_message_iter_append_basic(&dst_iter, DBUS_TYPE_STRING, &default_msg);
+                    logInfo("Completed signal - no message provided, using default: " + message_text);
                 }
 
                 logInfo("Completed signal parsed successfully: success=" + std::string(success ? "true" : "false") + ", message='" + message_text + "'");

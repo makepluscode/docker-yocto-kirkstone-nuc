@@ -163,6 +163,8 @@ private:
                 DLT_STRING(", Message: "), DLT_STRING(message.c_str()));
 
         if (!current_execution_id_.empty()) {
+            // Send progress 100% before final feedback
+            server_agent_.sendProgressFeedback(current_execution_id_, 100, "Installation completed");
             server_agent_.sendFinishedFeedback(current_execution_id_, success, message);
             current_execution_id_.clear();
         }
@@ -171,8 +173,26 @@ private:
 
         if (success) {
             DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update completed successfully"));
+
+            // Clean up downloaded file
+            if (remove(UPDATE_BUNDLE_PATH.c_str()) == 0) {
+                DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Cleaned up downloaded bundle file"));
+            } else {
+                DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to clean up downloaded bundle file"));
+            }
+
+            // Reboot system to boot into new image
+            DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update completed successfully. Rebooting system to new image..."));
+            std::this_thread::sleep_for(std::chrono::seconds(REBOOT_DELAY_SECONDS)); // Brief delay for log message
+            system("sync && reboot");
+            g_running = false; // Stop main loop
         } else {
             DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Update failed: "), DLT_STRING(message.c_str()));
+
+            // Clean up downloaded file on failure too
+            if (remove(UPDATE_BUNDLE_PATH.c_str()) == 0) {
+                DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Cleaned up downloaded bundle file after failure"));
+            }
         }
     }
 };
