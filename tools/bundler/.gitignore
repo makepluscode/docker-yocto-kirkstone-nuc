@@ -1,0 +1,49 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.d
+bundler
+
+# Output directories and files
+output/
+bundle-temp/
+extracted/
+extracted-real/
+temp-extract/
+
+# RAUC bundles
+*.raucb
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Symbolic links to large files
+files/real-rootfs.ext4
+
+# Certificate and key files (security)
+example-ca/
+*.pem
+*.key
+*.crt
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-*
+.DS_Store
+
+# Log files
+*.log
+
+# Backup files
+*.bak
+*.backup
+
+# Test files
+test-*
+*.test 
