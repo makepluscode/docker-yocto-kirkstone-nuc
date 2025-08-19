@@ -194,7 +194,7 @@ private:
             // Reboot system to boot into new image
             DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update completed successfully. Rebooting system to new image..."));
             std::this_thread::sleep_for(std::chrono::seconds(REBOOT_DELAY_SECONDS)); // Brief delay for log message
-            system("sync && reboot");
+            system("sync && systemctl reboot --force --no-block");
             g_running = false; // Stop main loop
         } else {
             DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Update failed: "), DLT_STRING(message.c_str()));

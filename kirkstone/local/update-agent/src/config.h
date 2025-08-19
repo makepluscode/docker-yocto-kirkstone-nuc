@@ -20,7 +20,7 @@ const int PROGRESS_FEEDBACK_INTERVAL_SECONDS = 3;  // Progress feedback cycle
 const int INSTALLATION_TIMEOUT_SECONDS_MAIN = 300;  // Installation timeout in main loop (5 minutes)
 const int SERVICE_STATUS_CHECK_INTERVAL_SECONDS = 10;  // Update service status check interval
 const int MAIN_LOOP_SLEEP_SECONDS = 2;  // Main loop sleep interval
-const int REBOOT_DELAY_SECONDS = 2;  // Delay before reboot
+const int REBOOT_DELAY_SECONDS = 1;  // Delay before reboot (reduced from 2s to 1s)
 const int CLEANUP_DELAY_MS = 100;  // Cleanup delay in milliseconds
 
 // File paths
