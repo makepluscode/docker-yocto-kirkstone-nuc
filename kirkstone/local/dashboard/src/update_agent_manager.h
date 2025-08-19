@@ -20,11 +20,9 @@ public:
     ~UpdateAgentManager();
 
     Q_INVOKABLE void refresh();
-    Q_INVOKABLE void checkUpdateStatus();
     Q_INVOKABLE void startService();
     Q_INVOKABLE void stopService();
     Q_INVOKABLE void testProgressParsing(const QString& testLine);
-    Q_INVOKABLE void testStatusToggle();
     Q_INVOKABLE void testRealtimeMonitoring();
 
     // Property getters
@@ -45,7 +43,6 @@ signals:
 
 private slots:
     void onServiceStatusProcessFinished(int exitCode);
-    void onLogFileChanged(const QString& path);
     void onRefreshTimer();
     void onDBusSignal(const QDBusMessage& message);
 
@@ -60,26 +57,22 @@ private:
     QString m_updateStatus;
     int m_updateProgress;
 
-    // Log monitoring
-    QFileSystemWatcher* m_logWatcher;
-    QString m_logFilePath;
-    qint64 m_lastLogPosition;
-    QProcess* m_journalFollowProcess;
+    // Operation monitoring
+    QString m_currentOperation;
+    QTimer* m_operationPollTimer;
+    
+    // Rebooting progress timer
+    QTimer* m_rebootProgressTimer;
 
     // D-Bus monitoring
     QDBusConnection m_dbusConnection;
     bool m_dbusConnected;
 
-    // Status parsing
-    void parseLogContent();
-    void parseLogLine(const QString& line);
+    // Status management
     void checkServiceStatus();
-    void setupLogMonitoring();
     void setupDBusMonitoring();
-    void startRealtimeJournalMonitoring();
-    void stopRealtimeJournalMonitoring();
-    void updateProgressFromLog(const QString& line);
-    void updateStatusFromLog(const QString& line);
+    void pollOperation();
+    void updateStatusFromOperation(const QString& operation);
     void handleProgressSignal(int percentage);
     void handleCompletedSignal(bool success, const QString& message);
 };

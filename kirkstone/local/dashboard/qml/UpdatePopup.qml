@@ -15,11 +15,11 @@ Rectangle {
     property int animationDuration: 300
 
     // Popup styling (1.2x size)
-    width: 480
+    width: 600
     height: 240
     color: "#2a2a2a"
     border.color: "#4a9eff"
-    border.width: 2
+    border.width: 4
     radius: 10
 
     // Center the popup
@@ -51,43 +51,42 @@ Rectangle {
     // Content layout
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 20
+        anchors.margins: 24
         spacing: 15
 
         // Header
         Row {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 12
 
             Rectangle {
-                width: 24
-                height: 24
+                width: 26
+                height: 26
                 color: "#4a9eff"
                 radius: 12
-
                 Text {
                     anchors.centerIn: parent
                     text: "⟳"
                     color: "white"
-                    font.pixelSize: 16
-                    font.bold: true
-
+                    font.pixelSize: 24
+		    font.bold: true
                     RotationAnimation on rotation {
                         running: updatePopup.showProgress && updatePopup.progress < 100
                         from: 0
                         to: 360
-                        duration: 2000
+                        duration: 1000
                         loops: Animation.Infinite
                     }
                 }
             }
 
             Text {
-                text: "Software Update"
+		text: "Software Upgrade"
                 color: "#ffffff"
-                font.pixelSize: 18
+                font.pixelSize: 28
                 font.bold: true
-                verticalAlignment: Text.AlignVCenter
+		verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
             }
         }
 
@@ -96,24 +95,25 @@ Rectangle {
             Layout.fillWidth: true
             text: updatePopup.status
             color: "#cccccc"
-            font.pixelSize: 14
+            font.pixelSize: 20
             wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
         }
 
         // Progress bar
         Rectangle {
             Layout.fillWidth: true
-            height: 20
+            height: 28
             color: "#1a1a1a"
             border.color: "#555555"
-            border.width: 1
-            radius: 10
-            visible: updatePopup.showProgress
+            border.width: 2
+            radius: 8
+            visible: true
 
             Rectangle {
                 id: progressFill
                 height: parent.height - 2
-                width: Math.max(0, (parent.width - 2) * (updatePopup.progress / 100))
+                width: Math.max(10, (parent.width - 2) * (updatePopup.progress / 100))
                 color: "#4a9eff"
                 radius: parent.radius - 1
                 anchors.verticalCenter: parent.verticalCenter
@@ -129,54 +129,11 @@ Rectangle {
                 anchors.centerIn: parent
                 text: Math.round(updatePopup.progress) + "%"
                 color: "#ffffff"
-                font.pixelSize: 12
+                font.pixelSize: 16
                 font.bold: true
             }
         }
 
-        // Action buttons (optional)
-        Row {
-            Layout.alignment: Qt.AlignCenter
-            spacing: 10
-            visible: !updatePopup.showProgress || updatePopup.progress >= 100
-
-            Button {
-                text: "Details"
-                background: Rectangle {
-                    color: parent.pressed ? "#3a7acc" : "#4a9eff"
-                    radius: 5
-                }
-                contentItem: Text {
-                    text: parent.text
-                    color: "#ffffff"
-                    font.pixelSize: 12
-                    horizontalAlignment: Text.AlignHCenter
-                }
-
-                onClicked: {
-                    // Show detailed update information
-                    console.log("Show update details")
-                }
-            }
-
-            Button {
-                text: updatePopup.progress >= 100 ? "Close" : "Hide"
-                background: Rectangle {
-                    color: parent.pressed ? "#555555" : "#666666"
-                    radius: 5
-                }
-                contentItem: Text {
-                    text: parent.text
-                    color: "#ffffff"
-                    font.pixelSize: 12
-                    horizontalAlignment: Text.AlignHCenter
-                }
-
-                onClicked: {
-                    updatePopup.isVisible = false
-                }
-            }
-        }
     }
 
     // Auto-hide after completion (optional)

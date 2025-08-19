@@ -21,8 +21,13 @@ ApplicationWindow {
     property int updateProgress: 0
     property bool updateComplete: false
 
-    // Keyboard shortcuts
-    Keys.onPressed: function(event) {
+    // Invisible item for keyboard event handling
+    Item {
+        id: keyHandler
+        anchors.fill: parent
+        focus: true
+        
+        Keys.onPressed: function(event) {
         switch(event.key) {
             case Qt.Key_F1:
                 f1Button.clicked()
@@ -60,14 +65,6 @@ ApplicationWindow {
                 f8Button.clicked()
                 event.accepted = true
                 break
-            case Qt.Key_F9:
-                // Test Update Agent status changes
-                systemInfo.logUIEvent("F9 pressed", "Testing Update Agent status toggle")
-                if (updateAgentManager) {
-                    updateAgentManager.testStatusToggle()
-                }
-                event.accepted = true
-                break
             case Qt.Key_F10:
                 // Simulate progressive update stages
                 if (!swUpdateInProgress) {
@@ -91,14 +88,6 @@ ApplicationWindow {
                 }
                 event.accepted = true
                 break
-            case Qt.Key_F11:
-                // Test Update Agent progress parsing
-                systemInfo.logUIEvent("F11 pressed", "Testing Update Agent progress parsing")
-                if (updateAgentManager) {
-                    updateAgentManager.testProgressParsing("Update started: downloading bundle Progress: 30%")
-                }
-                event.accepted = true
-                break
             case Qt.Key_F12:
                 // Toggle real-time journal monitoring
                 systemInfo.logUIEvent("F12 pressed", "Toggle real-time journal monitoring")
@@ -108,7 +97,8 @@ ApplicationWindow {
                 event.accepted = true
                 break
         }
-    }
+        }
+    } // End of keyHandler Item
 
     SystemInfo {
         id: systemInfo
@@ -288,19 +278,14 @@ ApplicationWindow {
 
         onUpdateStatusChanged: {
             systemInfo.logUIEvent("Update Agent Status", updateAgentManager.updateStatus)
+            // Update local status immediately
             updateStatus = updateAgentManager.updateStatus
-
-            // Show popup for any active update or significant status changes
+            
+            // Update progress immediately
+            updateProgress = updateAgentManager.updateProgress
+            
+            // Show popup for any active update
             if (updateAgentManager.isUpdateActive) {
-                swUpdateInProgress = true
-                updateComplete = false
-            } else if (updateAgentManager.updateStatus.includes("started") ||
-                      updateAgentManager.updateStatus.includes("progress") ||
-                      updateAgentManager.updateStatus.includes("downloading") ||
-                      updateAgentManager.updateStatus.includes("installing") ||
-                      updateAgentManager.updateStatus.includes("completed") ||
-                      updateAgentManager.updateStatus.includes("failed")) {
-                // Show popup for important status updates even if isUpdateActive is false
                 swUpdateInProgress = true
                 updateComplete = false
             }
@@ -308,15 +293,13 @@ ApplicationWindow {
 
         onUpdateProgressChanged: {
             systemInfo.logUIEvent("Update Agent Progress", "Progress: " + updateAgentManager.updateProgress + "%")
+            // Update progress immediately
             updateProgress = updateAgentManager.updateProgress
-
-            // Show popup when progress changes, regardless of isUpdateActive
-            if (updateAgentManager.updateProgress > 0 && updateAgentManager.updateProgress < 100) {
+            
+            // Show popup when we have active update
+            if (updateAgentManager.isUpdateActive) {
                 swUpdateInProgress = true
                 updateComplete = false
-            } else if (updateAgentManager.updateProgress >= 100) {
-                updateComplete = true
-                // Keep popup visible to show completion
             }
         }
 
@@ -351,8 +334,8 @@ ApplicationWindow {
         z: 1000
 
         isVisible: swUpdateInProgress
-        status: updateStatus
-        progress: updateProgress
+        status: updateAgentManager ? updateAgentManager.updateStatus : "Initializing..."
+        progress: updateAgentManager ? updateAgentManager.updateProgress : 0
         showProgress: !updateComplete
 
         onIsVisibleChanged: {
@@ -812,10 +795,10 @@ ApplicationWindow {
                 id: f6Button
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
-                enabled: false
+                enabled: true
 
                 background: Rectangle {
-                    color: "#1a1a1a"
+                    color: parent.pressed ? "#555555" : "#333333"
                     radius: 5
                 }
 
@@ -825,17 +808,24 @@ ApplicationWindow {
 
                     Text {
                         text: "F6"
-                        color: "#666666"
+                        color: "#ffffff"
                         font.pointSize: 10
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
 
                     Text {
-                        text: "Empty"
-                        color: "#666666"
+                        text: "Test"
+                        color: "#ffffff"
                         font.pointSize: 8
                         anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+                
+                onClicked: {
+                    systemInfo.logUIEvent("F6 button clicked", "Testing Update Agent progress")
+                    if (updateAgentManager) {
+                        updateAgentManager.testProgressParsing("Test progress from F6 button")
                     }
                 }
             }
