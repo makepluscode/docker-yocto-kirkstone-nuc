@@ -142,7 +142,7 @@ Rectangle {
         interval: 5000
         running: false
         onTriggered: {
-            if (updatePopup.progress >= 100) {
+            if (updatePopup.progress >= 100 && !updatePopup.status.includes("Rebooting")) {
                 updatePopup.isVisible = false
             }
         }
@@ -150,7 +150,7 @@ Rectangle {
 
     // Watch for completion to start auto-hide timer
     onProgressChanged: {
-        if (progress >= 100 && isVisible) {
+        if (progress >= 100 && isVisible && !updatePopup.status.includes("Rebooting")) {
             autoHideTimer.start()
         }
     }

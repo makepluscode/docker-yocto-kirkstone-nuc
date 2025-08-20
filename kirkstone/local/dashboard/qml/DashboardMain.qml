@@ -306,13 +306,19 @@ ApplicationWindow {
         onUpdateCompleted: function(success, message) {
             systemInfo.logUIEvent("Update Agent Completed", "Success: " + success + " - " + message)
             updateComplete = true
-            swUpdateInProgress = false
-            updateStatus = success ? "Update completed successfully!" : "Update failed: " + message
-            updateProgress = success ? 100 : 0
-
+            
             if (success) {
+                // Keep popup visible during rebooting status
+                // The popup will be hidden when the system actually reboots
+                updateStatus = "Update completed successfully!\n\nSystem will reboot to new slot."
+                updateProgress = 100
                 // Auto-reboot after successful update
                 rebootTimer.start()
+            } else {
+                // Hide popup only on failure
+                swUpdateInProgress = false
+                updateStatus = "Update failed: " + message
+                updateProgress = 0
             }
         }
     }
@@ -334,8 +340,8 @@ ApplicationWindow {
         z: 1000
 
         isVisible: swUpdateInProgress
-        status: updateAgentManager ? updateAgentManager.updateStatus : "Initializing..."
-        progress: updateAgentManager ? updateAgentManager.updateProgress : 0
+        status: updateComplete ? updateStatus : (updateAgentManager ? updateAgentManager.updateStatus : "Initializing...")
+        progress: updateComplete ? updateProgress * 100 : (updateAgentManager ? updateAgentManager.updateProgress : 0)
         showProgress: !updateComplete
 
         onIsVisibleChanged: {
