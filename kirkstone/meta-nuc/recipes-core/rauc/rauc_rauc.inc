@@ -9,6 +9,9 @@ NUC_BUNDLE_COMPATIBLE ?= "${RAUC_BUNDLE_COMPATIBLE}"
 # Change to SATA device instead of NVMe
 ROOT_BLOCK_DEVICE_NAME ?= "sda"
 
+# Use fixed CA from meta-nuc layer (compatible with bundler)
+RAUC_KEYRING_FILE = "ca-fixed/ca.cert.pem"
+
 do_install:prepend () {
   # Replace root block device name parameters
   sed -i -e 's:@ROOT_BLOCK_DEVICE_NAME@:${ROOT_BLOCK_DEVICE_NAME}:g' ${WORKDIR}/system.conf
