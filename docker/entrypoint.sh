@@ -150,16 +150,13 @@ else
   echo "❌ Template file not found: $LOCALCONF_TEMPLATE"
 fi
 
-# Setup RAUC keys if they don't exist
+# Setup RAUC keys (always use fixed CA for consistency)
 echo "🔑 Setting up RAUC keys..."
-if [ ! -f "$BUILDDIR/example-ca/private/development-1.key.pem" ]; then
-  echo "🛠 Generating RAUC keys..."
-  cd "$BUILDDIR/../meta-nuc"
-  ./create-example-keys.sh
-  cd "$BUILDDIR"
-else
-  echo "ℹ️  RAUC keys already exist"
-fi
+echo "🛠 Using fixed CA from meta-nuc layer..."
+cd "$BUILDDIR/../meta-nuc"
+./create-example-keys.sh
+cd "$BUILDDIR"
+
 
 # Ensure site.conf has RAUC key configuration
 SITECONF="$BUILDDIR/conf/site.conf"

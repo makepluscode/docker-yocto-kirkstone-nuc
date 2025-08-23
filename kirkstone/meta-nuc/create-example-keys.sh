@@ -12,8 +12,10 @@ FIXED_CA_DIR="$BBPATH/../meta-nuc/recipes-core/rauc/files/ca-fixed"
 BASE="$BBPATH/example-ca"
 
 if [ -e $BASE ]; then
-  echo "$BASE already exists"
-  exit 1
+# Always use fixed CA - remove existing if present
+if [ -e $BASE ]; then
+  echo "🔄 Removing existing CA to use fixed CA..."
+  rm -rf $BASE
 fi
 
 # Check if fixed CA files exist
