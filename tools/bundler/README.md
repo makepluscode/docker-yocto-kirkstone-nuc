@@ -1,140 +1,90 @@
-# RAUC Bundler
+# RAUC Bundler Tool
 
-A minimal command-line tool for creating RAUC bundles from manifest files.
+A CMake-based RAUC bundle creation tool for Yocto-based embedded systems.
 
-## Overview
+## Project Structure
 
-The RAUC Bundler is a simple wrapper around the `rauc bundle` command that provides additional validation and convenience features for creating RAUC update bundles.
+```
+tools/bundler/
+├── CMakeLists.txt          # CMake build configuration
+├── README.md               # This file
+├── src/                    # Source code
+│   └── bundler.c          # Main bundler implementation
+├── scripts/                # Utility scripts
+│   ├── connect.sh         # SSH connection script
+│   └── rauc-bundle-manual.sh # Manual bundle creation
+├── docs/                   # Documentation
+│   ├── README.md          # Original README
+│   └── rauc-bundle-guide.md # RAUC bundle guide
+└── test/                   # Test files and data
+```
 
-## Features
+## Building
 
-- Validate manifest and certificate files before bundling
-- Check output directory existence
-- Prevent accidental overwrites (with force option)
-- Verbose output mode
-- Comprehensive error handling
-- Command-line argument validation
+### Prerequisites
 
-## Requirements
-
+- CMake 3.10 or higher
 - GCC compiler
-- RAUC tools installed on the system
-- Make (for building)
+- RAUC tools
 
-## Installation
-
-### Build from source
+### Build Instructions
 
 ```bash
-# Clone or download the source
-cd bundler
+# Create build directory
+mkdir build && cd build
 
-# Build the executable
+# Configure and build
+cmake ..
 make
 
-# Install system-wide (optional)
+# Install (optional)
 sudo make install
 ```
 
-### Development
+### Development Build
 
 ```bash
-# Build with debug symbols
-make debug
-
-# Build with strict warnings
-make check
-
-# Format code (requires clang-format)
-make format
-
-# Clean build artifacts
-make clean
+mkdir build-debug && cd build-debug
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make
 ```
 
 ## Usage
 
-### Basic Usage
+### Basic Bundle Creation
 
 ```bash
-# Create a bundle from manifest
-./bundler manifest.raucm bundle.raucb
+# Using the compiled bundler
+./build/bundler <rootfs.ext4> <output.raucb>
 
-# Create a signed bundle
-./bundler -c cert.pem -k key.pem manifest.raucm bundle.raucb
+# Using the manual script
+./scripts/rauc-bundle-manual.sh <rootfs.ext4>
 ```
 
-### Command Line Options
-
-```
-Usage: bundler [OPTIONS] <manifest> <output>
-
-Arguments:
-  manifest    Path to the RAUC manifest file
-  output      Path for the output .raucb bundle
-
-Options:
-  -c, --cert PATH    Path to certificate file
-  -k, --key PATH     Path to private key file
-  -v, --verbose      Enable verbose output
-  -f, --force        Overwrite existing output file
-  -h, --help         Show this help message
-```
-
-### Examples
+### Connecting to Target
 
 ```bash
-# Basic bundle creation
-./bundler my-update.raucm update-bundle.raucb
+./scripts/connect.sh root@192.168.1.100
+```
 
-# Signed bundle with verbose output
-./bundler -v -c /path/to/cert.pem -k /path/to/key.pem my-update.raucm signed-bundle.raucb
+## Testing
 
-# Force overwrite existing bundle
-./bundler -f manifest.raucm bundle.raucb
+```bash
+# Run tests
+cd build
+make test
 
-# Show help
+# Manual testing
 ./bundler --help
 ```
 
-## Error Handling
+## Configuration
 
-The bundler performs several validation checks:
-
-- **Manifest file existence**: Ensures the manifest file exists before attempting to create the bundle
-- **Certificate/key validation**: Verifies both certificate and key files exist when signing
-- **Output directory**: Checks if the output directory exists
-- **File overwrite protection**: Prevents accidental overwrites unless `-f` is specified
-- **RAUC command execution**: Reports detailed error messages from the underlying `rauc bundle` command
-
-## Exit Codes
-
-- `0`: Success
-- `1`: Error (invalid arguments, file not found, etc.)
-- Other: Exit code from the underlying `rauc bundle` command
-
-## Integration
-
-The bundler can be easily integrated into build systems and CI/CD pipelines:
-
-```bash
-# In a Makefile
-bundle: $(MANIFEST)
-	./bundler -v -c $(CERT) -k $(KEY) $(MANIFEST) $(OUTPUT)
-
-# In a shell script
-if ./bundler -c cert.pem -k key.pem manifest.raucm bundle.raucb; then
-    echo "Bundle created successfully"
-else
-    echo "Bundle creation failed"
-    exit 1
-fi
-```
+The bundler uses fixed CA certificates from the meta-nuc layer:
+- CA Certificate: `kirkstone/meta-nuc/recipes-core/rauc/files/ca-fixed/ca.cert.pem`
+- Development Certificate: `kirkstone/meta-nuc/recipes-core/rauc/files/ca-fixed/development-1.cert.pem`
+- Private Key: `kirkstone/meta-nuc/recipes-core/rauc/files/ca-fixed/development-1.key.pem`
 
 ## License
 
-This project is provided as-is for educational and development purposes.
-
-## Contributing
-
-Feel free to submit issues and enhancement requests. 
+This project is part of the Yocto-based NUC system. 
