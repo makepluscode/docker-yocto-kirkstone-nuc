@@ -199,10 +199,10 @@ private:
         } else {
             DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Update failed: "), DLT_STRING(message.c_str()));
 
-            // Clean up downloaded file on failure too
-            if (remove(UPDATE_BUNDLE_PATH.c_str()) == 0) {
-                DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Cleaned up downloaded bundle file after failure"));
-            }
+            // Clean up downloaded file on failure too - COMMENTED OUT FOR DEBUGGING
+            // if (remove(UPDATE_BUNDLE_PATH.c_str()) == 0) {
+            //     DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Cleaned up downloaded bundle file after failure"));
+            // }
         }
     }
 };

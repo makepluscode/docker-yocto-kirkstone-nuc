@@ -14,7 +14,7 @@ BUNDLE_DESCRIPTION="Intel NUC Qt5 Image"
 
 # Directory setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-KEYS_DIR="${SCRIPT_DIR}/example-ca"
+KEYS_DIR="/home/makepluscode/docker-yocto-kirkstone-nuc/kirkstone/meta-nuc/recipes-core/rauc/files/ca-fixed"
 BUNDLE_DIR="${SCRIPT_DIR}/bundle-temp"
 OUTPUT_DIR="${SCRIPT_DIR}/output"
 
@@ -159,8 +159,8 @@ main() {
     print_status "Starting manual RAUC bundle creation"
     
     # Check if keys exist
-    if [ ! -f "$KEYS_DIR/development-1.cert.pem" ] || [ ! -f "$KEYS_DIR/private/development-1.key.pem" ]; then
-        print_error "RAUC keys not found. Please run create-example-keys.sh first."
+    if [ ! -f "$KEYS_DIR/development-1.cert.pem" ] || [ ! -f "$KEYS_DIR/development-1.key.pem" ]; then
+        print_error "RAUC keys not found in $KEYS_DIR"
         exit 1
     fi
     
@@ -196,7 +196,7 @@ main() {
     local output_file="$OUTPUT_DIR/${BUNDLE_NAME}-${BUNDLE_VERSION}.raucb"
     create_bundle "$BUNDLE_DIR" "$output_file" \
         "$KEYS_DIR/development-1.cert.pem" \
-        "$KEYS_DIR/private/development-1.key.pem"
+        "$KEYS_DIR/development-1.key.pem"
     
     # Verify bundle
     verify_bundle "$output_file" "$KEYS_DIR/ca.cert.pem"
