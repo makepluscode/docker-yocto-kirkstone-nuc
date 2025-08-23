@@ -83,7 +83,6 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer
 basicConstraints = critical, CA:false
 keyUsage = critical, digitalSignature
-extendedKeyUsage = clientAuth, serverAuth
 EOF
 
 # Initialize CA database
