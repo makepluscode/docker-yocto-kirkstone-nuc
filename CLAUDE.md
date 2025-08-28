@@ -296,3 +296,66 @@ uv run python -m updater_server.main_refactored
 - **Activity Logging**: Real-time server output and application events
 
 See `tools/updater/REFACTORING_GUIDE.md` for detailed architecture documentation.
+
+## RAUC Bundler Tool
+
+The `tools/bundler` directory contains a CMake-based RAUC bundle creation tool for standalone bundle generation.
+
+### Bundler Architecture
+- **C Implementation**: `src/bundler.c` - Core bundler implementation 
+- **CMake Build**: Standard CMake configuration with install targets
+- **Scripts**: Connection and manual bundle creation utilities
+- **Documentation**: Comprehensive RAUC bundle creation guide
+
+### Bundler Commands
+```bash
+# Build the bundler tool
+cd tools/bundler
+mkdir build && cd build
+cmake ..
+make
+
+# Create RAUC bundle
+./bundler <rootfs.ext4> <output.raucb>
+
+# Using manual script
+./scripts/rauc-bundle-manual.sh <rootfs.ext4>
+
+# Connect to target for deployment
+./scripts/connect.sh root@192.168.1.100
+
+# Development build with debugging
+mkdir build-debug && cd build-debug
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make
+```
+
+### Bundle Creation Workflow
+```bash
+# Standalone bundle creation (outside Yocto)
+cd tools/bundler
+
+# Build the tool
+mkdir build && cd build
+cmake .. && make
+
+# Create bundle from filesystem image
+./bundler /path/to/rootfs.ext4 output.raucb
+
+# Deploy to target device
+scp output.raucb root@192.168.1.100:/data/
+ssh root@192.168.1.100 "rauc install /data/output.raucb"
+```
+
+### Certificate Configuration
+The bundler uses fixed CA certificates from the meta-nuc layer:
+- **CA Certificate**: `kirkstone/meta-nuc/recipes-core/rauc/files/ca-fixed/ca.cert.pem`
+- **Development Certificate**: `kirkstone/meta-nuc/recipes-core/rauc/files/ca-fixed/development-1.cert.pem`
+- **Private Key**: `kirkstone/meta-nuc/recipes-core/rauc/files/ca-fixed/development-1.key.pem`
+
+### Integration with Build System
+The bundler tool complements the Yocto build system by providing:
+- **Standalone Operation**: Create bundles without full Yocto build
+- **Development Speed**: Faster iteration during bundle testing
+- **CI/CD Integration**: Lightweight tool for automated pipelines
+- **Manual Control**: Fine-grained control over bundle creation process
