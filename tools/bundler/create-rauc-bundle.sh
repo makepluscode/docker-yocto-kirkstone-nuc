@@ -136,18 +136,7 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Function to calculate SHA256 hash
-calculate_sha256() {
-    local file="$1"
-    if command_exists sha256sum; then
-        sha256sum "$file" | cut -d' ' -f1
-    elif command_exists shasum; then
-        shasum -a 256 "$file" | cut -d' ' -f1
-    else
-        print_error "Neither sha256sum nor shasum found. Cannot calculate hash."
-        exit 1
-    fi
-}
+# Note: SHA256 calculation removed as RAUC auto-calculates hashes during bundle creation
 
 # Function to check directory and setup paths
 setup_environment() {
@@ -297,13 +286,9 @@ create_manifest() {
     
     print_status "Creating manifest: $(basename "$manifest_file")"
     
-    # Calculate file size and hash
-    local file_size=$(stat -c%s "$rootfs_file" 2>/dev/null || stat -f%z "$rootfs_file" 2>/dev/null)
-    local file_hash=$(calculate_sha256 "$rootfs_file")
     local build_timestamp=$(date '+%Y%m%d%H%M%S')
     
-    print_debug "File size: $file_size bytes"
-    print_debug "SHA256 hash: $file_hash"
+    print_debug "Creating simplified manifest (RAUC will auto-calculate SHA256 and size)"
     
     cat > "$manifest_file" << EOF
 [update]
@@ -317,8 +302,6 @@ format=plain
 
 [image.rootfs]
 filename=$(basename "$rootfs_file")
-size=$file_size
-sha256=$file_hash
 EOF
     
     print_success "Manifest created successfully"
