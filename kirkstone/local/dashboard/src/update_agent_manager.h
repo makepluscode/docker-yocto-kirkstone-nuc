@@ -60,7 +60,7 @@ private:
     // Operation monitoring
     QString m_currentOperation;
     QTimer* m_operationPollTimer;
-    
+
     // Rebooting progress timer
     QTimer* m_rebootProgressTimer;
 

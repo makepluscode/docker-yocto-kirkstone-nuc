@@ -142,7 +142,7 @@ void UpdateAgentManager::pollOperation()
                     DLT_STRING(operation.toUtf8().constData()));
         }
     }
-    
+
     // Also poll Progress property directly from UpdateService (safely)
     QVariant progressProperty = updateService.property("Progress");
     if (progressProperty.isValid() && !progressProperty.isNull()) {
@@ -203,7 +203,7 @@ void UpdateAgentManager::updateStatusFromOperation(const QString& operation)
 {
     QString newStatus = m_updateStatus;
     bool wasUpdateActive = m_isUpdateActive;
-    
+
     if (operation == "idle") {
         m_isUpdateActive = false;
         newStatus = "Polling";
@@ -216,7 +216,7 @@ void UpdateAgentManager::updateStatusFromOperation(const QString& operation)
             emit updateStarted();
             emit updateProgressChanged();
         }
-    } else if (operation.contains("download", Qt::CaseInsensitive) || 
+    } else if (operation.contains("download", Qt::CaseInsensitive) ||
                operation.contains("fetch", Qt::CaseInsensitive)) {
         m_isUpdateActive = true;
         newStatus = "Download";
@@ -235,11 +235,11 @@ void UpdateAgentManager::updateStatusFromOperation(const QString& operation)
             emit updateProgressChanged();
         }
     }
-    
+
     if (newStatus != m_updateStatus || wasUpdateActive != m_isUpdateActive) {
         m_updateStatus = newStatus;
         emit updateStatusChanged();
-        
+
         if (m_updateProgress == 0 && m_isUpdateActive && newStatus != "Installing") {
             emit updateProgressChanged();
         }
@@ -282,9 +282,9 @@ void UpdateAgentManager::testProgressParsing(const QString& testLine)
     // Cycle through test states with new progress ranges
     static int testState = 0;
     testState = (testState + 1) % 5; // 5 states: Polling, Download, Installing, Installing, Rebooting
-    
+
     bool oldActive = m_isUpdateActive;
-    
+
     switch(testState) {
         case 0: // Polling
             m_isUpdateActive = false;
@@ -383,7 +383,7 @@ void UpdateAgentManager::handleProgressSignal(int percentage)
     if (mappedProgress != m_updateProgress && percentage >= 0 && percentage <= 100) {
         m_updateProgress = mappedProgress;
         emit updateProgressChanged();
-        
+
         DLT_LOG(m_ctx, DLT_LOG_INFO,
                 DLT_STRING("RAUC progress:"), DLT_INT(percentage),
                 DLT_STRING("% mapped to:"), DLT_INT(mappedProgress), DLT_STRING("%"));
@@ -400,7 +400,7 @@ void UpdateAgentManager::handleProgressSignal(int percentage)
     if (newStatus != m_updateStatus) {
         m_updateStatus = newStatus;
         emit updateStatusChanged();
-        
+
         DLT_LOG(m_ctx, DLT_LOG_INFO,
                 DLT_STRING("Status changed to:"),
                 DLT_STRING(newStatus.toUtf8().constData()));
@@ -416,10 +416,10 @@ void UpdateAgentManager::handleCompletedSignal(bool success, const QString& mess
         m_isUpdateActive = true; // Keep active during reboot
         m_updateProgress = 80;
         m_updateStatus = "Rebooting";
-        
+
         // Start reboot progress timer (80% -> 99%, 1% per second)
         m_rebootProgressTimer->start();
-        
+
         DLT_LOG(m_ctx, DLT_LOG_INFO, DLT_STRING("Started Rebooting phase at 80%"));
     } else {
         m_isUpdateActive = false;

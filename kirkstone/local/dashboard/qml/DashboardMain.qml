@@ -26,7 +26,7 @@ ApplicationWindow {
         id: keyHandler
         anchors.fill: parent
         focus: true
-        
+
         Keys.onPressed: function(event) {
         switch(event.key) {
             case Qt.Key_F1:
@@ -280,10 +280,10 @@ ApplicationWindow {
             systemInfo.logUIEvent("Update Agent Status", updateAgentManager.updateStatus)
             // Update local status immediately
             updateStatus = updateAgentManager.updateStatus
-            
+
             // Update progress immediately
             updateProgress = updateAgentManager.updateProgress
-            
+
             // Show popup for any active update
             if (updateAgentManager.isUpdateActive) {
                 swUpdateInProgress = true
@@ -295,7 +295,7 @@ ApplicationWindow {
             systemInfo.logUIEvent("Update Agent Progress", "Progress: " + updateAgentManager.updateProgress + "%")
             // Update progress immediately
             updateProgress = updateAgentManager.updateProgress
-            
+
             // Show popup when we have active update
             if (updateAgentManager.isUpdateActive) {
                 swUpdateInProgress = true
@@ -306,7 +306,7 @@ ApplicationWindow {
         onUpdateCompleted: function(success, message) {
             systemInfo.logUIEvent("Update Agent Completed", "Success: " + success + " - " + message)
             updateComplete = true
-            
+
             if (success) {
                 // Keep popup visible during rebooting status
                 // The popup will be hidden when the system actually reboots
@@ -827,7 +827,7 @@ ApplicationWindow {
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
-                
+
                 onClicked: {
                     systemInfo.logUIEvent("F6 button clicked", "Testing Update Agent progress")
                     if (updateAgentManager) {
