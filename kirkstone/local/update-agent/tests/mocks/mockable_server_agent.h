@@ -1,7 +1,7 @@
 /**
  * @file mockable_server_agent.h
  * @brief 모킹 가능한 ServerAgent 래퍼
- * 
+ *
  * ServerAgent의 HTTP 통신을 모킹할 수 있도록
  * 의존성 주입을 지원하는 래퍼 클래스입니다.
  */
@@ -17,7 +17,7 @@
 /**
  * @class MockableServerAgent
  * @brief 모킹 가능한 ServerAgent 래퍼 클래스
- * 
+ *
  * ServerAgent의 HTTP 통신을 모킹할 수 있도록
  * 의존성 주입을 지원합니다.
  */
@@ -30,23 +30,23 @@ public:
      * @param device_id 디바이스 ID
      * @param http_client HTTP 클라이언트 (선택적, nullptr이면 실제 클라이언트 사용)
      */
-    MockableServerAgent(const std::string& server_url, 
-                       const std::string& tenant, 
+    MockableServerAgent(const std::string& server_url,
+                       const std::string& tenant,
                        const std::string& device_id,
                        MockHttpClient* http_client = nullptr);
-    
+
     /**
      * @brief 소멸자
      */
     ~MockableServerAgent() = default;
-    
+
     /**
      * @brief 업데이트 폴링 (모킹 가능)
      * @param response 응답 데이터를 받을 문자열 참조
      * @return 폴링 성공 여부
      */
     bool pollForUpdates(std::string& response);
-    
+
     /**
      * @brief 번들 다운로드 (모킹 가능)
      * @param download_url 다운로드 URL
@@ -54,7 +54,7 @@ public:
      * @return 다운로드 성공 여부
      */
     bool downloadBundle(const std::string& download_url, const std::string& local_path);
-    
+
     /**
      * @brief 피드백 전송 (모킹 가능)
      * @param execution_id 실행 ID
@@ -63,7 +63,7 @@ public:
      * @return 전송 성공 여부
      */
     bool sendFeedback(const std::string& execution_id, const std::string& status, const std::string& message = "");
-    
+
     /**
      * @brief 진행률 피드백 전송 (모킹 가능)
      * @param execution_id 실행 ID
@@ -72,14 +72,14 @@ public:
      * @return 전송 성공 여부
      */
     bool sendProgressFeedback(const std::string& execution_id, int progress, const std::string& message = "");
-    
+
     /**
      * @brief 시작 피드백 전송 (모킹 가능)
      * @param execution_id 실행 ID
      * @return 전송 성공 여부
      */
     bool sendStartedFeedback(const std::string& execution_id);
-    
+
     /**
      * @brief 완료 피드백 전송 (모킹 가능)
      * @param execution_id 실행 ID
@@ -88,7 +88,7 @@ public:
      * @return 전송 성공 여부
      */
     bool sendFinishedFeedback(const std::string& execution_id, bool success, const std::string& message = "");
-    
+
     /**
      * @brief 업데이트 응답 파싱 (실제 구현 사용)
      * @param response 응답 문자열

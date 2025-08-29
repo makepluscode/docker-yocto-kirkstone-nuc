@@ -134,7 +134,7 @@ make -j$(nproc)
 ### 🎯 Mocked Tests (Primary - No Dependencies)
 **File**: `test_mocked_only.cpp`
 - ✅ `MockedOnlyTest.HttpClientMocking` - HTTP GET operations
-- ✅ `MockedOnlyTest.HttpClientPostMocking` - HTTP POST operations  
+- ✅ `MockedOnlyTest.HttpClientPostMocking` - HTTP POST operations
 - ✅ `MockedOnlyTest.FileDownloadMocking` - File download operations
 - ✅ `MockedOnlyTest.DbusClientMocking` - D-Bus connection operations
 - ✅ `MockedOnlyTest.DbusServiceCheckMocking` - Service availability checks

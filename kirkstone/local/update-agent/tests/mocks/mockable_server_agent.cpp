@@ -5,15 +5,15 @@
 
 #include "mockable_server_agent.h"
 
-MockableServerAgent::MockableServerAgent(const std::string& server_url, 
-                                       const std::string& tenant, 
+MockableServerAgent::MockableServerAgent(const std::string& server_url,
+                                       const std::string& tenant,
                                        const std::string& device_id,
                                        MockHttpClient* http_client)
     : mock_http_client_(http_client)
     , server_url_(server_url)
     , tenant_(tenant)
     , device_id_(device_id) {
-    
+
     // 실제 ServerAgent 생성 (파싱 기능은 실제 구현 사용)
     real_agent_ = std::make_unique<ServerAgent>(server_url, tenant, device_id);
 }

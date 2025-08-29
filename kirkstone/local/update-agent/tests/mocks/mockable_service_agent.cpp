@@ -7,7 +7,7 @@
 
 MockableServiceAgent::MockableServiceAgent(MockDbusClient* dbus_client)
     : mock_dbus_client_(dbus_client) {
-    
+
     // 실제 ServiceAgent 생성
     real_agent_ = std::make_unique<ServiceAgent>();
 }
