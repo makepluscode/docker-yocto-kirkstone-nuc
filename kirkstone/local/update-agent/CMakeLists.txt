@@ -31,6 +31,7 @@ target_link_libraries(update-agent
     ${JSON_LIBRARIES}
 )
 
+
 # Set the correct dynamic linker for target device
 if(CMAKE_CROSSCOMPILING)
     set_target_properties(update-agent PROPERTIES
@@ -52,3 +53,19 @@ install(TARGETS update-agent
 install(FILES services/update-agent.service
     DESTINATION /etc/systemd/system
 )
+
+# Google Test
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+# Enable testing
+enable_testing()
+
+# Add test subdirectory
+add_subdirectory(tests)

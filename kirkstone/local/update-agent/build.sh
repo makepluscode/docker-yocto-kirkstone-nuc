@@ -28,3 +28,4 @@ make -j$(nproc)
 
 echo "Build completed successfully!"
 echo "Binary location: build/update-agent"
+echo "Test binary location: build/tests/update-agent-tests"

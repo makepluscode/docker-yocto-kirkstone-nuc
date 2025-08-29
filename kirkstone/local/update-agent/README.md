@@ -51,9 +51,38 @@ systemctl stop rauc-hawkbit-cpp
 systemctl status rauc-hawkbit-cpp
 ```
 
+## Testing
+
+The project includes comprehensive Google Test (gtest) framework integration with the following test categories:
+
+### Test Structure
+- **Configuration Tests**: Validate all configuration constants and settings
+- **ServerAgent Tests**: Test Hawkbit server communication and JSON parsing
+- **ServiceAgent Tests**: Test RAUC D-Bus communication and bundle installation
+- **Integration Tests**: Test complete update flow and error handling
+
+### Running Tests
+
+```bash
+./test.sh
+```
+
+This will:
+1. Source Yocto SDK environment
+2. Build the project and tests with cross-compilation
+3. Run all tests
+
+For detailed testing information, see [tests/TESTING.md](tests/TESTING.md).
+
 ## Development
 
 The application consists of:
 - `main.cpp`: Main application loop and integration
-- `hawkbit_client.h/cpp`: Hawkbit server communication
-- `rauc_client.h/cpp`: RAUC DBus communication
+- `server_agent.h/cpp`: Hawkbit server communication
+- `service_agent.h/cpp`: RAUC D-Bus communication
+- `config.h`: Configuration constants
+
+### Build Scripts
+- `build.sh`: Cross-compilation build with Yocto SDK
+- `test.sh`: Local test execution
+- `deploy.sh`: Application deployment to target device

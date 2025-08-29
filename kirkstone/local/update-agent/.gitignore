@@ -45,3 +45,36 @@ environment-setup-*
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Test build directories
+build-local/
+build-mocked/
+build-host/
+
+# Test artifacts
+tests/CMakeFiles/
+tests/CMakeCache.txt
+tests/cmake_install.cmake
+tests/Makefile
+tests/*.cmake
+
+# Google Test build artifacts
+_deps/
+lib/
+*.a
+
+# Test binaries
+update-agent-tests
+update-agent-mocked-tests
+
+# Mock test files (if you want to exclude them)
+# tests/mocks/
+# tests/test_*_mocked.cpp
+# tests/CMakeLists_mocked.txt
+
+# Test results and reports
+test_results.xml
+*.gcov
+*.gcno
+*.gcda
+coverage/
