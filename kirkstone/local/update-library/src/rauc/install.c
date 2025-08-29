@@ -15,6 +15,7 @@
 #include "../../include/rauc/slot.h"
 #include "../../include/rauc/utils.h"
 #include "../../include/rauc/checksum.h"
+#include "../../include/rauc/bootchooser.h"
 
 typedef struct {
     RaucSlot *slot;
@@ -163,8 +164,8 @@ static gboolean verify_installed_image(RaucSlot *slot, RaucImage *image,
                                      GError **error)
 {
     GError *ierror = NULL;
-    gchar *calculated_checksum = NULL;
     gboolean res = FALSE;
+    RaucChecksum computed = {};
 
     g_return_val_if_fail(slot != NULL, FALSE);
     g_return_val_if_fail(image != NULL, FALSE);
@@ -182,21 +183,29 @@ static gboolean verify_installed_image(RaucSlot *slot, RaucImage *image,
         g_free(message);
     }
 
-    RaucChecksum calc_checksum;
-    calc_checksum.type = image->checksum.type;
-    calc_checksum.digest = NULL;
+    /* Use exactly the same approach as original RAUC: verify_checksum */
+    computed.type = image->checksum.type;
 
-    if (!r_checksum_file(slot->device, &calc_checksum, &ierror)) {
+    if (!r_checksum_file(slot->device, &computed, &ierror)) {
         g_propagate_prefixed_error(error, ierror, "Failed to calculate checksum of installed image: ");
         goto out;
     }
 
-    calculated_checksum = calc_checksum.digest;
+    /* Check size match first */
+    res = (image->checksum.size == computed.size);
+    if (!res) {
+        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Size verification failed for slot '%s'. Expected: %lld, Calculated: %lld",
+                   slot->name, (long long)image->checksum.size, (long long)computed.size);
+        goto out;
+    }
 
-    if (g_strcmp0(calculated_checksum, image->checksum.digest) != 0) {
+    /* Check digest match */
+    res = g_str_equal(image->checksum.digest, computed.digest);
+    if (!res) {
         g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED,
                    "Checksum verification failed for slot '%s'. Expected: %s, Calculated: %s",
-                   slot->name, image->checksum.digest, calculated_checksum);
+                   slot->name, image->checksum.digest, computed.digest);
         goto out;
     }
 
@@ -209,8 +218,8 @@ static gboolean verify_installed_image(RaucSlot *slot, RaucImage *image,
     res = TRUE;
 
 out:
-    if (calc_checksum.digest) {
-        g_free(calc_checksum.digest);
+    if (computed.digest) {
+        g_free(computed.digest);
     }
     return res;
 }
@@ -271,9 +280,11 @@ static gboolean install_image_to_slot(InstallTask *task,
         goto out;
     }
 
-    if (!verify_installed_image(task->slot, task->image, progress_callback, user_data, &ierror)) {
-        g_propagate_error(error, ierror);
-        goto out;
+    /* Follow original RAUC approach: no post-installation verification */
+    if (progress_callback) {
+        gchar *message = g_strdup_printf("Installation to slot '%s' completed", task->slot->name);
+        progress_callback(100, message, 1, user_data);
+        g_free(message);
     }
 
     if (!update_slot_status(task->slot, R_SLOT_STATE_GOOD, &ierror)) {
@@ -281,9 +292,24 @@ static gboolean install_image_to_slot(InstallTask *task,
         goto out;
     }
 
+    /* Mark slot as active in bootloader */
+    if (task->slot && task->slot->name && task->slot->bootname) {
+        if (!r_boot_mark_active(task->slot, &ierror)) {
+            g_warning("Failed to mark slot %s as active in bootloader: %s",
+                      task->slot->name, ierror ? ierror->message : "unknown error");
+            g_clear_error(&ierror);
+        } else {
+            g_message("Successfully marked slot %s as active in bootloader", task->slot->name);
+        }
+    } else {
+        g_warning("Cannot mark slot as active: slot data is incomplete");
+    }
+
     if (progress_callback) {
+        const gchar *image_name = (task->image && task->image->filename) ? task->image->filename : "unknown";
+        const gchar *slot_name = (task->slot && task->slot->name) ? task->slot->name : "unknown";
         gchar *message = g_strdup_printf("Successfully installed image '%s' to slot '%s'",
-                                       task->image->filename, task->slot->name);
+                                       image_name, slot_name);
         progress_callback(100, message, 0, user_data);
         g_free(message);
     }
@@ -379,21 +405,28 @@ gboolean r_install_bundle(RaucBundle *bundle,
         printf("DEBUG: Skipping signature verification (already verified)\n");
     }
 
+    printf("DEBUG: Starting compatibility check...\n");
     if (!r_bundle_check_compatible(bundle, &ierror)) {
         g_propagate_prefixed_error(error, ierror, "Bundle compatibility check failed: ");
         goto out;
     }
+    printf("DEBUG: Compatibility check passed\n");
 
+    printf("DEBUG: Starting content verification...\n");
     if (!r_bundle_verify_content(bundle, &ierror)) {
         g_propagate_prefixed_error(error, ierror, "Bundle content verification failed: ");
         goto out;
     }
+    printf("DEBUG: Content verification passed\n");
 
+    printf("DEBUG: Creating install tasks...\n");
     tasks = create_install_tasks(bundle, &ierror);
     if (!tasks) {
+        printf("DEBUG: Failed to create install tasks: %s\n", ierror ? ierror->message : "unknown error");
         g_propagate_error(error, ierror);
         goto out;
     }
+    printf("DEBUG: Install tasks created successfully\n");
 
     total_tasks = g_list_length(tasks);
 

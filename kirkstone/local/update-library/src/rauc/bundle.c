@@ -511,6 +511,22 @@ gboolean r_bundle_check_compatible(RaucBundle *bundle, GError **error)
     g_return_val_if_fail(bundle->manifest != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+    printf("DEBUG: r_bundle_check_compatible called\n");
+
+    if (!context) {
+        printf("DEBUG: Context is NULL!\n");
+        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "RAUC context not initialized");
+        goto out;
+    }
+
+    if (!context->config) {
+        printf("DEBUG: Context config is NULL!\n");
+        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "RAUC context config not initialized");
+        goto out;
+    }
+
     if (!bundle->manifest->compatible) {
         g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED,
                    "Bundle manifest does not specify compatible string");

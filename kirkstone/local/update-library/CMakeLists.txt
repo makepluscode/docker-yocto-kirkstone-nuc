@@ -36,6 +36,7 @@ set(RAUC_SOURCES
     src/rauc/config_file.c
     src/rauc/stubs.c
     src/rauc/signature.c
+    src/rauc/bootchooser.c
 )
 
 # C++ wrapper sources (commented out for now due to build issues)

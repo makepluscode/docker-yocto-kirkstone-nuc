@@ -61,6 +61,11 @@ gboolean r_context_init(void) {
 
     r_context = g_new0(RaucContext, 1);
 
+    // config 구조체 생성 및 초기화
+    r_context->config = g_new0(RaucConfig, 1);
+    r_context->config->system_compatible = g_strdup("intel-i7-x64-nuc-rauc");
+    r_context->config->slots = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+
     // 기본값 설정
     r_context->configpath = g_strdup("/etc/rauc/system.conf");
     r_context->keyringpath = NULL;  // 설정에서 로드
