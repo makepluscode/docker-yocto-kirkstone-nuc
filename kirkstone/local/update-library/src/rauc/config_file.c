@@ -450,11 +450,11 @@ const gchar *r_config_get_grubenv_path(void) {
 }
 
 const gchar *r_config_get_data_directory(void) {
-    return r_context ? r_context->data_directory : "/var/lib/rauc";
+    return r_context ? r_context->data_directory : "/data";
 }
 
 const gchar *r_config_get_mount_prefix(void) {
-    return r_context ? r_context->mount_prefix : "/mnt/rauc";
+    return r_context ? r_context->mount_prefix : "/tmp/rauc";
 }
 
 gboolean r_config_is_loaded(void) {

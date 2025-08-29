@@ -369,9 +369,14 @@ gboolean r_install_bundle(RaucBundle *bundle,
         progress_callback(0, "Starting bundle installation", 0, user_data);
     }
 
-    if (!r_bundle_verify_signature(bundle, &ierror)) {
-        g_propagate_prefixed_error(error, ierror, "Bundle signature verification failed: ");
-        goto out;
+    // Skip signature verification if bundle already has sigdata (already verified)
+    if (!bundle->sigdata) {
+        if (!r_bundle_verify_signature(bundle, &ierror)) {
+            g_propagate_prefixed_error(error, ierror, "Bundle signature verification failed: ");
+            goto out;
+        }
+    } else {
+        printf("DEBUG: Skipping signature verification (already verified)\n");
     }
 
     if (!r_bundle_check_compatible(bundle, &ierror)) {

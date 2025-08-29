@@ -8,13 +8,210 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <glib.h>
+#include <gio/gio.h>
+#include <openssl/cms.h>
+#include <openssl/x509.h>
 
 #include "../../include/rauc/context.h"
 #include "../../include/rauc/bundle.h"
 #include "../../include/rauc/utils.h"
 #include "../../include/rauc/checksum.h"
+#include "../../include/rauc/signature.h"
 
 static gchar *bundle_mount_point = NULL;
+
+// Forward declarations
+static gboolean r_bundle_mount(const gchar *bundlename, gchar **mountpoint, GError **error);
+static gboolean r_bundle_unmount(const gchar *mountpoint, GError **error);
+
+#define MAX_BUNDLE_SIGNATURE_SIZE (64 * 1024)  // 64KB max signature size
+
+static gboolean open_local_bundle(RaucBundle *bundle, GError **error)
+{
+    gboolean res = FALSE;
+    GError *ierror = NULL;
+    g_autoptr(GFile) bundlefile = NULL;
+    g_autoptr(GFileInfo) bundleinfo = NULL;
+    guint64 sigsize;
+    goffset offset;
+    gchar *mountpoint = NULL;
+
+    g_return_val_if_fail(bundle != NULL, FALSE);
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+    g_assert_null(bundle->stream);
+
+    // Mount bundle for manifest access
+    if (!r_bundle_mount(bundle->path, &mountpoint, &ierror)) {
+        g_propagate_error(error, ierror);
+        goto out;
+    }
+
+    bundle->mount_point = g_strdup(mountpoint);
+
+    bundlefile = g_file_new_for_path(bundle->path);
+    bundle->stream = G_INPUT_STREAM(g_file_read(bundlefile, NULL, &ierror));
+    if (bundle->stream == NULL) {
+        g_propagate_prefixed_error(
+                error,
+                ierror,
+                "Failed to open bundle for reading: ");
+        res = FALSE;
+        goto out;
+    }
+
+    bundleinfo = g_file_input_stream_query_info(
+            G_FILE_INPUT_STREAM(bundle->stream),
+            G_FILE_ATTRIBUTE_STANDARD_TYPE,
+            NULL, &ierror);
+    if (bundleinfo == NULL) {
+        g_propagate_prefixed_error(
+                error,
+                ierror,
+                "Failed to query bundle file info: ");
+        res = FALSE;
+        goto out;
+    }
+
+    if (g_file_info_get_file_type(bundleinfo) != G_FILE_TYPE_REGULAR) {
+        g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                "Bundle is not a regular file");
+        res = FALSE;
+        goto out;
+    }
+
+    // Read signature size from end of file
+    offset = sizeof(sigsize);
+    res = g_seekable_seek(G_SEEKABLE(bundle->stream),
+            -offset, G_SEEK_END, NULL, &ierror);
+    if (!res) {
+        g_propagate_prefixed_error(
+                error,
+                ierror,
+                "Failed to seek to end of bundle: ");
+        goto out;
+    }
+    offset = g_seekable_tell(G_SEEKABLE(bundle->stream));
+
+    // Read signature size (8 bytes at end of file)
+    guchar sigsize_buffer[8];
+    gsize bytes_read = 0;
+    res = g_input_stream_read_all(bundle->stream, sigsize_buffer, 8, &bytes_read, NULL, &ierror);
+    if (!res || bytes_read != 8) {
+        g_propagate_prefixed_error(
+                error,
+                ierror,
+                "Failed to read signature size from bundle: ");
+        goto out;
+    }
+
+    // Convert bytes to uint64 (RAUC uses network byte order - big-endian)
+    // Use the same method as original RAUC: GUINT64_FROM_BE
+    sigsize = ((guint64)sigsize_buffer[0] << 56) |
+              ((guint64)sigsize_buffer[1] << 48) |
+              ((guint64)sigsize_buffer[2] << 40) |
+              ((guint64)sigsize_buffer[3] << 32) |
+              ((guint64)sigsize_buffer[4] << 24) |
+              ((guint64)sigsize_buffer[5] << 16) |
+              ((guint64)sigsize_buffer[6] << 8)  |
+              ((guint64)sigsize_buffer[7]);
+
+    if (sigsize == 0) {
+        g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                "Signature size is 0");
+        res = FALSE;
+        goto out;
+    }
+
+    // Sanity check: signature should be smaller than bundle size
+    if (sigsize > (guint64)offset) {
+        g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                "Signature size (%"G_GUINT64_FORMAT ") exceeds bundle size", sigsize);
+        res = FALSE;
+        goto out;
+    }
+
+    // Sanity check: signature should be smaller than 64KiB
+    if (sigsize > MAX_BUNDLE_SIGNATURE_SIZE) {
+        g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                "Signature size (%"G_GUINT64_FORMAT ") exceeds 64KiB", sigsize);
+        res = FALSE;
+        goto out;
+    }
+
+    // Calculate bundle content size (excluding signature)
+    offset -= sigsize;
+    bundle->size = offset;
+
+    // Seek to start of signature
+    res = g_seekable_seek(G_SEEKABLE(bundle->stream),
+            offset, G_SEEK_SET, NULL, &ierror);
+    if (!res) {
+        g_propagate_prefixed_error(
+                error,
+                ierror,
+                "Failed to seek to start of bundle signature: ");
+        goto out;
+    }
+
+    // Read signature data
+    guchar *sigdata_buffer = g_malloc(sigsize);
+    gsize sig_bytes_read = 0;
+    res = g_input_stream_read_all(bundle->stream, sigdata_buffer, sigsize, &sig_bytes_read, NULL, &ierror);
+    if (!res || sig_bytes_read != sigsize) {
+        g_free(sigdata_buffer);
+        g_propagate_prefixed_error(
+                error,
+                ierror,
+                "Failed to read signature from bundle: ");
+        goto out;
+    }
+
+    bundle->sigdata = g_bytes_new_take(sigdata_buffer, sigsize);
+
+    res = TRUE;
+
+out:
+    if (!res && mountpoint) {
+        r_bundle_unmount(mountpoint, NULL);
+        g_free(mountpoint);
+    }
+    return res;
+}
+
+gboolean r_bundle_load(const gchar *bundlename, RaucBundle **bundle, GError **error)
+{
+    gboolean res = FALSE;
+    RaucBundle *ibundle = NULL;
+
+    g_return_val_if_fail(bundlename != NULL, FALSE);
+    g_return_val_if_fail(bundle != NULL, FALSE);
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+    // Create bundle structure
+    ibundle = g_new0(RaucBundle, 1);
+    ibundle->path = g_strdup(bundlename);
+
+    // Open bundle and extract signature data
+    if (!open_local_bundle(ibundle, error)) {
+        g_free(ibundle->path);
+        g_free(ibundle);
+        goto out;
+    }
+
+    // Load manifest for compatibility checks
+    if (!r_bundle_load_manifest(ibundle, error)) {
+        g_free(ibundle->path);
+        g_free(ibundle);
+        goto out;
+    }
+
+    *bundle = ibundle;
+    res = TRUE;
+
+out:
+    return res;
+}
 
 gboolean r_bundle_mount(const gchar *bundlename, gchar **mountpoint, GError **error)
 {
@@ -185,32 +382,123 @@ void r_bundle_free(RaucBundle *bundle)
 gboolean r_bundle_verify_signature(RaucBundle *bundle, GError **error)
 {
     GError *ierror = NULL;
-    gchar *manifest_path = NULL;
-    gchar *signature_path = NULL;
     gboolean res = FALSE;
+    gboolean detached = FALSE;
+    g_autoptr(CMS_ContentInfo) cms = NULL;
+    g_autoptr(X509_STORE) store = NULL;
 
     g_return_val_if_fail(bundle != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-    manifest_path = g_build_filename(bundle->mount_point, "manifest.raucm", NULL);
-    signature_path = g_build_filename(bundle->mount_point, "manifest.raucm.sig", NULL);
+    printf("DEBUG: Starting signature verification...\n");
 
-    if (!g_file_test(signature_path, G_FILE_TEST_EXISTS)) {
+    // Check if we have signature data from the bundle
+    if (!bundle->sigdata) {
         g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_NOENT,
-                   "Bundle signature not found: '%s'", signature_path);
+                   "Bundle signature data not found");
         goto out;
     }
 
-    if (!r_verify_signature(manifest_path, signature_path, &ierror)) {
-        g_propagate_prefixed_error(error, ierror, "Bundle signature verification failed: ");
+    printf("DEBUG: Signature data found, size: %zu bytes\n", g_bytes_get_size(bundle->sigdata));
+
+    // Determine if this is a detached signature
+    if (!cms_is_detached(bundle->sigdata, &detached, &ierror)) {
+        g_propagate_prefixed_error(error, ierror, "Failed to determine signature type: ");
         goto out;
     }
 
+    printf("DEBUG: Signature type: %s\n", detached ? "detached" : "inline");
+
+    // Set up X509 store for verification (try multiple paths)
+    const char* ca_paths[] = {
+        "/etc/rauc/ca.cert.pem",
+        "/home/makepluscode/docker-yocto-kirkstone-nuc/kirkstone/meta-nuc/recipes-core/rauc/files/ca-fixed/ca.cert.pem",
+        "/etc/ssl/certs/ca-certificates.crt",
+        NULL
+    };
+
+    store = NULL;
+    for (int i = 0; ca_paths[i] != NULL; i++) {
+        printf("DEBUG: Trying CA path: %s\n", ca_paths[i]);
+        store = setup_x509_store(ca_paths[i], NULL, &ierror);
+        if (store) {
+            printf("DEBUG: Successfully loaded CA from: %s\n", ca_paths[i]);
+            break;
+        } else {
+            printf("DEBUG: Failed to load CA from: %s - %s\n", ca_paths[i], ierror ? ierror->message : "unknown error");
+            if (ierror) {
+                g_error_free(ierror);
+                ierror = NULL;
+            }
+        }
+    }
+
+    if (!store) {
+        g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_NOENT,
+                   "Failed to load CA certificate from any path");
+        goto out;
+    }
+
+    printf("DEBUG: X509 store setup complete\n");
+    g_message("Verifying bundle signature... ");
+
+    if (detached) {
+        printf("DEBUG: Processing detached signature\n");
+        // For detached signatures, verify against the bundle file itself
+        int fd = open(bundle->path, O_RDONLY);
+
+        if (fd < 0) {
+            g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                       "Failed to open bundle file for verification: %s", g_strerror(errno));
+            goto out;
+        }
+
+        printf("DEBUG: Bundle file opened, fd: %d, size: %" G_GUINT64_FORMAT "\n", fd, bundle->size);
+
+        // Verify the detached signature against the bundle content
+        res = cms_verify_fd(fd, bundle->sigdata, bundle->size, store, &cms, &ierror);
+        close(fd);  // Close file descriptor
+
+        printf("DEBUG: cms_verify_fd result: %s\n", res ? "SUCCESS" : "FAILED");
+
+        if (!res) {
+            g_propagate_prefixed_error(error, ierror, "Bundle signature verification failed: ");
+            goto out;
+        }
+    } else {
+        printf("DEBUG: Processing inline signature\n");
+        // For inline signatures, verify the signature and extract manifest
+        g_autoptr(GBytes) manifest_bytes = NULL;
+
+        res = cms_verify_sig(bundle->sigdata, store, &cms, &manifest_bytes, &ierror);
+        if (!res) {
+            g_propagate_prefixed_error(error, ierror, "Bundle signature verification failed: ");
+            goto out;
+        }
+    }
+
+    printf("DEBUG: Basic signature verification completed\n");
+
+    // Get certificate chain for verification
+    STACK_OF(X509) *verified_chain = NULL;
+    res = cms_get_cert_chain(cms, store, &verified_chain, &ierror);
+    if (!res) {
+        g_propagate_prefixed_error(error, ierror, "Failed to get certificate chain: ");
+        goto out;
+    }
+
+    printf("DEBUG: Certificate chain verification completed\n");
+
+    // Log verification success
+    g_autofree gchar *signers = cms_get_signers(cms, &ierror);
+    if (signers) {
+        g_message("Verified %s signature by %s", detached ? "detached" : "inline", signers);
+    }
+
+    printf("DEBUG: Signature verification completed successfully\n");
     res = TRUE;
 
 out:
-    g_free(manifest_path);
-    g_free(signature_path);
     return res;
 }
 

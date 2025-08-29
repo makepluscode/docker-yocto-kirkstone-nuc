@@ -78,8 +78,41 @@ RaucContext* r_context_get(void)
     static gboolean initialized = FALSE;
 
     if (!initialized) {
-        global_config.system_compatible = g_strdup("test-system");
-        global_config.slots = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+        global_config.system_compatible = g_strdup("intel-i7-x64-nuc-rauc");
+        global_config.slots = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)r_slot_free);
+
+        global_context.compatible = g_strdup("intel-i7-x64-nuc-rauc");
+        global_context.data_directory = g_strdup("/data");
+        global_context.config = &global_config;
+
+        // Add actual slots
+        RaucSlot *slot0 = g_new0(RaucSlot, 1);
+        slot0->name = g_strdup("rootfs.0");
+        slot0->sclass = g_strdup("rootfs");
+        slot0->slot_class = g_strdup("rootfs");
+        slot0->device = g_strdup("/dev/sda2");
+        slot0->type = g_strdup("ext4");
+        slot0->bootname = g_strdup("A");
+        slot0->state = ST_BOOTED;
+        slot0->rauc_state = R_SLOT_STATE_BOOTED;
+        slot0->status = g_new0(RaucSlotStatus, 1);
+        slot0->status->status = g_strdup("good");
+        // Store slots by name for lookup
+        g_hash_table_insert(global_config.slots, g_strdup("rootfs.0"), slot0);
+
+        RaucSlot *slot1 = g_new0(RaucSlot, 1);
+        slot1->name = g_strdup("rootfs.1");
+        slot1->sclass = g_strdup("rootfs");
+        slot1->slot_class = g_strdup("rootfs");
+        slot1->device = g_strdup("/dev/sda3");
+        slot1->type = g_strdup("ext4");
+        slot1->bootname = g_strdup("B");
+        slot1->state = ST_INACTIVE;
+        slot1->rauc_state = R_SLOT_STATE_INACTIVE;
+        slot1->status = g_new0(RaucSlotStatus, 1);
+        slot1->status->status = g_strdup("inactive");
+        g_hash_table_insert(global_config.slots, g_strdup("rootfs.1"), slot1);
+
         global_context.config = &global_config;
         initialized = TRUE;
     }
@@ -91,21 +124,18 @@ RaucContext* r_context_get(void)
 
 RaucSlot* r_context_find_slot_by_class(RaucContext *context, const gchar *slotclass)
 {
-    // Stub implementation
-    static RaucSlot dummy_slot;
-    static gboolean initialized = FALSE;
+    // Return inactive slot (B slot) for installation
+    if (context && context->config && context->config->slots) {
+        // Look for inactive slot (rootfs.1) first
+        RaucSlot *slot = g_hash_table_lookup(context->config->slots, "rootfs.1");
+        if (slot && slot->rauc_state == R_SLOT_STATE_INACTIVE) {
+            return slot;
+        }
 
-    if (!initialized) {
-        memset(&dummy_slot, 0, sizeof(RaucSlot));
-        dummy_slot.name = g_intern_string("test-slot");
-        dummy_slot.sclass = g_intern_string(slotclass);
-        dummy_slot.slot_class = g_intern_string(slotclass);
-        dummy_slot.device = g_strdup("/dev/null");
-        dummy_slot.state = ST_INACTIVE;
-        dummy_slot.rauc_state = R_SLOT_STATE_INACTIVE;
-        initialized = TRUE;
+        // If no inactive slot found, return rootfs.0
+        return g_hash_table_lookup(context->config->slots, "rootfs.0");
     }
-    return &dummy_slot;
+    return NULL;
 }
 
 // 위의 함수들은 실제 구현 파일들(bundle.c, manifest.c, install.c)에서 제공되므로

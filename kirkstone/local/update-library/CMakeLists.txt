@@ -35,6 +35,7 @@ set(RAUC_SOURCES
     src/rauc/context.c
     src/rauc/config_file.c
     src/rauc/stubs.c
+    src/rauc/signature.c
 )
 
 # C++ wrapper sources (commented out for now due to build issues)
@@ -56,6 +57,7 @@ set(HEADERS
     include/rauc/utils.h
     include/rauc/context.h
     include/rauc/config_file.h
+    include/rauc/signature.h
 )
 
 # Create static library

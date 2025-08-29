@@ -5,6 +5,7 @@
 #include "include/rauc/bundle.h"
 #include "include/rauc/install.h"
 #include "include/rauc/context.h"
+#include "include/rauc/signature.h"
 
 // 진행 상황 콜백 함수
 void progress_callback(gint percentage, const gchar* message, gint nesting_depth, gpointer user_data) {
@@ -65,18 +66,39 @@ int main(int argc, char* argv[]) {
 
     printf("번들 파일 확인됨\n");
 
-    // 번들 설치 실행
+    // 번들 로드 및 서명 검증
+    printf("\n");
+    printf("번들 로드 및 서명 검증을 시작합니다...\n");
+    printf("=====================================\n\n");
+
+    RaucBundle *bundle = NULL;
+    if (!r_bundle_load(bundle_path, &bundle, &error)) {
+        fprintf(stderr, "오류: 번들 로드 실패: %s\n", error->message);
+        g_error_free(error);
+        r_context_cleanup();
+        return 1;
+    }
+
+    printf("✓ 번들 로드 성공\n");
+
+    // 서명 검증
+    if (!r_bundle_verify_signature(bundle, &error)) {
+        fprintf(stderr, "오류: 서명 검증 실패: %s\n", error->message);
+        g_error_free(error);
+        r_bundle_free(bundle);
+        r_context_cleanup();
+        return 1;
+    }
+
+    printf("✓ 서명 검증 성공\n");
+
+    // 번들 설치 실행 (이미 검증된 번들 객체 사용)
     printf("\n");
     printf("번들 설치를 시작합니다...\n");
     printf("=====================================\n\n");
 
-    gboolean success = r_install_bundle_from_file(
-        bundle_path,
-        progress_callback,
-        completion_callback,
-        NULL,  // user_data
-        &error
-    );
+    // 이미 검증된 번들 객체를 사용하여 설치
+    gboolean success = r_install_bundle(bundle, progress_callback, completion_callback, NULL, &error);
 
     printf("\n");
     printf("=====================================\n");
@@ -107,6 +129,9 @@ int main(int argc, char* argv[]) {
     }
 
     // 정리
+    if (bundle) {
+        r_bundle_free(bundle);
+    }
     r_context_cleanup();
 
     printf("\n");

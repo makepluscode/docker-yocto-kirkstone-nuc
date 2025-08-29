@@ -223,6 +223,15 @@ gboolean r_bundle_verify_signature(RaucBundle *bundle, GError **error);
 gboolean r_bundle_open(const gchar *bundlename, RaucBundle **bundle, GError **error);
 
 /**
+ * @brief 번들 로드 (서명 데이터 추출 포함)
+ * @param bundlename 번들 파일 경로
+ * @param bundle 번들 구조체 반환 위치
+ * @param error 오류 정보 반환 위치
+ * @return 성공 시 TRUE, 실패 시 FALSE
+ */
+gboolean r_bundle_load(const gchar *bundlename, RaucBundle **bundle, GError **error);
+
+/**
  * @brief 번들 메모리 해제
  * @param bundle 해제할 번들
  */
