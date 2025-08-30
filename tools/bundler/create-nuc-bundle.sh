@@ -1,1 +1,0 @@
-create-rauc-bundle.sh

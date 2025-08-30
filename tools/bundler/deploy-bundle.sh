@@ -2,12 +2,12 @@
 
 set -e
 
-echo "🚀 Deploying RAUC bundle to NUC target..."
+echo "🚀 Deploying bundle to NUC target..."
 
 # Default configuration
 DEFAULT_TARGET="192.168.1.100"
 DEFAULT_USER="root"
-REMOTE_DIR="/tmp"
+REMOTE_DIR="/data"
 CONNECT_TIMEOUT=10
 BUNDLE_PATTERN="*.raucb"
 
@@ -53,6 +53,12 @@ show_usage() {
     echo "  -s, --status        Check RAUC status after installation"
     echo "  -v, --verbose       Enable verbose output"
     echo "  -h, --help          Show this help message"
+    echo ""
+    echo "Bundle Search Order (when no specific bundle file is provided):"
+    echo "  1. build/output/             # Primary search location"
+    echo "  2. Current directory         # Local bundles"  
+    echo "  3. ../../build/output/       # Relative to bundler tool"
+    echo "  4. ../../                    # Project root"
     echo ""
     echo "Examples:"
     echo "  $0                                    # Deploy to default target"
@@ -145,22 +151,37 @@ print_status "Connection timeout: ${CONNECT_TIMEOUT}s"
 if [ -z "$BUNDLE_FILE" ]; then
     print_status "Step 1: Finding latest RAUC bundle..."
     
-    # Look for bundles in current directory and build output
-    BUNDLE_FILES=$(find . -name "$BUNDLE_PATTERN" -type f 2>/dev/null | head -10)
+    # Primary search: build/output directory (relative to current location)
+    BUNDLE_FILES=$(find build/output/ -name "$BUNDLE_PATTERN" -type f 2>/dev/null | head -10)
+    
+    # If not found, check current directory
+    if [ -z "$BUNDLE_FILES" ]; then
+        BUNDLE_FILES=$(find . -maxdepth 1 -name "$BUNDLE_PATTERN" -type f 2>/dev/null | head -10)
+    fi
+    
+    # Check relative to bundler tool directory (../../build/output from tools/bundler)
+    if [ -z "$BUNDLE_FILES" ]; then
+        BUNDLE_FILES=$(find ../../build/output/ -name "$BUNDLE_PATTERN" -type f 2>/dev/null | head -10)
+    fi
     
     # Also check in project root
     if [ -z "$BUNDLE_FILES" ]; then
         BUNDLE_FILES=$(find ../../ -maxdepth 1 -name "$BUNDLE_PATTERN" -type f 2>/dev/null | head -10)
     fi
     
-    # Check in build output directory
-    if [ -z "$BUNDLE_FILES" ]; then
-        BUNDLE_FILES=$(find build/output/ -name "$BUNDLE_PATTERN" -type f 2>/dev/null | head -10)
-    fi
-    
     if [ -z "$BUNDLE_FILES" ]; then
         print_error "No RAUC bundle files found (*.raucb)"
-        print_status "Please specify bundle file explicitly or ensure bundle exists"
+        print_status "Searched locations:"
+        echo "  - build/output/"
+        echo "  - Current directory (.)"
+        echo "  - ../../build/output/"
+        echo "  - Project root (../../)"
+        echo ""
+        print_status "Solutions:"
+        echo "  1. Build a bundle first: bitbake nuc-bundle"
+        echo "  2. Specify bundle file explicitly: $0 path/to/bundle.raucb"
+        echo "  3. Ensure bundle exists in build/output/ directory"
+        echo ""
         exit 1
     fi
     
