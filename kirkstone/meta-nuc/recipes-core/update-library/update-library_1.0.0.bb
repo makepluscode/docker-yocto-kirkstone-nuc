@@ -4,7 +4,7 @@ HOMEPAGE = "https://github.com/your-project/update-library"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-DEPENDS = "glib-2.0 openssl"
+DEPENDS = "glib-2.0 openssl pkgconfig-native"
 RDEPENDS:${PN} = "glib-2.0 openssl grub"
 
 PV = "1.0.0"
@@ -23,7 +23,11 @@ inherit cmake
 EXTRA_OECMAKE += " \
     -DCMAKE_BUILD_TYPE=Release \
     -DWITH_DLT=OFF \
+    -DCMAKE_CROSSCOMPILING=TRUE \
 "
+
+# pkg-config 환경 변수 설정
+export PKG_CONFIG_PATH = "${STAGING_LIBDIR}/pkgconfig:${STAGING_DATADIR}/pkgconfig"
 
 # 설치 대상 디렉토리 설정
 INSTALL_DIR = "${D}${bindir}"
@@ -52,11 +56,12 @@ do_install() {
 }
 
 # 패키지 분할 설정
-PACKAGES = "${PN} ${PN}-dev ${PN}-staticdev"
+PACKAGES = "${PN} ${PN}-dev ${PN}-staticdev ${PN}-dbg"
 
 FILES:${PN} = "${bindir}/update-library"
 FILES:${PN}-dev = "${includedir}"
 FILES:${PN}-staticdev = "${libdir}/*.a"
+FILES:${PN}-dbg = "${bindir}/.debug/*"
 
 # 개발 패키지에 대한 의존성
 RDEPENDS:${PN}-dev = "${PN} (= ${EXTENDPKGV})"

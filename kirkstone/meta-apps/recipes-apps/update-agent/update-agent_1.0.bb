@@ -4,7 +4,7 @@ LICENSE = "CLOSED"
 
 PN = "update-agent"
 
-DEPENDS = "dlt-daemon cmake-native pkgconfig-native dbus curl json-c rauc"
+DEPENDS = "dlt-daemon cmake-native pkgconfig-native dbus curl json-c rauc googletest"
 RDEPENDS:${PN} = "rauc dbus curl json-c"
 
 SRC_URI = ""

@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find required packages for tests
 find_package(PkgConfig REQUIRED)
+find_package(GTest REQUIRED)
 pkg_check_modules(DLT REQUIRED automotive-dlt)
 pkg_check_modules(DBUS REQUIRED dbus-1)
 pkg_check_modules(CURL REQUIRED libcurl)
