@@ -40,6 +40,7 @@ do_install() {
     # 실행 파일 설치
     if [ -f ${B}/update-test-app ]; then
         install -m 0755 ${B}/update-test-app ${D}${bindir}/update-library
+        install -m 0755 ${B}/update-test-app ${D}${bindir}/update-test-app
     fi
     
     # 라이브러리 설치
@@ -58,7 +59,7 @@ do_install() {
 # 패키지 분할 설정
 PACKAGES = "${PN} ${PN}-dev ${PN}-staticdev ${PN}-dbg"
 
-FILES:${PN} = "${bindir}/update-library"
+FILES:${PN} = "${bindir}/update-library ${bindir}/update-test-app"
 FILES:${PN}-dev = "${includedir}"
 FILES:${PN}-staticdev = "${libdir}/*.a"
 FILES:${PN}-dbg = "${bindir}/.debug/*"
