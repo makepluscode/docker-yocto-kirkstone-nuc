@@ -128,9 +128,15 @@ static gboolean copy_image_to_slot(const gchar *image_path, RaucSlot *slot,
 
         if (progress_callback) {
             int percentage = (int)((total_written * 100) / st.st_size);
-            gchar *message = g_strdup_printf("Installing to slot '%s': %d%%", slot->name, percentage);
-            progress_callback(percentage, message, 1, user_data);
-            g_free(message);
+            static int last_reported = -1;
+
+            // Report progress every 10% or at 99%/100%
+            if ((percentage / 10) != (last_reported / 10) || percentage >= 99) {
+                gchar *message = g_strdup_printf("Installing to slot '%s': %d%%", slot->name, percentage);
+                progress_callback(percentage, message, 1, user_data);
+                g_free(message);
+                last_reported = percentage;
+            }
         }
     }
 
