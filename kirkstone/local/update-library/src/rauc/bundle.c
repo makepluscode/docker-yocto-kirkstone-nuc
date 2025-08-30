@@ -188,24 +188,32 @@ gboolean r_bundle_load(const gchar *bundlename, RaucBundle **bundle, GError **er
     g_return_val_if_fail(bundle != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+    g_print("[Bundle Step 1/6] Starting bundle load and verification process\n");
+    g_print("DEBUG: Bundle file: %s\n", bundlename);
+
     // Create bundle structure
     ibundle = g_new0(RaucBundle, 1);
     ibundle->path = g_strdup(bundlename);
 
+    g_print("[Bundle Step 2/6] Opening bundle and extracting signature data\n");
     // Open bundle and extract signature data
     if (!open_local_bundle(ibundle, error)) {
+        g_print("ERROR: Failed to open bundle file\n");
         g_free(ibundle->path);
         g_free(ibundle);
         goto out;
     }
 
+    g_print("[Bundle Step 3/6] Loading manifest for compatibility checks\n");
     // Load manifest for compatibility checks
     if (!r_bundle_load_manifest(ibundle, error)) {
+        g_print("ERROR: Failed to load bundle manifest\n");
         g_free(ibundle->path);
         g_free(ibundle);
         goto out;
     }
 
+    g_print("[Bundle Step 4/6] Bundle structure loaded successfully\n");
     *bundle = ibundle;
     res = TRUE;
 
@@ -224,18 +232,26 @@ gboolean r_bundle_mount(const gchar *bundlename, gchar **mountpoint, GError **er
     g_return_val_if_fail(mountpoint != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+    g_print("[Bundle Step 5/6] Creating temporary mount point for bundle\n");
     tmpdir = g_dir_make_tmp("rauc-bundle-XXXXXX", &ierror);
     if (tmpdir == NULL) {
+        g_print("ERROR: Failed to create temporary directory\n");
         g_propagate_prefixed_error(error, ierror, "Failed to create temporary directory: ");
         goto out;
     }
+    g_print("DEBUG: Created temporary mount point: %s\n", tmpdir);
 
+    g_print("[Bundle Step 6/6] Mounting bundle as read-only loop device\n");
     mount_cmd = g_strdup_printf("mount -o loop,ro '%s' '%s'", bundlename, tmpdir);
+    printf("DEBUG: Executing mount command: %s\n", mount_cmd);
+    
     if (!r_subprocess_new(mount_cmd, NULL, &ierror)) {
+        g_print("ERROR: Failed to mount bundle\n");
         g_propagate_prefixed_error(error, ierror, "Failed to mount bundle: ");
         goto out;
     }
 
+    g_print("✓ Bundle mounted successfully at: %s\n", tmpdir);
     *mountpoint = g_strdup(tmpdir);
     bundle_mount_point = g_strdup(tmpdir);
     res = TRUE;
@@ -390,10 +406,12 @@ gboolean r_bundle_verify_signature(RaucBundle *bundle, GError **error)
     g_return_val_if_fail(bundle != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+    g_print("[Verification Step 1/4] Starting bundle signature verification\n");
     printf("DEBUG: Starting signature verification...\n");
 
     // Check if we have signature data from the bundle
     if (!bundle->sigdata) {
+        g_print("ERROR: Bundle signature data not found\n");
         g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_NOENT,
                    "Bundle signature data not found");
         goto out;
@@ -401,14 +419,17 @@ gboolean r_bundle_verify_signature(RaucBundle *bundle, GError **error)
 
     printf("DEBUG: Signature data found, size: %zu bytes\n", g_bytes_get_size(bundle->sigdata));
 
+    g_print("[Verification Step 2/4] Analyzing signature format and type\n");
     // Determine if this is a detached signature
     if (!cms_is_detached(bundle->sigdata, &detached, &ierror)) {
+        g_print("ERROR: Failed to determine signature type\n");
         g_propagate_prefixed_error(error, ierror, "Failed to determine signature type: ");
         goto out;
     }
 
     printf("DEBUG: Signature type: %s\n", detached ? "detached" : "inline");
 
+    g_print("[Verification Step 3/4] Loading CA certificates and setting up X509 store\n");
     // Set up X509 store for verification (try multiple paths)
     const char* ca_paths[] = {
         "/etc/rauc/ca.cert.pem",
@@ -434,12 +455,14 @@ gboolean r_bundle_verify_signature(RaucBundle *bundle, GError **error)
     }
 
     if (!store) {
+        g_print("ERROR: Failed to load CA certificate from any path\n");
         g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_NOENT,
                    "Failed to load CA certificate from any path");
         goto out;
     }
 
     printf("DEBUG: X509 store setup complete\n");
+    g_print("[Verification Step 4/4] Performing CMS signature verification\n");
     g_message("Verifying bundle signature... ");
 
     if (detached) {

@@ -130,8 +130,8 @@ static gboolean copy_image_to_slot(const gchar *image_path, RaucSlot *slot,
             int percentage = (int)((total_written * 100) / st.st_size);
             static int last_reported = -1;
 
-            // Report progress every 10% or at 99%/100%
-            if ((percentage / 10) != (last_reported / 10) || percentage >= 99) {
+            // Report progress every 10% or at 100%
+            if ((percentage / 10) != (last_reported / 10) || (percentage == 100 && last_reported != 100)) {
                 gchar *message = g_strdup_printf("Installing to slot '%s': %d%%", slot->name, percentage);
                 progress_callback(percentage, message, 1, user_data);
                 g_free(message);
@@ -267,9 +267,15 @@ static gboolean install_image_to_slot(InstallTask *task,
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
     if (progress_callback) {
-        gchar *message = g_strdup_printf("Installing image '%s' to slot '%s'",
+        gchar *message = g_strdup_printf("[Step 1/5] Starting installation of '%s' to slot '%s'",
                                        task->image->filename, task->slot->name);
         progress_callback(0, message, 0, user_data);
+        g_free(message);
+    }
+
+    if (progress_callback) {
+        gchar *message = g_strdup_printf("[Step 2/5] Verifying slot compatibility");
+        progress_callback(5, message, 0, user_data);
         g_free(message);
     }
 
@@ -278,9 +284,21 @@ static gboolean install_image_to_slot(InstallTask *task,
         goto out;
     }
 
+    if (progress_callback) {
+        gchar *message = g_strdup_printf("[Step 3/5] Updating slot status to inactive");
+        progress_callback(10, message, 0, user_data);
+        g_free(message);
+    }
+
     if (!update_slot_status(task->slot, R_SLOT_STATE_INACTIVE, &ierror)) {
         g_propagate_error(error, ierror);
         goto out;
+    }
+
+    if (progress_callback) {
+        gchar *message = g_strdup_printf("[Step 4/5] Copying image data to slot");
+        progress_callback(15, message, 0, user_data);
+        g_free(message);
     }
 
     if (!copy_image_to_slot(task->image_path, task->slot, progress_callback, user_data, &ierror)) {
@@ -288,16 +306,22 @@ static gboolean install_image_to_slot(InstallTask *task,
         goto out;
     }
 
-    /* Follow original RAUC approach: no post-installation verification */
     if (progress_callback) {
-        gchar *message = g_strdup_printf("Installation to slot '%s' completed", task->slot->name);
-        progress_callback(100, message, 1, user_data);
+        gchar *message = g_strdup_printf("[Step 5/5] Finalizing installation and updating slot status");
+        progress_callback(98, message, 0, user_data);
         g_free(message);
     }
 
     if (!update_slot_status(task->slot, R_SLOT_STATE_GOOD, &ierror)) {
         g_propagate_error(error, ierror);
         goto out;
+    }
+
+    /* Follow original RAUC approach: no post-installation verification */
+    if (progress_callback) {
+        gchar *message = g_strdup_printf("Installation to slot '%s' completed successfully", task->slot->name);
+        progress_callback(100, message, 1, user_data);
+        g_free(message);
     }
 
     /* Mark slot as active in bootloader */
