@@ -75,7 +75,7 @@ gboolean r_context_init(void) {
     r_context->variant = NULL;
     r_context->bootslot = NULL;     // 런타임에 결정
     r_context->bootloader = g_strdup("grub");  // 기본값
-    r_context->grubenv_path = g_strdup("/boot/grub/grubenv");
+    r_context->grubenv_path = g_strdup("/grubenv/grubenv");
     r_context->data_directory = g_strdup("/data");
     r_context->debug = FALSE;
     r_context->logfile_path = NULL;
