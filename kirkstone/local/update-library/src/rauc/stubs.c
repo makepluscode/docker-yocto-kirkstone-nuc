@@ -90,18 +90,43 @@ RaucSlot* r_context_find_slot_by_class(RaucContext *context, const gchar *slotcl
         return NULL;
     }
 
-    /* Create and return a simple mock slot for the slotclass */
-    /* For safety, we'll create a simple rootfs.1 slot for installation */
+    /* Find the non-booted slot for installation (A/B switching) */
     if (g_strcmp0(slotclass, "rootfs") == 0) {
         RaucSlot *slot = g_new0(RaucSlot, 1);
-        slot->name = g_strdup("rootfs.1");
+
+        /* Check which slot is currently booted by reading /proc/cmdline */
+        gchar *cmdline_content = NULL;
+        gboolean is_booted_from_b = FALSE;
+
+        if (g_file_get_contents("/proc/cmdline", &cmdline_content, NULL, NULL)) {
+            /* Check if booted from sda3 (B slot) or sda2 (A slot) */
+            if (g_strstr_len(cmdline_content, -1, "root=/dev/sda3") ||
+                g_strstr_len(cmdline_content, -1, "PARTUUID=") &&
+                g_strstr_len(cmdline_content, -1, "sda3")) {
+                is_booted_from_b = TRUE;
+            }
+            g_free(cmdline_content);
+        }
+
+        /* Install to the non-booted slot */
+        if (is_booted_from_b) {
+            /* Booted from B, install to A */
+            slot->name = g_strdup("rootfs.0");
+            slot->device = g_strdup("/dev/sda2");
+            slot->bootname = g_strdup("A");
+            slot->data_directory = g_strdup("slots/rootfs.0");
+        } else {
+            /* Booted from A, install to B */
+            slot->name = g_strdup("rootfs.1");
+            slot->device = g_strdup("/dev/sda3");
+            slot->bootname = g_strdup("B");
+            slot->data_directory = g_strdup("slots/rootfs.1");
+        }
+
         slot->sclass = g_strdup("rootfs");
-        slot->device = g_strdup("/dev/sda3");
         slot->type = g_strdup("ext4");
-        slot->bootname = g_strdup("B");
         slot->state = ST_INACTIVE;
         slot->rauc_state = R_SLOT_STATE_INACTIVE;
-        slot->data_directory = g_strdup("slots/rootfs.1");
 
         // status 구조체 생성 및 초기화
         slot->status = g_new0(RaucSlotStatus, 1);

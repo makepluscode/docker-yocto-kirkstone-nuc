@@ -179,6 +179,21 @@ GPtrArray *r_install_make_plans(const RaucManifest *manifest,
 gboolean r_install_is_supported_http_header(const gchar *header);
 
 /**
+ * @brief 번들 객체를 사용한 설치 (콜백 포함)
+ * @param bundle RAUC 번들 객체 (이미 검증된)
+ * @param progress_callback 진행률 콜백 (NULL 가능)
+ * @param completed_callback 완료 콜백 (NULL 가능)
+ * @param user_data 콜백용 사용자 데이터
+ * @param error 오류 정보 반환 위치
+ * @return 성공 시 TRUE, 실패 시 FALSE
+ */
+gboolean r_install_bundle(RaucBundle *bundle,
+                         RaucProgressCallback progress_callback,
+                         RaucCompletionCallback completed_callback,
+                         gpointer user_data,
+                         GError **error);
+
+/**
  * @brief 간단한 번들 설치 (동기 버전)
  * @param bundle_path 번들 파일 경로
  * @param error 오류 정보 반환 위치
@@ -260,6 +275,18 @@ gboolean r_install_bundle_from_file(const gchar *bundle_path,
  * @return 상태 정보 문자열 (호출자가 g_free 해야 함)
  */
 gchar* r_install_get_status_info(void);
+
+/**
+ * @brief 시스템 재부팅 수행 (RAUC install과 동일)
+ * @param error 오류 정보 반환 위치
+ * @return 재부팅 명령 실행 성공 시 TRUE, 실패 시 FALSE
+ */
+gboolean r_install_reboot_system(GError **error);
+
+/**
+ * @brief 설치 완료 후 자동 재부팅 옵션
+ */
+extern gboolean r_install_auto_reboot;
 
 // GLib 자동 정리 매크로
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(RaucInstallArgs, install_args_free);

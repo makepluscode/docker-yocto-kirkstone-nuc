@@ -17,6 +17,8 @@
 #include "../../include/rauc/checksum.h"
 #include "../../include/rauc/bootchooser.h"
 
+G_DEFINE_QUARK(r-install-error-quark, r_install_error)
+
 typedef struct {
     RaucSlot *slot;
     RaucImage *image;
@@ -300,6 +302,20 @@ static gboolean install_image_to_slot(InstallTask *task,
             g_clear_error(&ierror);
         } else {
             g_message("Successfully marked slot %s as active in bootloader", task->slot->name);
+
+            /* RAUC install과 동일하게 bootchooser 적용 후 재부팅 수행 */
+            if (r_install_auto_reboot) {
+                GError *reboot_error = NULL;
+                g_message("Auto-reboot enabled, initiating system reboot...");
+
+                if (!r_install_reboot_system(&reboot_error)) {
+                    g_warning("Failed to reboot system: %s",
+                             reboot_error ? reboot_error->message : "unknown error");
+                    g_clear_error(&reboot_error);
+                } else {
+                    g_message("System reboot initiated successfully");
+                }
+            }
         }
     } else {
         g_warning("Cannot mark slot as active: slot data is incomplete");
@@ -600,4 +616,54 @@ gchar* r_install_get_status_info(void)
 out:
     result = g_string_free(info, FALSE);
     return result;
+}
+
+/* 자동 재부팅 옵션 전역 변수 */
+gboolean r_install_auto_reboot = FALSE;
+
+gboolean r_install_reboot_system(GError **error)
+{
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+    gchar *reboot_command = NULL;
+    gchar *stdout_output = NULL;
+    gchar *stderr_output = NULL;
+    gint exit_status;
+    GError *spawn_error = NULL;
+    gboolean success = FALSE;
+
+    r_info("Initiating system reboot...");
+
+    /* RAUC와 동일하게 systemctl reboot 명령 사용 */
+    reboot_command = g_strdup("systemctl reboot");
+
+    /* 명령 실행 (RAUC와 동일한 방식) */
+    if (!g_spawn_command_line_sync(reboot_command,
+                                   &stdout_output,
+                                   &stderr_output,
+                                   &exit_status,
+                                   &spawn_error)) {
+        g_set_error(error, R_INSTALL_ERROR, R_INSTALL_ERROR_FAILED,
+                   "Failed to execute reboot command: %s",
+                   spawn_error->message);
+        g_error_free(spawn_error);
+        goto out;
+    }
+
+    if (exit_status != 0) {
+        g_set_error(error, R_INSTALL_ERROR, R_INSTALL_ERROR_FAILED,
+                   "Reboot command failed with exit code %d: %s",
+                   exit_status, stderr_output ? stderr_output : "Unknown error");
+        goto out;
+    }
+
+    r_info("System reboot command executed successfully");
+    success = TRUE;
+
+out:
+    g_free(reboot_command);
+    g_free(stdout_output);
+    g_free(stderr_output);
+
+    return success;
 }

@@ -27,25 +27,57 @@ void completion_callback(RInstallResult result, const gchar* message, gpointer u
 }
 
 void print_usage(const char* program_name) {
-    printf("사용법: %s <bundle.raucb>\n", program_name);
+    printf("사용법: %s [옵션] <bundle.raucb>\n", program_name);
     printf("\n");
     printf("RAUC 번들 설치 테스트 도구\n");
     printf("\n");
+    printf("옵션:\n");
+    printf("  --reboot, -r    설치 완료 후 자동으로 시스템 재부팅\n");
+    printf("  --help, -h      이 도움말 출력\n");
+    printf("\n");
     printf("예시:\n");
     printf("  %s /path/to/update.raucb\n", program_name);
+    printf("  %s --reboot /path/to/update.raucb\n", program_name);
 }
 
 int main(int argc, char* argv[]) {
     printf("=== RAUC Bundle Installer Test ===\n");
 
-    if (argc != 2) {
+    gboolean auto_reboot = FALSE;
+    const char* bundle_path = NULL;
+
+    // 명령행 인자 파싱
+    for (int i = 1; i < argc; i++) {
+        if (g_strcmp0(argv[i], "--reboot") == 0 || g_strcmp0(argv[i], "-r") == 0) {
+            auto_reboot = TRUE;
+        } else if (g_strcmp0(argv[i], "--help") == 0 || g_strcmp0(argv[i], "-h") == 0) {
+            print_usage(argv[0]);
+            return 0;
+        } else if (argv[i][0] != '-') {
+            if (bundle_path == NULL) {
+                bundle_path = argv[i];
+            } else {
+                fprintf(stderr, "오류: 여러 번들 파일이 지정되었습니다\n\n");
+                print_usage(argv[0]);
+                return 1;
+            }
+        } else {
+            fprintf(stderr, "오류: 알 수 없는 옵션: %s\n\n", argv[i]);
+            print_usage(argv[0]);
+            return 1;
+        }
+    }
+
+    if (bundle_path == NULL) {
+        fprintf(stderr, "오류: 번들 파일이 지정되지 않았습니다\n\n");
         print_usage(argv[0]);
         return 1;
     }
 
-    const char* bundle_path = argv[1];
-
     printf("번들 파일: %s\n", bundle_path);
+    if (auto_reboot) {
+        printf("자동 재부팅: 활성화됨 (RAUC install과 동일)\n");
+    }
     printf("\n");
 
     // RAUC 컨텍스트 초기화
@@ -54,6 +86,9 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "오류: RAUC 컨텍스트 초기화 실패\n");
         return 1;
     }
+
+    // 자동 재부팅 옵션 설정 (RAUC install과 동일)
+    r_install_auto_reboot = auto_reboot;
 
     GError* error = NULL;
 
@@ -117,7 +152,11 @@ int main(int argc, char* argv[]) {
 
     printf("\n");
     printf("설치가 성공적으로 완료되었습니다!\n");
-    printf("시스템을 재부팅하여 업데이트를 적용하세요.\n");
+    if (auto_reboot) {
+        printf("시스템 재부팅이 자동으로 시작됩니다... (RAUC install과 동일)\n");
+    } else {
+        printf("시스템을 재부팅하여 업데이트를 적용하세요.\n");
+    }
 
     // 설치 후 상태 정보 출력
     printf("\n");

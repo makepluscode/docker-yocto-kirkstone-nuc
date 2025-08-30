@@ -11,6 +11,7 @@ IMAGE_INSTALL = "\
     ${CORE_IMAGE_EXTRA_INSTALL} \
     intel-nuc-init \
     rauc \
+    update-library \
     qtbase \
     qtbase-plugins \
     qtbase-tools \
