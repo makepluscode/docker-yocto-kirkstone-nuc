@@ -244,7 +244,7 @@ gboolean r_bundle_mount(const gchar *bundlename, gchar **mountpoint, GError **er
     g_print("[Bundle Step 6/6] Mounting bundle as read-only loop device\n");
     mount_cmd = g_strdup_printf("mount -o loop,ro '%s' '%s'", bundlename, tmpdir);
     printf("DEBUG: Executing mount command: %s\n", mount_cmd);
-    
+
     if (!r_subprocess_new(mount_cmd, NULL, &ierror)) {
         g_print("ERROR: Failed to mount bundle\n");
         g_propagate_prefixed_error(error, ierror, "Failed to mount bundle: ");
