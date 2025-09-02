@@ -1,0 +1,42 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(update-agent-mocked-tests)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Google Test
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+# Enable testing
+enable_testing()
+
+# Mocked-only test executable (no external dependencies)
+add_executable(update-agent-mocked-tests
+    ../tests/main.cpp
+    ../tests/test_mocked_only.cpp
+)
+
+target_include_directories(update-agent-mocked-tests PRIVATE
+    .
+)
+
+target_link_libraries(update-agent-mocked-tests
+    GTest::gtest_main
+    GTest::gmock
+)
+
+# Add test to CTest
+add_test(NAME update-agent-mocked-tests COMMAND update-agent-mocked-tests)
+
+# Set test properties
+set_tests_properties(update-agent-mocked-tests PROPERTIES
+    TIMEOUT 300
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)

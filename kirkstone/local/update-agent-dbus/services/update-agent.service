@@ -1,0 +1,15 @@
+[Unit]
+Description=Update Agent
+After=network.target update-service.service
+Wants=network.target update-service.service
+Requires=update-service.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/update-agent
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

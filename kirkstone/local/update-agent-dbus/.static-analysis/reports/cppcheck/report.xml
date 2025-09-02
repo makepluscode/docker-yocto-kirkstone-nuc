@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results version="2">
+    <cppcheck version="2.13.0"/>
+    <errors>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;string&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;string&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.h" line="4" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;memory&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;memory&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.h" line="5" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;vector&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;vector&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.h" line="6" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;curl/curl.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;curl/curl.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.h" line="7" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;json-c/json.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;json-c/json.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.h" line="8" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;string&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;string&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/config.h" line="4" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;dlt/dlt.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;dlt/dlt.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.cpp" line="4" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;fstream&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;fstream&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.cpp" line="5" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;sstream&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;sstream&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.cpp" line="6" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;chrono&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;chrono&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.cpp" line="7" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;sys/stat.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;sys/stat.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.cpp" line="8" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;unistd.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;unistd.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.cpp" line="9" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;errno.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;errno.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.cpp" line="10" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;cstring&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;cstring&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/agent.cpp" line="11" column="0"/>
+        </error>
+        <error id="unusedPrivateFunction" severity="style" msg="Unused private function: &apos;Agent::setupDownloadCurlOptions&apos;" verbose="Unused private function: &apos;Agent::setupDownloadCurlOptions&apos;" cwe="398" file0="src/agent.cpp">
+            <location file="src/agent.h" line="51" column="10"/>
+            <symbol>Agent::setupDownloadCurlOptions</symbol>
+        </error>
+        <error id="functionStatic" severity="performance" msg="Technically the member function &apos;Agent::parseArtifactInfo&apos; can be static (but you may consider moving to unnamed namespace)." verbose="The member function &apos;Agent::parseArtifactInfo&apos; can be made a static function. Making a function static can bring a performance benefit since no &apos;this&apos; instance is passed to the function. This change should not cause compiler errors but it does not necessarily make sense conceptually. Think about your design and the task of the function first - is it a function that must not access members of class instances? And maybe it is more appropriate to move this function to an unnamed namespace." cwe="398" inconclusive="true" file0="src/agent.cpp">
+            <location file="src/agent.h" line="54" column="10"/>
+            <location file="src/agent.cpp" line="266" column="13"/>
+            <symbol>Agent::parseArtifactInfo</symbol>
+        </error>
+        <error id="cstyleCast" severity="style" msg="C-style pointer casting" verbose="C-style pointer casting detected. C++ offers four different kinds of casts as replacements: static_cast, const_cast, dynamic_cast and reinterpret_cast. A C-style cast could evaluate to any of those automatically, thus it is considered safer if the programmer explicitly states which kind of cast is expected." cwe="398" file0="src/agent.cpp">
+            <location file="src/agent.cpp" line="59" column="23"/>
+        </error>
+        <error id="constParameterCallback" severity="style" msg="Parameter &apos;contents&apos; can be declared as pointer to const. However it seems that &apos;writeFileCallback&apos; is a callback function, if &apos;contents&apos; is declared with const you might also need to cast function pointer(s)." verbose="Parameter &apos;contents&apos; can be declared as pointer to const. However it seems that &apos;writeFileCallback&apos; is a callback function, if &apos;contents&apos; is declared with const you might also need to cast function pointer(s)." cwe="398" file0="src/agent.cpp">
+            <location file="src/agent.cpp" line="70" column="39" info="Parameter &apos;contents&apos; can be declared as pointer to const"/>
+            <location file="src/agent.cpp" line="532" column="59" info="You might need to cast the function pointer here"/>
+            <symbol>contents</symbol>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;dlt/dlt.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;dlt/dlt.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/update_agent.cpp" line="1" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;thread&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;thread&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/update_agent.cpp" line="2" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;chrono&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;chrono&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/update_agent.cpp" line="3" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;signal.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;signal.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/update_agent.cpp" line="4" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;unistd.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;unistd.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/update_agent.cpp" line="5" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;string&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;string&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/updater.h" line="4" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;dbus/dbus.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;dbus/dbus.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/updater.h" line="5" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;functional&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;functional&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/updater.h" line="6" column="0"/>
+        </error>
+        <error id="variableScope" severity="style" msg="The scope of the variable &apos;installation_completed&apos; can be reduced." verbose="The scope of the variable &apos;installation_completed&apos; can be reduced. Warning: Be careful when fixing this message, especially when there are inner loops. Here is an example where cppcheck will write that the scope for &apos;i&apos; can be reduced:\012void f(int x)\012{\012    int i = 0;\012    if (x) {\012        // it&apos;s safe to move &apos;int i = 0;&apos; here\012        for (int n = 0; n &lt; 10; ++n) {\012            // it is possible but not safe to move &apos;int i = 0;&apos; here\012            do_something(&amp;i);\012        }\012    }\012}\012When you see this message it is always safe to reduce the variable scope 1 level." cwe="398" file0="src/update_agent.cpp">
+            <location file="src/update_agent.cpp" line="76" column="10"/>
+            <symbol>installation_completed</symbol>
+        </error>
+        <error id="unreadVariable" severity="style" msg="Variable &apos;installation_completed&apos; is assigned a value that is never used." verbose="Variable &apos;installation_completed&apos; is assigned a value that is never used." cwe="563" file0="src/update_agent.cpp">
+            <location file="src/update_agent.cpp" line="76" column="33"/>
+            <symbol>installation_completed</symbol>
+        </error>
+        <error id="unreadVariable" severity="style" msg="Variable &apos;installation_completed&apos; is assigned a value that is never used." verbose="Variable &apos;installation_completed&apos; is assigned a value that is never used." cwe="563" file0="src/update_agent.cpp">
+            <location file="src/update_agent.cpp" line="89" column="44"/>
+            <symbol>installation_completed</symbol>
+        </error>
+        <error id="unreadVariable" severity="style" msg="Variable &apos;installation_completed&apos; is assigned a value that is never used." verbose="Variable &apos;installation_completed&apos; is assigned a value that is never used." cwe="563" file0="src/update_agent.cpp">
+            <location file="src/update_agent.cpp" line="93" column="44"/>
+            <symbol>installation_completed</symbol>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;dlt/dlt.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;dlt/dlt.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/updater.cpp" line="2" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;cstring&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;cstring&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/updater.cpp" line="3" column="0"/>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Include file: &lt;unistd.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results." verbose="Include file: &lt;unistd.h&gt; not found. Please note: Cppcheck does not need standard library headers to get proper results.">
+            <location file="src/updater.cpp" line="4" column="0"/>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;setupDownloadCurlOptions&apos; is never used." verbose="The function &apos;setupDownloadCurlOptions&apos; is never used." cwe="561">
+            <location file="src/agent.cpp" line="89" column="0"/>
+            <symbol>setupDownloadCurlOptions</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;sendFeedback&apos; is never used." verbose="The function &apos;sendFeedback&apos; is never used." cwe="561">
+            <location file="src/agent.cpp" line="607" column="0"/>
+            <symbol>sendFeedback</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;isConnected&apos; is never used." verbose="The function &apos;isConnected&apos; is never used." cwe="561">
+            <location file="src/updater.cpp" line="78" column="0"/>
+            <symbol>isConnected</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;getBootSlot&apos; is never used." verbose="The function &apos;getBootSlot&apos; is never used." cwe="561">
+            <location file="src/updater.cpp" line="299" column="0"/>
+            <symbol>getBootSlot</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;markGood&apos; is never used." verbose="The function &apos;markGood&apos; is never used." cwe="561">
+            <location file="src/updater.cpp" line="329" column="0"/>
+            <symbol>markGood</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;markBad&apos; is never used." verbose="The function &apos;markBad&apos; is never used." cwe="561">
+            <location file="src/updater.cpp" line="334" column="0"/>
+            <symbol>markBad</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;getBundleInfo&apos; is never used." verbose="The function &apos;getBundleInfo&apos; is never used." cwe="561">
+            <location file="src/updater.cpp" line="339" column="0"/>
+            <symbol>getBundleInfo</symbol>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/usr/include/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/usr/local/include/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/opt/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: missingIncludeSystem" verbose="Unmatched suppression: missingIncludeSystem">
+            <location file="*/usr/include/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: missingIncludeSystem" verbose="Unmatched suppression: missingIncludeSystem">
+            <location file="*/usr/local/include/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/automotive-dlt/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: missingIncludeSystem" verbose="Unmatched suppression: missingIncludeSystem">
+            <location file="*/automotive-dlt/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/dbus-1/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: missingIncludeSystem" verbose="Unmatched suppression: missingIncludeSystem">
+            <location file="*/dbus-1/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/curl/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: missingIncludeSystem" verbose="Unmatched suppression: missingIncludeSystem">
+            <location file="*/curl/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/json-c/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: missingIncludeSystem" verbose="Unmatched suppression: missingIncludeSystem">
+            <location file="*/json-c/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/build/*" line="0" column="0"/>
+        </error>
+        <error id="unmatchedSuppression" severity="information" msg="Unmatched suppression: unusedFunction" verbose="Unmatched suppression: unusedFunction">
+            <location file="*/CMakeFiles/*" line="0" column="0"/>
+        </error>
+        <error id="checkersReport" severity="information" msg="Active checkers: 172/592 (use --checkers-report=&lt;filename&gt; to see details)" verbose="Active checkers: 172/592 (use --checkers-report=&lt;filename&gt; to see details)"/>
+    </errors>
+</results>
