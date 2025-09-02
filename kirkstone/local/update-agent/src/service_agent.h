@@ -2,8 +2,9 @@
 #define SERVICE_AGENT_H
 
 #include <string>
-#include <dbus/dbus.h>
 #include <functional>
+#include <memory>
+#include "update_client.h"
 
 class ServiceAgent {
 public:
@@ -28,15 +29,14 @@ public:
     void processMessages();
 
 private:
-    DBusConnection* connection_;
+    std::unique_ptr<UpdateClient> update_client_;
     bool connected_;
     std::function<void(int)> progress_callback_;
     std::function<void(bool, const std::string&)> completed_callback_;
 
-    bool sendMethodCall(const std::string& method, const std::string& interface);
-    bool sendMethodCallWithPath(const std::string& method, const std::string& path, const std::string& interface);
-    static DBusHandlerResult messageHandler(DBusConnection* connection, DBusMessage* message, void* user_data);
-    void handleSignal(DBusMessage* message);
+    // Internal callback handlers for update-library
+    void onProgressCallback(const ProgressInfo& progress);
+    void onCompletedCallback(InstallResult result, const std::string& message);
 };
 
 #endif // SERVICE_AGENT_H
