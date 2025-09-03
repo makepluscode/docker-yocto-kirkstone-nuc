@@ -168,6 +168,7 @@ static gboolean open_local_bundle(RaucBundle *bundle, GError **error)
     }
 
     bundle->sigdata = g_bytes_new_take(sigdata_buffer, sigsize);
+    g_info("Bundle signature data loaded successfully, size: %zu bytes", sigsize);
 
     res = TRUE;
 
@@ -195,14 +196,16 @@ gboolean r_bundle_load(const gchar *bundlename, RaucBundle **bundle, GError **er
     ibundle = g_new0(RaucBundle, 1);
     ibundle->path = g_strdup(bundlename);
 
-    g_print("[Bundle Step 2/6] Opening bundle and extracting signature data\n");
+    g_info("Opening bundle and extracting signature data");
     // Open bundle and extract signature data
     if (!open_local_bundle(ibundle, error)) {
-        g_print("ERROR: Failed to open bundle file\n");
+        g_critical("Failed to open bundle file: %s",
+                   error && *error ? (*error)->message : "unknown error");
         g_free(ibundle->path);
         g_free(ibundle);
         goto out;
     }
+    g_info("Bundle opened successfully, signature data extracted");
 
     g_print("[Bundle Step 3/6] Loading manifest for compatibility checks\n");
     // Load manifest for compatibility checks
@@ -411,13 +414,13 @@ gboolean r_bundle_verify_signature(RaucBundle *bundle, GError **error)
 
     // Check if we have signature data from the bundle
     if (!bundle->sigdata) {
-        g_print("ERROR: Bundle signature data not found\n");
+        g_critical("Bundle signature data not found - bundle may not be properly loaded");
         g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_NOENT,
                    "Bundle signature data not found");
         goto out;
     }
 
-    printf("DEBUG: Signature data found, size: %zu bytes\n", g_bytes_get_size(bundle->sigdata));
+    g_info("Signature data found, size: %zu bytes", g_bytes_get_size(bundle->sigdata));
 
     g_print("[Verification Step 2/4] Analyzing signature format and type\n");
     // Determine if this is a detached signature

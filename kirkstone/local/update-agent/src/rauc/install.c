@@ -96,31 +96,44 @@ static gboolean copy_image_to_slot(const gchar *image_path, RaucSlot *slot,
     g_return_val_if_fail(slot != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+    g_info("Mounting slot '%s' for image copy", slot->name ? slot->name : "unknown");
     if (!r_slot_mount(slot, &ierror)) {
+        g_critical("Failed to mount slot '%s': %s", slot->name ? slot->name : "unknown",
+                   ierror ? ierror->message : "unknown error");
         g_propagate_prefixed_error(error, ierror, "Failed to mount slot '%s': ", slot->name);
         goto out;
     }
+    g_info("Slot '%s' mounted successfully", slot->name ? slot->name : "unknown");
 
+    g_info("Opening image file '%s' for reading", image_path);
     image_fd = open(image_path, O_RDONLY);
     if (image_fd < 0) {
+        g_critical("Failed to open image file '%s': %s", image_path, g_strerror(errno));
         g_set_error(error, G_FILE_ERROR, g_file_error_from_errno(errno),
                    "Failed to open image file '%s': %s", image_path, g_strerror(errno));
         goto out;
     }
+    g_info("Image file '%s' opened successfully", image_path);
 
     if (fstat(image_fd, &st) < 0) {
+        g_critical("Failed to stat image file '%s': %s", image_path, g_strerror(errno));
         g_set_error(error, G_FILE_ERROR, g_file_error_from_errno(errno),
                    "Failed to stat image file '%s': %s", image_path, g_strerror(errno));
         goto out;
     }
+    g_info("Image file size: %lld bytes", (long long)st.st_size);
 
+    g_info("Opening slot device '%s' for writing", slot->device ? slot->device : "unknown");
     slot_fd = open(slot->device, O_WRONLY);
     if (slot_fd < 0) {
+        g_critical("Failed to open slot device '%s': %s", slot->device ? slot->device : "unknown", g_strerror(errno));
         g_set_error(error, G_FILE_ERROR, g_file_error_from_errno(errno),
                    "Failed to open slot device '%s': %s", slot->device, g_strerror(errno));
         goto out;
     }
+    g_info("Slot device '%s' opened successfully", slot->device ? slot->device : "unknown");
 
+    g_info("Starting image copy from '%s' to slot device '%s'", image_path, slot->device ? slot->device : "unknown");
     while ((bytes_read = read(image_fd, buffer, sizeof(buffer))) > 0) {
         gchar *write_ptr = buffer;
         gssize remaining = bytes_read;
@@ -155,16 +168,20 @@ static gboolean copy_image_to_slot(const gchar *image_path, RaucSlot *slot,
     }
 
     if (bytes_read < 0) {
+        g_critical("Failed to read from image file '%s': %s", image_path, g_strerror(errno));
         g_set_error(error, G_FILE_ERROR, g_file_error_from_errno(errno),
                    "Failed to read from image file '%s': %s", image_path, g_strerror(errno));
         goto out;
     }
 
+    g_info("Image copy completed, syncing slot device '%s'", slot->device ? slot->device : "unknown");
     if (fsync(slot_fd) < 0) {
+        g_critical("Failed to sync slot device '%s': %s", slot->device ? slot->device : "unknown", g_strerror(errno));
         g_set_error(error, G_FILE_ERROR, g_file_error_from_errno(errno),
                    "Failed to sync slot device '%s': %s", slot->device, g_strerror(errno));
         goto out;
     }
+    g_info("Slot device '%s' synced successfully", slot->device ? slot->device : "unknown");
 
     res = TRUE;
 
@@ -280,12 +297,20 @@ static gboolean install_image_to_slot(InstallTask *task,
     g_return_val_if_fail(task->image_path != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+    g_info("Starting installation of image '%s' to slot '%s'",
+           task->image->filename ? task->image->filename : "unknown",
+           task->slot->name ? task->slot->name : "unknown");
+
     if (progress_callback) {
         gchar *message = g_strdup_printf("[Step 1/5] Starting installation of '%s' to slot '%s'",
                                        task->image->filename, task->slot->name);
         progress_callback(0, message, 0, user_data);
         g_free(message);
     }
+
+    g_info("Verifying slot compatibility for slot '%s' with image class '%s'",
+           task->slot->name ? task->slot->name : "unknown",
+           task->image->slotclass ? task->image->slotclass : "unknown");
 
     if (progress_callback) {
         gchar *message = g_strdup_printf("[Step 2/5] Verifying slot compatibility");
@@ -294,9 +319,13 @@ static gboolean install_image_to_slot(InstallTask *task,
     }
 
     if (!verify_slot_compatible(task->slot, task->image, &ierror)) {
+        g_critical("Slot compatibility verification failed: %s", ierror ? ierror->message : "unknown error");
         g_propagate_error(error, ierror);
         goto out;
     }
+    g_info("Slot compatibility verification passed");
+
+    g_info("Updating slot '%s' status to inactive", task->slot->name ? task->slot->name : "unknown");
 
     if (progress_callback) {
         gchar *message = g_strdup_printf("[Step 3/5] Updating slot status to inactive");
@@ -339,30 +368,42 @@ static gboolean install_image_to_slot(InstallTask *task,
     }
 
     /* Mark slot as active in bootloader */
+    g_info("Attempting to mark slot as active in bootloader");
+    g_info("Slot name: %s, bootname: %s",
+           task->slot && task->slot->name ? task->slot->name : "NULL",
+           task->slot && task->slot->bootname ? task->slot->bootname : "NULL");
+
     if (task->slot && task->slot->name && task->slot->bootname) {
+        g_info("Calling r_boot_mark_active for slot '%s' with bootname '%s'",
+               task->slot->name, task->slot->bootname);
+
         if (!r_boot_mark_active(task->slot, &ierror)) {
-            g_warning("Failed to mark slot %s as active in bootloader: %s",
+            g_critical("Failed to mark slot %s as active in bootloader: %s",
                       task->slot->name, ierror ? ierror->message : "unknown error");
             g_clear_error(&ierror);
         } else {
-            g_message("Successfully marked slot %s as active in bootloader", task->slot->name);
+            g_info("Successfully marked slot %s as active in bootloader", task->slot->name);
 
             /* RAUC install과 동일하게 bootchooser 적용 후 재부팅 수행 */
             if (r_install_auto_reboot) {
                 GError *reboot_error = NULL;
-                g_message("Auto-reboot enabled, initiating system reboot...");
+                g_info("Auto-reboot enabled, initiating system reboot...");
 
                 if (!r_install_reboot_system(&reboot_error)) {
-                    g_warning("Failed to reboot system: %s",
+                    g_critical("Failed to reboot system: %s",
                              reboot_error ? reboot_error->message : "unknown error");
                     g_clear_error(&reboot_error);
                 } else {
-                    g_message("System reboot initiated successfully");
+                    g_info("System reboot initiated successfully");
                 }
             }
         }
     } else {
-        g_warning("Cannot mark slot as active: slot data is incomplete");
+        g_critical("Cannot mark slot as active: slot data is incomplete");
+        g_critical("Slot: %p, name: %s, bootname: %s",
+                   task->slot,
+                   task->slot && task->slot->name ? task->slot->name : "NULL",
+                   task->slot && task->slot->bootname ? task->slot->bootname : "NULL");
     }
 
     if (progress_callback) {
@@ -457,36 +498,41 @@ gboolean r_install_bundle(RaucBundle *bundle,
 
     // Skip signature verification if bundle already has sigdata (already verified)
     if (!bundle->sigdata) {
+        g_info("Starting bundle signature verification...");
         if (!r_bundle_verify_signature(bundle, &ierror)) {
+            g_critical("Bundle signature verification failed: %s", ierror ? ierror->message : "unknown error");
             g_propagate_prefixed_error(error, ierror, "Bundle signature verification failed: ");
             goto out;
         }
+        g_info("Bundle signature verification passed");
     } else {
-        printf("DEBUG: Skipping signature verification (already verified)\n");
+        g_info("Skipping signature verification (already verified)");
     }
 
-    printf("DEBUG: Starting compatibility check...\n");
+    g_info("Starting compatibility check...");
     if (!r_bundle_check_compatible(bundle, &ierror)) {
+        g_critical("Bundle compatibility check failed: %s", ierror ? ierror->message : "unknown error");
         g_propagate_prefixed_error(error, ierror, "Bundle compatibility check failed: ");
         goto out;
     }
-    printf("DEBUG: Compatibility check passed\n");
+    g_info("Compatibility check passed");
 
-    printf("DEBUG: Starting content verification...\n");
+    g_info("Starting content verification...");
     if (!r_bundle_verify_content(bundle, &ierror)) {
+        g_critical("Bundle content verification failed: %s", ierror ? ierror->message : "unknown error");
         g_propagate_prefixed_error(error, ierror, "Bundle content verification failed: ");
         goto out;
     }
-    printf("DEBUG: Content verification passed\n");
+    g_info("Content verification passed");
 
-    printf("DEBUG: Creating install tasks...\n");
+    g_info("Creating install tasks...");
     tasks = create_install_tasks(bundle, &ierror);
     if (!tasks) {
-        printf("DEBUG: Failed to create install tasks: %s\n", ierror ? ierror->message : "unknown error");
+        g_critical("Failed to create install tasks: %s", ierror ? ierror->message : "unknown error");
         g_propagate_error(error, ierror);
         goto out;
     }
-    printf("DEBUG: Install tasks created successfully\n");
+    g_info("Install tasks created successfully");
 
     total_tasks = g_list_length(tasks);
 
@@ -556,15 +602,14 @@ gboolean r_install_bundle_from_file(const gchar *bundle_path,
         g_free(message);
     }
 
-    if (!r_bundle_open(bundle_path, &bundle, &ierror)) {
+    // update-test-app과 동일하게 r_bundle_load 사용 (서명 데이터 포함)
+    if (!r_bundle_load(bundle_path, &bundle, &ierror)) {
+        g_critical("Failed to load bundle '%s': %s", bundle_path,
+                   ierror ? ierror->message : "unknown error");
         g_propagate_error(error, ierror);
         goto out;
     }
-
-    if (!r_bundle_load_manifest(bundle, &ierror)) {
-        g_propagate_error(error, ierror);
-        goto out;
-    }
+    g_info("Bundle '%s' loaded successfully with signature data", bundle_path);
 
     if (!r_install_bundle(bundle, progress_callback, completed_callback, user_data, &ierror)) {
         g_propagate_error(error, ierror);

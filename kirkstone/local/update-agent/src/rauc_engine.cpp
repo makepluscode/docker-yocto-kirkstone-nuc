@@ -20,6 +20,7 @@ RaucEngine::RaucEngine()
 #ifdef WITH_DLT
     DLT_REGISTER_CONTEXT(dlt_context_engine, "RENG", "RAUC Engine");
 #endif
+    logInfo("RaucEngine constructor called");
 }
 
 RaucEngine::~RaucEngine() {
@@ -39,37 +40,55 @@ bool RaucEngine::initialize(const std::string& config_file_path) {
     }
 
     config_file_path_ = config_file_path;
+    logInfo("Starting RAUC engine initialization with config: " + config_file_path_);
 
     // RAUC 컨텍스트 초기화
+    logInfo("Initializing RAUC context...");
+
+    // Check if config file exists
+    if (access(config_file_path_.c_str(), R_OK) != 0) {
+        last_error_ = "RAUC config file not accessible: " + config_file_path_;
+        logError(last_error_);
+        return false;
+    }
+    logInfo("RAUC config file is accessible");
+
     if (!r_context_init()) {
         last_error_ = "Failed to initialize RAUC context";
         logError(last_error_);
         return false;
     }
+    logInfo("RAUC context initialized successfully");
 
     // 설정 파일 로드
+    logInfo("Loading system configuration...");
     if (!loadSystemConfig()) {
         last_error_ = "Failed to load system configuration";
         logError(last_error_);
         r_context_cleanup();
         return false;
     }
+    logInfo("System configuration loaded successfully");
 
     // 슬롯 상태 파악
+    logInfo("Determining slot states...");
     if (!determineSlotStates()) {
         last_error_ = "Failed to determine slot states";
         logError(last_error_);
         r_context_cleanup();
         return false;
     }
+    logInfo("Slot states determined successfully");
 
     // 부트 상태 파악
+    logInfo("Determining boot states...");
     if (!determineBootStates()) {
         last_error_ = "Failed to determine boot states";
         logError(last_error_);
         r_context_cleanup();
         return false;
     }
+    logInfo("Boot states determined successfully");
 
     initialized_ = true;
     current_operation_ = "idle";
@@ -217,6 +236,7 @@ bool RaucEngine::isInitialized() const {
 
 bool RaucEngine::loadSystemConfig() {
     GError* error = nullptr;
+    logInfo("Loading config file: " + config_file_path_);
 
     // 설정 파일 로드
     gboolean success = load_config_file(config_file_path_.c_str(), &error);
@@ -224,17 +244,24 @@ bool RaucEngine::loadSystemConfig() {
     if (!success || error) {
         if (error) {
             last_error_ = std::string("Failed to load config: ") + error->message;
+            logError("Config load error: " + last_error_);
             g_error_free(error);
         } else {
             last_error_ = "Failed to load config: Unknown error";
+            logError("Config load failed with unknown error");
         }
         return false;
     }
+    logInfo("Config file loaded successfully");
 
     // 호환성 문자열 저장
     const gchar* compatible = r_context_get_compatible();
     if (compatible) {
         system_compatible_ = std::string(compatible);
+        logInfo("System compatible: " + system_compatible_);
+    } else {
+        logError("Failed to get system compatible string");
+        return false;
     }
 
     return true;
@@ -345,7 +372,8 @@ void RaucEngine::onProgressUpdate(int percentage, const char* message, int nesti
         engine->progress_callback_(engine->current_progress_);
     }
 
-    engine->logDebug("Installation progress: " + std::to_string(percentage) + "% - " +
+    // 상세한 DLT 로깅 추가
+    engine->logInfo("Installation progress: " + std::to_string(percentage) + "% - " +
                     (message ? message : ""));
 }
 

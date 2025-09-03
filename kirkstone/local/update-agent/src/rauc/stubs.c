@@ -157,7 +157,7 @@ gboolean r_bundle_get_info(const gchar *bundle_path, gchar **compatible, gchar *
     if (version) {
         *version = g_strdup("0.0.1");
     }
-    
+
     return TRUE;
 }
 
@@ -190,7 +190,7 @@ gboolean check_bundle(const gchar *bundlename,
     // 간단한 stub 구현 - 실제로는 번들 검증을 수행해야 함
     *bundle = g_new0(RaucBundle, 1);
     (*bundle)->path = g_strdup(bundlename);
-    
+
     return TRUE;
 }
 
@@ -217,16 +217,21 @@ gboolean install_run_simple(const gchar *bundle_path,
     g_return_val_if_fail(bundle_path != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-    // 간단한 stub 구현 - 실제로는 설치를 수행해야 함
-    if (progress_callback) {
-        progress_callback(0, "Starting installation", 0, user_data);
-        progress_callback(50, "Installing bundle", 0, user_data);
-        progress_callback(100, "Installation complete", 0, user_data);
+    g_info("Starting bundle installation from file: %s", bundle_path);
+
+    // 실제 RAUC 설치 함수 호출
+    gboolean result = r_install_bundle_from_file(bundle_path,
+                                                progress_callback,
+                                                completed_callback,
+                                                user_data,
+                                                error);
+
+    if (result) {
+        g_info("Bundle installation completed successfully");
+    } else {
+        g_critical("Bundle installation failed: %s",
+                   error && *error ? (*error)->message : "unknown error");
     }
-    
-    if (completed_callback) {
-        completed_callback(R_INSTALL_RESULT_SUCCESS, "Installation completed successfully", user_data);
-    }
-    
-    return TRUE;
+
+    return result;
 }

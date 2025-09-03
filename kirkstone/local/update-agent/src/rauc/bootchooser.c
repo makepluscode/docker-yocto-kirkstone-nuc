@@ -436,14 +436,26 @@ gboolean r_boot_mark_active(RaucSlot *slot, GError **error)
     g_return_val_if_fail(slot, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+    g_info("Marking slot '%s' as active in bootloader", slot->name ? slot->name : "unknown");
+    g_info("Slot bootname: %s", slot->bootname ? slot->bootname : "NULL");
+
     /* Mark slot as primary and set it as good */
+    g_info("Setting slot as primary boot target");
     if (!r_boot_set_primary(slot, error)) {
+        g_critical("Failed to set slot as primary: %s",
+                   error && *error ? (*error)->message : "unknown error");
         return FALSE;
     }
+    g_info("Successfully set slot as primary boot target");
 
+    g_info("Setting slot state as good");
     if (!r_boot_set_state(slot, TRUE, error)) {
+        g_critical("Failed to set slot state as good: %s",
+                   error && *error ? (*error)->message : "unknown error");
         return FALSE;
     }
+    g_info("Successfully set slot state as good");
 
+    g_info("Slot '%s' successfully marked as active in bootloader", slot->name ? slot->name : "unknown");
     return TRUE;
 }
