@@ -41,9 +41,9 @@ ServerAgent::~ServerAgent() {
 }
 
 size_t ServerAgent::writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
+    // If userp is null, this is a feedback request that doesn't need response data
     if (!userp) {
-        DLT_LOG(dlt_context_server, DLT_LOG_ERROR, DLT_STRING("writeCallback: userp is null"));
-        return 0;
+        return size * nmemb; // Just consume the data
     }
 
     if (!contents) {
@@ -52,6 +52,9 @@ size_t ServerAgent::writeCallback(void* contents, size_t size, size_t nmemb, std
     }
 
     size_t total_size = size * nmemb;
+    if (total_size == 0) {
+        return 0;
+    }
 
     try {
         userp->append((char*)contents, total_size);
@@ -141,6 +144,9 @@ bool ServerAgent::pollForUpdates(std::string& response) {
     curl_easy_setopt(curl_handle_, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, HTTP_TIMEOUT_SECONDS);
     curl_easy_setopt(curl_handle_, CURLOPT_FOLLOWLOCATION, FOLLOW_REDIRECTS ? 1L : 0L);
+    curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYPEER, ENABLE_SSL_VERIFICATION ? 1L : 0L);
+    curl_easy_setopt(curl_handle_, CURLOPT_SSL_VERIFYHOST, ENABLE_SSL_VERIFICATION ? 2L : 0L);
+    curl_easy_setopt(curl_handle_, CURLOPT_USERAGENT, "host-updater-cpp/1.0");
 
     CURLcode res = curl_easy_perform(curl_handle_);
     if (res != CURLE_OK) {
@@ -358,11 +364,16 @@ bool ServerAgent::sendStartedFeedback(const std::string& execution_id) {
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
-    // Minimal CURL configuration for POST request - avoid curl_easy_reset to prevent SEGFAULT
+    // Reset CURL handle to clean state before each request
+    curl_easy_reset(curl_handle_);
+
+    // Configure CURL options for POST request
     curl_easy_setopt(curl_handle_, CURLOPT_URL, buildFeedbackUrl(execution_id).c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_copy.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, 30L);
+    curl_easy_setopt(curl_handle_, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(curl_handle_, CURLOPT_WRITEDATA, nullptr); // No response data needed
 
     CURLcode res = curl_easy_perform(curl_handle_);
     curl_slist_free_all(headers);
@@ -419,11 +430,16 @@ bool ServerAgent::sendProgressFeedback(const std::string& execution_id, int prog
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
-    // Minimal CURL configuration for POST request - avoid curl_easy_reset to prevent SEGFAULT
+    // Reset CURL handle to clean state before each request
+    curl_easy_reset(curl_handle_);
+
+    // Configure CURL options for POST request
     curl_easy_setopt(curl_handle_, CURLOPT_URL, buildFeedbackUrl(execution_id).c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_copy.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, 30L);
+    curl_easy_setopt(curl_handle_, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(curl_handle_, CURLOPT_WRITEDATA, nullptr); // No response data needed
 
     CURLcode res = curl_easy_perform(curl_handle_);
     curl_slist_free_all(headers);
@@ -480,11 +496,16 @@ bool ServerAgent::sendFinishedFeedback(const std::string& execution_id, bool suc
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
-    // Minimal CURL configuration for POST request - avoid curl_easy_reset to prevent SEGFAULT
+    // Reset CURL handle to clean state before each request
+    curl_easy_reset(curl_handle_);
+
+    // Configure CURL options for POST request
     curl_easy_setopt(curl_handle_, CURLOPT_URL, buildFeedbackUrl(execution_id).c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_POSTFIELDS, json_copy.c_str());
     curl_easy_setopt(curl_handle_, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl_handle_, CURLOPT_TIMEOUT, 30L);
+    curl_easy_setopt(curl_handle_, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(curl_handle_, CURLOPT_WRITEDATA, nullptr); // No response data needed
 
     CURLcode res = curl_easy_perform(curl_handle_);
     curl_slist_free_all(headers);

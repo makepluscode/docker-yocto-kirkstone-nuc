@@ -21,12 +21,12 @@ bool ServiceAgent::connect() {
 
     // Create update client instance
     update_client_ = std::make_unique<UpdateClient>();
-    
+
     // Set up callbacks
     update_client_->setProgressCallback([this](const ProgressInfo& progress) {
         this->onProgressCallback(progress);
     });
-    
+
     update_client_->setCompletedCallback([this](InstallResult result, const std::string& message) {
         this->onCompletedCallback(result, message);
     });

@@ -194,9 +194,23 @@ private:
             // Reboot system to boot into new image
             DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Update completed successfully. Rebooting system to new image..."));
             std::this_thread::sleep_for(std::chrono::seconds(REBOOT_DELAY_SECONDS)); // Brief delay for log message
-            system("sync && systemctl reboot --force --no-block");
+
+            // Use safer reboot approach
+            DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Syncing filesystem..."));
+            sync();
+
+#if 1
+            DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Initiating system reboot..."));
+            int reboot_result = system("systemctl reboot --force --no-block");
+            if (reboot_result != 0) {
+                DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Reboot command failed, trying alternative method"));
+                // Alternative reboot method
+                system("reboot -f");
+            }
+
             g_running = false; // Stop main loop
-        } else {
+#endif
+	} else {
             DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Update failed: "), DLT_STRING(message.c_str()));
 
             // Clean up downloaded file on failure too - COMMENTED OUT FOR DEBUGGING
