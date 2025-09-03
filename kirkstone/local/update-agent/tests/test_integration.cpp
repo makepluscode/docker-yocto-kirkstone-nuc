@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "server_agent.h"
-#include "service_agent.h"
+#include "package_installer.h"
 #include "config.h"
 #include <fstream>
 #include <sstream>
@@ -16,10 +16,10 @@ protected:
         device_id = "test-device-001";
 
         server_agent = std::make_unique<ServerAgent>(server_url, tenant, device_id);
-        service_agent = std::make_unique<ServiceAgent>();
+        service_agent = std::make_unique<PackageInstaller>();
 
         // Create test bundle file
-        test_bundle_path = "/tmp/test_integration.raucb";
+        test_package_path = "/tmp/test_integration.raucb";
         createTestBundle();
     }
 
@@ -32,12 +32,12 @@ protected:
         service_agent.reset();
 
         // Remove test bundle file
-        std::remove(test_bundle_path.c_str());
+        std::remove(test_package_path.c_str());
     }
 
     void createTestBundle() {
         // Create a dummy test bundle file
-        std::ofstream file(test_bundle_path, std::ios::binary);
+        std::ofstream file(test_package_path, std::ios::binary);
         if (file.is_open()) {
             // Write some dummy data
             std::string dummy_data = "This is a test RAUC bundle file for integration testing.";
@@ -49,9 +49,9 @@ protected:
     std::string server_url;
     std::string tenant;
     std::string device_id;
-    std::string test_bundle_path;
+    std::string test_package_path;
     std::unique_ptr<ServerAgent> server_agent;
-    std::unique_ptr<ServiceAgent> service_agent;
+    std::unique_ptr<PackageInstaller> service_agent;
 };
 
 TEST_F(IntegrationTest, ServerAgentInitialization) {
@@ -59,7 +59,7 @@ TEST_F(IntegrationTest, ServerAgentInitialization) {
     EXPECT_NE(server_agent, nullptr);
 }
 
-TEST_F(IntegrationTest, ServiceAgentInitialization) {
+TEST_F(IntegrationTest, PackageInstallerInitialization) {
     // Test service agent initialization
     EXPECT_NE(service_agent, nullptr);
     EXPECT_FALSE(service_agent->isConnected());
@@ -126,7 +126,7 @@ TEST_F(IntegrationTest, UpdateFlowSimulation) {
     EXPECT_FALSE(download_result); // Expected to fail in test environment
 
     // Step 4: Install bundle (will fail in test environment)
-    bool install_result = service_agent->installBundle(test_bundle_path);
+            bool install_result = service_agent->installPackage(test_package_path);
     EXPECT_FALSE(install_result); // Expected to fail in test environment
 
     // Step 5: Send feedback (will fail in test environment)
@@ -207,7 +207,7 @@ TEST_F(IntegrationTest, ResourceManagement) {
     // Test that agents can be created and destroyed multiple times
     for (int i = 0; i < 3; ++i) {
         auto temp_server_agent = std::make_unique<ServerAgent>(server_url, tenant, device_id);
-        auto temp_service_agent = std::make_unique<ServiceAgent>();
+        auto temp_service_agent = std::make_unique<PackageInstaller>();
 
         EXPECT_NE(temp_server_agent, nullptr);
         EXPECT_NE(temp_service_agent, nullptr);
@@ -227,8 +227,8 @@ TEST_F(IntegrationTest, ThreadSafety) {
     // Create multiple agents
     auto agent1 = std::make_unique<ServerAgent>(server_url, tenant, device_id);
     auto agent2 = std::make_unique<ServerAgent>(server_url, tenant, device_id);
-    auto service1 = std::make_unique<ServiceAgent>();
-    auto service2 = std::make_unique<ServiceAgent>();
+            auto service1 = std::make_unique<PackageInstaller>();
+        auto service2 = std::make_unique<PackageInstaller>();
 
     // Test that they don't interfere with each other
     std::string response1, response2;

@@ -1,8 +1,8 @@
 /**
- * @file test_service_agent_mocked.cpp
- * @brief ServiceAgent 모킹 테스트
+ * @file test_package_installer_mocked.cpp
+ * @brief PackageInstaller 모킹 테스트
  *
- * MockDbusClient를 사용하여 ServiceAgent의 D-Bus 통신을 모킹하고
+ * MockDbusClient를 사용하여 PackageInstaller의 D-Bus 통신을 모킹하고
  * 실제 D-Bus 서비스 없이 테스트합니다.
  */
 
@@ -12,18 +12,18 @@
 #include <memory>
 #include <functional>
 #include "mocks/mock_dbus_client.h"
-#include "mocks/mockable_service_agent.h"
+#include "mocks/mockable_package_installer.h"
 
 namespace {
 
 /**
- * @class ServiceAgentMockedTest
- * @brief ServiceAgent 모킹 테스트 클래스
+ * @class PackageInstallerMockedTest
+ * @brief PackageInstaller 모킹 테스트 클래스
  *
  * MockDbusClient를 사용하여 D-Bus 통신을 모킹하고
- * ServiceAgent의 로직을 테스트합니다.
+ * PackageInstaller의 로직을 테스트합니다.
  */
-class ServiceAgentMockedTest : public ::testing::Test {
+class PackageInstallerTest : public ::testing::Test {
 protected:
     /**
      * @brief 각 테스트 시작 전 초기화
@@ -32,8 +32,8 @@ protected:
         // Mock D-Bus 클라이언트 생성
         mock_dbus_client_ = std::make_unique<MockDbusClient>();
 
-        // MockableServiceAgent 생성 (Mock D-Bus 클라이언트 주입)
-        service_agent_ = std::make_unique<MockableServiceAgent>(mock_dbus_client_.get());
+        // MockablePackageInstaller 생성 (Mock D-Bus 클라이언트 주입)
+        service_agent_ = std::make_unique<MockablePackageInstaller>(mock_dbus_client_.get());
 
         // 테스트용 콜백 호출 기록을 위한 변수 초기화
         progress_callback_called_ = false;
@@ -53,7 +53,7 @@ protected:
 
     // 테스트용 멤버 변수들
     std::unique_ptr<MockDbusClient> mock_dbus_client_;
-    std::unique_ptr<MockableServiceAgent> service_agent_;
+    std::unique_ptr<MockablePackageInstaller> service_agent_;
 
     // 콜백 테스트를 위한 상태 변수들
     bool progress_callback_called_;
@@ -87,9 +87,9 @@ protected:
  * @brief 성공적인 D-Bus 연결 테스트
  *
  * MockDbusClient가 성공적으로 연결할 때
- * ServiceAgent가 올바르게 처리하는지 검증합니다.
+ * PackageInstaller가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServiceAgentMockedTest, ConnectSuccess) {
+TEST_F(PackageInstallerTest, ConnectSuccess) {
     // Given: Mock D-Bus 클라이언트가 성공적으로 연결하도록 설정
     EXPECT_CALL(*mock_dbus_client_, connect())
         .WillOnce(testing::Return(true));
@@ -109,9 +109,9 @@ TEST_F(ServiceAgentMockedTest, ConnectSuccess) {
  * @brief D-Bus 연결 실패 테스트
  *
  * MockDbusClient가 연결 실패를 반환할 때
- * ServiceAgent가 올바르게 처리하는지 검증합니다.
+ * PackageInstaller가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServiceAgentMockedTest, ConnectFailure) {
+TEST_F(PackageInstallerTest, ConnectFailure) {
     // Given: Mock D-Bus 클라이언트가 연결 실패를 반환하도록 설정
     EXPECT_CALL(*mock_dbus_client_, connect())
         .WillOnce(testing::Return(false));
@@ -132,7 +132,7 @@ TEST_F(ServiceAgentMockedTest, ConnectFailure) {
  *
  * MockDbusClient를 사용하여 연결 해제를 테스트합니다.
  */
-TEST_F(ServiceAgentMockedTest, Disconnect) {
+TEST_F(PackageInstallerTest, Disconnect) {
     // Given: Mock D-Bus 클라이언트가 연결 해제를 처리하도록 설정
     EXPECT_CALL(*mock_dbus_client_, disconnect())
         .Times(1);
@@ -151,9 +151,9 @@ TEST_F(ServiceAgentMockedTest, Disconnect) {
  * @brief 서비스 확인 성공 테스트
  *
  * MockDbusClient가 서비스를 사용 가능하다고 반환할 때
- * ServiceAgent가 올바르게 처리하는지 검증합니다.
+ * PackageInstaller가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServiceAgentMockedTest, CheckServiceSuccess) {
+TEST_F(PackageInstallerTest, CheckServiceSuccess) {
     // Given: Mock D-Bus 클라이언트가 서비스 확인 성공을 반환하도록 설정
     EXPECT_CALL(*mock_dbus_client_, checkService())
         .WillOnce(testing::Return(true));
@@ -169,9 +169,9 @@ TEST_F(ServiceAgentMockedTest, CheckServiceSuccess) {
  * @brief 서비스 확인 실패 테스트
  *
  * MockDbusClient가 서비스를 사용 불가능하다고 반환할 때
- * ServiceAgent가 올바르게 처리하는지 검증합니다.
+ * PackageInstaller가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServiceAgentMockedTest, CheckServiceFailure) {
+TEST_F(PackageInstallerTest, CheckServiceFailure) {
     // Given: Mock D-Bus 클라이언트가 서비스 확인 실패를 반환하도록 설정
     EXPECT_CALL(*mock_dbus_client_, checkService())
         .WillOnce(testing::Return(false));
@@ -187,17 +187,17 @@ TEST_F(ServiceAgentMockedTest, CheckServiceFailure) {
  * @brief 성공적인 번들 설치 테스트
  *
  * MockDbusClient가 성공적으로 번들을 설치할 때
- * ServiceAgent가 올바르게 처리하는지 검증합니다.
+ * PackageInstaller가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServiceAgentMockedTest, InstallBundleSuccess) {
-    // Given: Mock D-Bus 클라이언트가 성공적으로 번들을 설치하도록 설정
-    const std::string bundle_path = "/tmp/test-bundle.raucb";
+TEST_F(PackageInstallerTest, InstallPackageSuccess) {
+    // Given: Mock D-Bus 클라이언트가 성공적으로 패키지를 설치하도록 설정
+    const std::string package_path = "/tmp/test-bundle.raucb";
 
-    EXPECT_CALL(*mock_dbus_client_, installBundle(bundle_path))
+    EXPECT_CALL(*mock_dbus_client_, installPackage(package_path))
         .WillOnce(testing::Return(true));
 
-    // When: 번들 설치 실행
-    const bool result = service_agent_->installBundle(bundle_path);
+    // When: 패키지 설치 실행
+    const bool result = service_agent_->installPackage(package_path);
 
     // Then: 성공적으로 처리되어야 함
     EXPECT_TRUE(result) << "번들 설치가 성공해야 합니다";
@@ -207,29 +207,29 @@ TEST_F(ServiceAgentMockedTest, InstallBundleSuccess) {
  * @brief 번들 설치 실패 테스트
  *
  * MockDbusClient가 번들 설치 실패를 반환할 때
- * ServiceAgent가 올바르게 처리하는지 검증합니다.
+ * PackageInstaller가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServiceAgentMockedTest, InstallBundleFailure) {
-    // Given: Mock D-Bus 클라이언트가 번들 설치 실패를 반환하도록 설정
-    const std::string bundle_path = "/tmp/invalid-bundle.raucb";
+TEST_F(PackageInstallerTest, InstallPackageFailure) {
+    // Given: Mock D-Bus 클라이언트가 패키지 설치 실패를 반환하도록 설정
+    const std::string package_path = "/tmp/invalid-bundle.raucb";
 
-    EXPECT_CALL(*mock_dbus_client_, installBundle(bundle_path))
+    EXPECT_CALL(*mock_dbus_client_, installPackage(package_path))
         .WillOnce(testing::Return(false));
 
-    // When: 번들 설치 실행
-    const bool result = service_agent_->installBundle(bundle_path);
+    // When: 패키지 설치 실행
+    const bool result = service_agent_->installPackage(package_path);
 
     // Then: 실패가 올바르게 처리되어야 함
-    EXPECT_FALSE(result) << "번들 설치가 실패해야 합니다";
+    EXPECT_FALSE(result) << "패키지 설치가 실패해야 합니다";
 }
 
 /**
  * @brief 상태 조회 성공 테스트
  *
  * MockDbusClient가 상태 정보를 성공적으로 조회할 때
- * ServiceAgent가 올바르게 처리하는지 검증합니다.
+ * PackageInstaller가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServiceAgentMockedTest, GetStatusSuccess) {
+TEST_F(PackageInstallerTest, GetStatusSuccess) {
     // Given: Mock D-Bus 클라이언트가 상태 조회 성공을 반환하도록 설정
     const std::string expected_status = "idle";
 
@@ -252,9 +252,9 @@ TEST_F(ServiceAgentMockedTest, GetStatusSuccess) {
  * @brief 부트 슬롯 조회 성공 테스트
  *
  * MockDbusClient가 부트 슬롯 정보를 성공적으로 조회할 때
- * ServiceAgent가 올바르게 처리하는지 검증합니다.
+ * PackageInstaller가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServiceAgentMockedTest, GetBootSlotSuccess) {
+TEST_F(PackageInstallerTest, GetBootSlotSuccess) {
     // Given: Mock D-Bus 클라이언트가 부트 슬롯 조회 성공을 반환하도록 설정
     const std::string expected_boot_slot = "A";
 
@@ -278,7 +278,7 @@ TEST_F(ServiceAgentMockedTest, GetBootSlotSuccess) {
  *
  * MockDbusClient를 사용하여 부트 슬롯 마킹을 테스트합니다.
  */
-TEST_F(ServiceAgentMockedTest, SlotMarkingMethods) {
+TEST_F(PackageInstallerTest, SlotMarkingMethods) {
     // Given: Mock D-Bus 클라이언트가 마킹 성공을 반환하도록 설정
     EXPECT_CALL(*mock_dbus_client_, markGood())
         .WillOnce(testing::Return(true));
@@ -299,7 +299,7 @@ TEST_F(ServiceAgentMockedTest, SlotMarkingMethods) {
  *
  * MockDbusClient를 사용하여 콜백 설정을 테스트합니다.
  */
-TEST_F(ServiceAgentMockedTest, CallbackSetup) {
+TEST_F(PackageInstallerTest, CallbackSetup) {
     // Given: Mock D-Bus 클라이언트가 콜백 설정을 처리하도록 설정
     EXPECT_CALL(*mock_dbus_client_, setProgressCallback(testing::_))
         .Times(1);
@@ -325,7 +325,7 @@ TEST_F(ServiceAgentMockedTest, CallbackSetup) {
  *
  * MockDbusClient를 사용하여 메시지 처리를 테스트합니다.
  */
-TEST_F(ServiceAgentMockedTest, MessageProcessing) {
+TEST_F(PackageInstallerTest, MessageProcessing) {
     // Given: Mock D-Bus 클라이언트가 메시지 처리를 하도록 설정
     EXPECT_CALL(*mock_dbus_client_, processMessages())
         .Times(1);
@@ -342,9 +342,9 @@ TEST_F(ServiceAgentMockedTest, MessageProcessing) {
  *
  * 연결, 서비스 확인, 번들 설치, 상태 조회의 전체 플로우를 모킹으로 테스트합니다.
  */
-TEST_F(ServiceAgentMockedTest, CompleteUpdateFlow) {
+TEST_F(PackageInstallerTest, CompleteUpdateFlow) {
     // Given: Mock D-Bus 클라이언트 설정
-    const std::string bundle_path = "/tmp/update-bundle.raucb";
+    const std::string package_path = "/tmp/update-bundle.raucb";
     const std::string expected_status = "installing";
     const std::string expected_boot_slot = "B";
 
@@ -359,8 +359,8 @@ TEST_F(ServiceAgentMockedTest, CompleteUpdateFlow) {
     EXPECT_CALL(*mock_dbus_client_, checkService())
         .WillOnce(testing::Return(true));
 
-    // 번들 설치 성공 설정
-    EXPECT_CALL(*mock_dbus_client_, installBundle(bundle_path))
+    // 패키지 설치 성공 설정
+    EXPECT_CALL(*mock_dbus_client_, installPackage(package_path))
         .WillOnce(testing::Return(true));
 
     // 상태 조회 성공 설정
@@ -384,7 +384,7 @@ TEST_F(ServiceAgentMockedTest, CompleteUpdateFlow) {
     // When: 전체 업데이트 플로우 실행
     bool connect_result = service_agent_->connect();
     bool service_result = service_agent_->checkService();
-    bool install_result = service_agent_->installBundle(bundle_path);
+    bool install_result = service_agent_->installPackage(package_path);
 
     std::string status;
     bool status_result = service_agent_->getStatus(status);

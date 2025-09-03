@@ -9,19 +9,19 @@ The project uses Google Test (gtest) and Google Mock (gmock) frameworks for comp
 ### Core Test Files
 - `test_config.cpp` - Configuration constants and settings validation
 - `test_server_agent.cpp` - ServerAgent class functionality (comprehensive)
-- `test_service_agent.cpp` - ServiceAgent class functionality (comprehensive)
+- `test_package_installer.cpp` - PackageInstaller class functionality (comprehensive)
 - `test_integration.cpp` - Integration tests and complete update flow
 
 ### Mocked Test Files
 - `test_mocked_only.cpp` - **Primary test file** - No external dependencies required
 - `test_server_agent_mocked.cpp` - ServerAgent with HTTP mocking
-- `test_service_agent_mocked.cpp` - ServiceAgent with D-Bus mocking
+- `test_package_installer_mocked.cpp` - PackageInstaller with D-Bus mocking
 
 ### Mock Framework
 - `mocks/mock_http_client.h` - HTTP client mocking interface
 - `mocks/mock_dbus_client.h` - D-Bus client mocking interface
 - `mocks/mockable_server_agent.*` - ServerAgent wrapper with dependency injection
-- `mocks/mockable_service_agent.*` - ServiceAgent wrapper with dependency injection
+- `mocks/mockable_package_installer.*` - PackageInstaller wrapper with dependency injection
 
 ## Test Structure
 
@@ -42,7 +42,7 @@ The project uses Google Test (gtest) and Google Mock (gmock) frameworks for comp
 - Feedback sending (with mock scenarios)
 - Error handling
 
-#### ServiceAgent Tests (`test_service_agent.cpp`)
+#### PackageInstaller Tests (`test_package_installer.cpp`)
 - Constructor and initialization
 - D-Bus connection handling
 - Bundle installation (with mock scenarios)
@@ -159,9 +159,9 @@ Tests that require network connectivity (for target device):
 
 ### D-Bus-Dependent Tests (Cross-Compilation Only)
 Tests that require D-Bus service (for target device):
-- `ServiceAgentTest.ConnectWithoutService`
-- `ServiceAgentTest.InstallBundle*`
-- `ServiceAgentTest.GetStatus*`
+- `PackageInstallerTest.ConnectWithoutService`
+- `PackageInstallerTest.InstallPackage*`
+- `PackageInstallerTest.GetStatus*`
 
 ## Test Environment
 
@@ -223,7 +223,7 @@ ctest --output-on-failure --verbose
 ```bash
 ./build/tests/update-agent-tests --gtest_filter="ConfigTest.*"
 ./build/tests/update-agent-tests --gtest_filter="ServerAgentTest.*"
-./build/tests/update-agent-tests --gtest_filter="ServiceAgentTest.*"
+./build/tests/update-agent-tests --gtest_filter="PackageInstallerTest.*"
 ./build/tests/update-agent-tests --gtest_filter="IntegrationTest.*"
 ```
 
@@ -281,7 +281,7 @@ ldd build/tests/update-agent-tests
 - **MockHttpClient**: HTTP operations mocking (GET, POST, download)
 - **MockDbusClient**: D-Bus operations mocking (connect, service, install, status)
 - **MockableServerAgent**: ServerAgent wrapper with dependency injection
-- **MockableServiceAgent**: ServiceAgent wrapper with dependency injection
+- **MockablePackageInstaller**: PackageInstaller wrapper with dependency injection
 - **SimpleJsonParser**: Mock JSON parsing for testing
 
 #### 3. Test Scripts

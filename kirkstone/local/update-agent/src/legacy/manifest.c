@@ -4,10 +4,10 @@
 #include <glib.h>
 #include <gio/gio.h>
 
-#include "../../include/rauc/manifest.h"
-#include "../../include/rauc/checksum.h"
-#include "../../include/rauc/utils.h"
-#include "../../include/rauc/context.h"
+#include "../../include/legacy/manifest.h"
+#include "../../include/legacy/checksum.h"
+#include "../../include/legacy/utils.h"
+#include "../../include/legacy/context.h"
 
 RaucManifest* r_manifest_new(void)
 {

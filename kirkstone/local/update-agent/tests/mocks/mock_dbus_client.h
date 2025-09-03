@@ -2,7 +2,7 @@
  * @file mock_dbus_client.h
  * @brief D-Bus 클라이언트 모킹 인터페이스
  *
- * ServiceAgent의 D-Bus 통신을 모킹하기 위한 인터페이스입니다.
+ * PackageInstaller의 D-Bus 통신을 모킹하기 위한 인터페이스입니다.
  * 실제 D-Bus 서비스 없이 테스트할 수 있도록 합니다.
  */
 
@@ -17,7 +17,7 @@
  * @class MockDbusClient
  * @brief D-Bus 클라이언트 모킹 클래스
  *
- * ServiceAgent의 D-Bus 통신을 모킹하여
+ * PackageInstaller의 D-Bus 통신을 모킹하여
  * 실제 RAUC 서비스 없이 테스트할 수 있도록 합니다.
  */
 class MockDbusClient {
@@ -49,10 +49,10 @@ public:
 
     /**
      * @brief 번들 설치 모킹
-     * @param bundle_path 번들 파일 경로
+     * @param package_path 패키지 파일 경로
      * @return 설치 시작 성공 여부
      */
-    MOCK_METHOD(bool, installBundle, (const std::string& bundle_path), ());
+    MOCK_METHOD(bool, installPackage, (const std::string& package_path), ());
 
     /**
      * @brief 상태 조회 모킹
@@ -82,11 +82,11 @@ public:
 
     /**
      * @brief 번들 정보 조회 모킹
-     * @param bundle_path 번들 파일 경로
-     * @param info 번들 정보를 받을 문자열 참조
+     * @param package_path 패키지 파일 경로
+     * @param info 패키지 정보를 받을 문자열 참조
      * @return 조회 성공 여부
      */
-    MOCK_METHOD(bool, getBundleInfo, (const std::string& bundle_path, std::string& info), ());
+    MOCK_METHOD(bool, getPackageInfo, (const std::string& package_path, std::string& info), ());
 
     /**
      * @brief 진행률 콜백 설정 모킹

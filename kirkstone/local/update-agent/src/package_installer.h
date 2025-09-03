@@ -1,28 +1,28 @@
-#ifndef SERVICE_AGENT_H
-#define SERVICE_AGENT_H
+#ifndef PACKAGE_INSTALLER_H
+#define PACKAGE_INSTALLER_H
 
 #include <string>
 #include <functional>
 #include <memory>
 #include "update_client.h"
 
-class ServiceAgent {
+class PackageInstaller {
 public:
-    ServiceAgent();
-    ~ServiceAgent();
+    PackageInstaller();
+    ~PackageInstaller();
 
     bool connect();
     void disconnect();
     bool isConnected() const;
     bool checkService();
 
-    bool installBundle(const std::string& bundle_path);
-    bool installBundleAsync(const std::string& bundle_path);
+    bool installPackage(const std::string& package_path);
+    bool installPackageAsync(const std::string& package_path);
     bool getStatus(std::string& status);
     bool getBootSlot(std::string& boot_slot);
     bool markGood();
     bool markBad();
-    bool getBundleInfo(const std::string& bundle_path, std::string& info);
+    bool getPackageInfo(const std::string& package_path, std::string& info);
 
     void setProgressCallback(std::function<void(int)> callback);
     void setCompletedCallback(std::function<void(bool, const std::string&)> callback);
@@ -39,4 +39,4 @@ private:
     void onCompletedCallback(InstallResult result, const std::string& message);
 };
 
-#endif // SERVICE_AGENT_H
+#endif // PACKAGE_INSTALLER_H

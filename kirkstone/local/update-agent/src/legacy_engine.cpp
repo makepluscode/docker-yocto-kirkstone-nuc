@@ -1,11 +1,11 @@
-#include "rauc_engine.h"
+#include "legacy_engine.h"
 
 #ifdef WITH_DLT
 #include <dlt/dlt.h>
 DLT_DECLARE_CONTEXT(dlt_context_engine);
 #endif
 
-RaucEngine::RaucEngine()
+LegacyEngine::LegacyEngine()
     : initialized_(false)
     , installing_(false)
     , last_error_("")
@@ -18,12 +18,12 @@ RaucEngine::RaucEngine()
     , system_compatible_("")
 {
 #ifdef WITH_DLT
-    DLT_REGISTER_CONTEXT(dlt_context_engine, "RENG", "RAUC Engine");
+    DLT_REGISTER_CONTEXT(dlt_context_engine, "LENG", "Legacy Engine");
 #endif
-    logInfo("RaucEngine constructor called");
+    logInfo("LegacyEngine constructor called");
 }
 
-RaucEngine::~RaucEngine() {
+LegacyEngine::~LegacyEngine() {
     if (initialized_) {
         // 정리 작업
         r_context_cleanup();
@@ -34,13 +34,13 @@ RaucEngine::~RaucEngine() {
 #endif
 }
 
-bool RaucEngine::initialize(const std::string& config_file_path) {
+bool LegacyEngine::initialize(const std::string& config_file_path) {
     if (initialized_) {
         return true;
     }
 
     config_file_path_ = config_file_path;
-    logInfo("Starting RAUC engine initialization with config: " + config_file_path_);
+    logInfo("Starting Legacy engine initialization with config: " + config_file_path_);
 
     // RAUC 컨텍스트 초기화
     logInfo("Initializing RAUC context...");
@@ -93,15 +93,15 @@ bool RaucEngine::initialize(const std::string& config_file_path) {
     initialized_ = true;
     current_operation_ = "idle";
 
-    logInfo("RAUC Engine initialized successfully");
+    logInfo("Legacy Engine initialized successfully");
     return true;
 }
 
-bool RaucEngine::installBundle(const std::string& bundle_path,
+bool LegacyEngine::installPackage(const std::string& package_path,
                               ProgressCallback progress_callback,
                               CompletedCallback completed_callback) {
     if (!initialized_) {
-        last_error_ = "RAUC Engine not initialized";
+        last_error_ = "Legacy Engine not initialized";
         logError(last_error_);
         return false;
     }
@@ -121,7 +121,7 @@ bool RaucEngine::installBundle(const std::string& bundle_path,
     current_progress_ = ProgressInfo(0, "Starting installation", 0);
 
     // 설치 시작
-    bool success = doInstallBundle(bundle_path);
+    bool success = doInstallPackage(package_path);
 
     if (!success) {
         installing_ = false;
@@ -138,9 +138,9 @@ bool RaucEngine::installBundle(const std::string& bundle_path,
     return true;
 }
 
-std::vector<SlotInfo> RaucEngine::getSlotStatus() {
+std::vector<SlotInfo> LegacyEngine::getSlotStatus() {
     if (!initialized_) {
-        logError("RAUC Engine not initialized");
+        logError("Legacy Engine not initialized");
         return {};
     }
 
@@ -153,9 +153,9 @@ std::vector<SlotInfo> RaucEngine::getSlotStatus() {
     return convertSlotsToVector(slots);
 }
 
-std::string RaucEngine::getBootSlot() {
+std::string LegacyEngine::getBootSlot() {
     if (!initialized_) {
-        logError("RAUC Engine not initialized");
+        logError("Legacy Engine not initialized");
         return "";
     }
 
@@ -163,9 +163,9 @@ std::string RaucEngine::getBootSlot() {
     return bootslot ? std::string(bootslot) : "";
 }
 
-std::string RaucEngine::getCompatible() {
+std::string LegacyEngine::getCompatible() {
     if (!initialized_) {
-        logError("RAUC Engine not initialized");
+        logError("Legacy Engine not initialized");
         return "";
     }
 
@@ -173,23 +173,23 @@ std::string RaucEngine::getCompatible() {
     return compatible ? std::string(compatible) : "";
 }
 
-ProgressInfo RaucEngine::getCurrentProgress() {
+ProgressInfo LegacyEngine::getCurrentProgress() {
     return current_progress_;
 }
 
-std::string RaucEngine::getLastError() {
+std::string LegacyEngine::getLastError() {
     return last_error_;
 }
 
-std::string RaucEngine::getOperation() {
+std::string LegacyEngine::getOperation() {
     return current_operation_;
 }
 
-bool RaucEngine::getBundleInfo(const std::string& bundle_path,
-                              std::string& compatible,
-                              std::string& version) {
+bool LegacyEngine::getPackageInfo(const std::string& package_path,
+                                std::string& compatible,
+                                std::string& version) {
     if (!initialized_) {
-        last_error_ = "RAUC Engine not initialized";
+        last_error_ = "Legacy Engine not initialized";
         logError(last_error_);
         return false;
     }
@@ -198,8 +198,8 @@ bool RaucEngine::getBundleInfo(const std::string& bundle_path,
     gchar* compat_str = nullptr;
     gchar* version_str = nullptr;
 
-    // 번들 정보 가져오기
-    gboolean success = r_bundle_get_info(bundle_path.c_str(), &compat_str, &version_str, &error);
+    // 패키지 정보 가져오기
+    gboolean success = r_bundle_get_info(package_path.c_str(), &compat_str, &version_str, &error);
 
     if (!success || error) {
         if (error) {
@@ -224,17 +224,17 @@ bool RaucEngine::getBundleInfo(const std::string& bundle_path,
     return true;
 }
 
-bool RaucEngine::isInstalling() const {
+bool LegacyEngine::isInstalling() const {
     return installing_;
 }
 
-bool RaucEngine::isInitialized() const {
+bool LegacyEngine::isInitialized() const {
     return initialized_;
 }
 
 // Private 메서드들
 
-bool RaucEngine::loadSystemConfig() {
+bool LegacyEngine::loadSystemConfig() {
     GError* error = nullptr;
     logInfo("Loading config file: " + config_file_path_);
 
@@ -267,7 +267,7 @@ bool RaucEngine::loadSystemConfig() {
     return true;
 }
 
-bool RaucEngine::determineSlotStates() {
+bool LegacyEngine::determineSlotStates() {
     GError* error = nullptr;
 
     // 슬롯 상태 결정
@@ -286,7 +286,7 @@ bool RaucEngine::determineSlotStates() {
     return true;
 }
 
-bool RaucEngine::determineBootStates() {
+bool LegacyEngine::determineBootStates() {
     GError* error = nullptr;
 
     // 부트 상태 결정
@@ -305,11 +305,11 @@ bool RaucEngine::determineBootStates() {
     return true;
 }
 
-bool RaucEngine::checkBundle(const std::string& bundle_path, RaucBundle** bundle) {
+bool LegacyEngine::checkPackage(const std::string& package_path, RaucBundle** bundle) {
     GError* error = nullptr;
 
     // 번들 검증 (서명 검증 포함)
-    gboolean success = check_bundle(bundle_path.c_str(), bundle, CHECK_BUNDLE_DEFAULT, nullptr, &error);
+    gboolean success = check_bundle(package_path.c_str(), bundle, CHECK_BUNDLE_DEFAULT, nullptr, &error);
 
     if (!success || error) {
         if (error) {
@@ -324,7 +324,7 @@ bool RaucEngine::checkBundle(const std::string& bundle_path, RaucBundle** bundle
     return true;
 }
 
-bool RaucEngine::doInstallBundle(const std::string& bundle_path) {
+bool LegacyEngine::doInstallPackage(const std::string& package_path) {
     GError* error = nullptr;
 
     // 설치 인자 생성
@@ -334,13 +334,13 @@ bool RaucEngine::doInstallBundle(const std::string& bundle_path) {
         return false;
     }
 
-    args->bundle_path = g_strdup(bundle_path.c_str());
+    args->bundle_path = g_strdup(package_path.c_str());
     args->progress_callback = onProgressUpdate;
     args->completed_callback = onInstallCompleted;
     args->user_data = this;
 
     // 설치 실행
-    gboolean success = install_run_simple(bundle_path.c_str(),
+    gboolean success = install_run_simple(package_path.c_str(),
                                          onProgressUpdate,
                                          onInstallCompleted,
                                          this,
@@ -362,8 +362,8 @@ bool RaucEngine::doInstallBundle(const std::string& bundle_path) {
     return true;
 }
 
-void RaucEngine::onProgressUpdate(int percentage, const char* message, int nesting_depth, void* user_data) {
-    RaucEngine* engine = static_cast<RaucEngine*>(user_data);
+void LegacyEngine::onProgressUpdate(int percentage, const char* message, int nesting_depth, void* user_data) {
+    LegacyEngine* engine = static_cast<LegacyEngine*>(user_data);
     if (!engine) return;
 
     engine->current_progress_ = ProgressInfo(percentage, message ? message : "", 0);
@@ -377,8 +377,8 @@ void RaucEngine::onProgressUpdate(int percentage, const char* message, int nesti
                     (message ? message : ""));
 }
 
-void RaucEngine::onInstallCompleted(RInstallResult result, const char* message, void* user_data) {
-    RaucEngine* engine = static_cast<RaucEngine*>(user_data);
+void LegacyEngine::onInstallCompleted(RInstallResult result, const char* message, void* user_data) {
+    LegacyEngine* engine = static_cast<LegacyEngine*>(user_data);
     if (!engine) return;
 
     engine->installing_ = false;
@@ -400,7 +400,7 @@ void RaucEngine::onInstallCompleted(RInstallResult result, const char* message, 
     }
 }
 
-std::vector<SlotInfo> RaucEngine::convertSlotsToVector(GHashTable* slots) {
+std::vector<SlotInfo> LegacyEngine::convertSlotsToVector(GHashTable* slots) {
     std::vector<SlotInfo> slot_list;
 
     if (!slots) {
@@ -470,26 +470,26 @@ std::vector<SlotInfo> RaucEngine::convertSlotsToVector(GHashTable* slots) {
     return slot_list;
 }
 
-void RaucEngine::logInfo(const std::string& message) {
+void LegacyEngine::logInfo(const std::string& message) {
 #ifdef WITH_DLT
     DLT_LOG(dlt_context_engine, DLT_LOG_INFO, DLT_CSTRING(message.c_str()));
 #else
-    g_info("RaucEngine: %s", message.c_str());
+    g_info("LegacyEngine: %s", message.c_str());
 #endif
 }
 
-void RaucEngine::logError(const std::string& message) {
+void LegacyEngine::logError(const std::string& message) {
 #ifdef WITH_DLT
     DLT_LOG(dlt_context_engine, DLT_LOG_ERROR, DLT_CSTRING(message.c_str()));
 #else
-    g_critical("RaucEngine: %s", message.c_str());
+    g_critical("LegacyEngine: %s", message.c_str());
 #endif
 }
 
-void RaucEngine::logDebug(const std::string& message) {
+void LegacyEngine::logDebug(const std::string& message) {
 #ifdef WITH_DLT
     DLT_LOG(dlt_context_engine, DLT_LOG_DEBUG, DLT_CSTRING(message.c_str()));
 #else
-    g_debug("RaucEngine: %s", message.c_str());
+    g_debug("LegacyEngine: %s", message.c_str());
 #endif
 }

@@ -1,5 +1,5 @@
 #include "server_agent.h"
-#include "service_agent.h"
+#include "package_installer.h"
 #include "config.h"
 #include <dlt/dlt.h>
 #include <chrono>
@@ -21,36 +21,36 @@ class UpdateAgent {
 public:
     UpdateAgent()
         : server_agent_(HOST_SERVER_URL, HOST_TENANT, DEVICE_ID),
-          service_agent_() {
+          package_installer_() {
 
         DLT_REGISTER_CONTEXT(dlt_context_main, "MAIN", "Update Agent Main");
         DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Initializing Update Orchestrator"));
 
-        // Set up ServiceAgent callbacks
-        service_agent_.setProgressCallback([this](int progress) {
+        // Set up PackageInstaller callbacks
+        package_installer_.setProgressCallback([this](int progress) {
             handleInstallProgress(progress);
         });
 
-        service_agent_.setCompletedCallback([this](bool success, const std::string& message) {
+        package_installer_.setCompletedCallback([this](bool success, const std::string& message) {
             handleInstallCompleted(success, message);
         });
     }
 
     ~UpdateAgent() {
         DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Shutting down Update Orchestrator"));
-        service_agent_.disconnect();
+        package_installer_.disconnect();
         DLT_UNREGISTER_CONTEXT(dlt_context_main);
     }
 
     bool initialize() {
         DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Connecting to update service"));
 
-        if (!service_agent_.connect()) {
+        if (!package_installer_.connect()) {
             DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to connect to update service"));
             return false;
         }
 
-        if (!service_agent_.checkService()) {
+        if (!package_installer_.checkService()) {
             DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Update service is not available"));
             return false;
         }
@@ -65,7 +65,7 @@ public:
         while (g_running) {
             try {
                 // Process D-Bus messages to handle update-service signals
-                service_agent_.processMessages();
+                package_installer_.processMessages();
 
                 checkForUpdates();
                 std::this_thread::sleep_for(std::chrono::seconds(POLL_INTERVAL_SECONDS));
@@ -80,7 +80,7 @@ public:
 
 private:
     ServerAgent server_agent_;
-    ServiceAgent service_agent_;
+    PackageInstaller package_installer_;
     std::string current_execution_id_;
     bool installation_in_progress_ = false;
     bool installation_started_ = false; // Flag to stop polling after installation starts
@@ -144,17 +144,17 @@ private:
 
         DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Bundle downloaded successfully"));
 
-        // Install bundle via ServiceAgent
+        // Install bundle via PackageInstaller
         DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Starting bundle installation"));
 
-        if (!service_agent_.installBundle(UPDATE_BUNDLE_PATH)) {
-            DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to start bundle installation"));
+        if (!package_installer_.installPackage(UPDATE_BUNDLE_PATH)) {
+            DLT_LOG(dlt_context_main, DLT_LOG_ERROR, DLT_STRING("Failed to start package installation"));
             server_agent_.sendFinishedFeedback(current_execution_id_, false, "Installation failed to start");
             installation_in_progress_ = false;
             return;
         }
 
-        DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Bundle installation started"));
+        DLT_LOG(dlt_context_main, DLT_LOG_INFO, DLT_STRING("Package installation started"));
         // Installation completion will be handled by callback
     }
 

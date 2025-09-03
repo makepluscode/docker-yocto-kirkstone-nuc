@@ -17,32 +17,32 @@ pkg_check_modules(OPENSSL REQUIRED openssl)
 # Enable DLT support
 add_definitions(-DWITH_DLT)
 
-# RAUC source files
-set(RAUC_SOURCES
-    src/rauc/bundle.c
-    src/rauc/install.c
-    src/rauc/slot.c
-    src/rauc/manifest.c
-    src/rauc/checksum.c
-    src/rauc/utils.c
-    src/rauc/context.c
-    src/rauc/config_file.c
-    src/rauc/stubs.c
-    src/rauc/signature.c
-    src/rauc/bootchooser.c
+# Legacy RAUC source files
+set(LEGACY_SOURCES
+    src/legacy/bundle.c
+    src/legacy/install.c
+    src/legacy/slot.c
+    src/legacy/manifest.c
+    src/legacy/checksum.c
+    src/legacy/utils.c
+    src/legacy/context.c
+    src/legacy/config_file.c
+    src/legacy/stubs.c
+    src/legacy/signature.c
+    src/legacy/bootchooser.c
 )
 
 # C++ wrapper sources
 set(CPP_SOURCES
     src/update_client.cpp
-    src/rauc_engine.cpp
+    src/legacy_engine.cpp
 )
 
 add_executable(update-agent
     src/main.cpp
     src/server_agent.cpp
-    src/service_agent.cpp
-    ${RAUC_SOURCES}
+    src/package_installer.cpp
+    ${LEGACY_SOURCES}
     ${CPP_SOURCES}
 )
 

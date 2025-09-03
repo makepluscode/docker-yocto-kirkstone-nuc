@@ -1,22 +1,22 @@
 #include <dlt/dlt.h>
 #include <cstring>
 #include <unistd.h> // For access()
-#include "service_agent.h"
+#include "package_installer.h"
 
 DLT_DECLARE_CONTEXT(dlt_context_updater);
 
-ServiceAgent::ServiceAgent() : connected_(false) {
-    DLT_REGISTER_CONTEXT(dlt_context_updater, "SVCA", "Service Agent - Update Library Client");
-    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Initializing Service Agent (Update Library Client)"));
+PackageInstaller::PackageInstaller() : connected_(false) {
+    DLT_REGISTER_CONTEXT(dlt_context_updater, "PKGI", "Package Installer - Update Library Client");
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Initializing Package Installer (Update Library Client)"));
 }
 
-ServiceAgent::~ServiceAgent() {
-    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Destroying Service Agent"));
+PackageInstaller::~PackageInstaller() {
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Destroying Package Installer"));
     disconnect();
     DLT_UNREGISTER_CONTEXT(dlt_context_updater);
 }
 
-bool ServiceAgent::connect() {
+bool PackageInstaller::connect() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Connecting to update library"));
 
     // Create update client instance
@@ -43,7 +43,7 @@ bool ServiceAgent::connect() {
     return true;
 }
 
-void ServiceAgent::disconnect() {
+void PackageInstaller::disconnect() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Disconnecting from update library"));
     if (update_client_) {
         update_client_.reset();
@@ -52,11 +52,11 @@ void ServiceAgent::disconnect() {
     connected_ = false;
 }
 
-bool ServiceAgent::isConnected() const {
+bool PackageInstaller::isConnected() const {
     return connected_ && update_client_ && update_client_->isInitialized();
 }
 
-bool ServiceAgent::checkService() {
+bool PackageInstaller::checkService() {
     if (!isConnected()) {
         DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to update library"));
         return false;
@@ -88,51 +88,51 @@ bool ServiceAgent::checkService() {
     }
 }
 
-bool ServiceAgent::installBundle(const std::string& bundle_path) {
-    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Installing bundle: "), DLT_STRING(bundle_path.c_str()));
+bool PackageInstaller::installPackage(const std::string& package_path) {
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Installing package: "), DLT_STRING(package_path.c_str()));
 
     // Check if file exists and is readable
-    if (access(bundle_path.c_str(), F_OK) != 0) {
-        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle file does not exist: "), DLT_STRING(bundle_path.c_str()));
+    if (access(package_path.c_str(), F_OK) != 0) {
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Package file does not exist: "), DLT_STRING(package_path.c_str()));
         return false;
     }
 
-    if (access(bundle_path.c_str(), R_OK) != 0) {
-        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle file is not readable: "), DLT_STRING(bundle_path.c_str()));
+    if (access(package_path.c_str(), R_OK) != 0) {
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Package file is not readable: "), DLT_STRING(package_path.c_str()));
         return false;
     }
 
-    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Bundle file exists and is readable"));
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Package file exists and is readable"));
 
     // Check update library status before attempting installation
     if (!checkService()) {
-        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Update library is not available, cannot install bundle"));
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Update library is not available, cannot install package"));
         return false;
     }
 
     // Check if already installing
     if (update_client_->isInstalling()) {
-        DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Bundle installation already in progress"));
+        DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Package installation already in progress"));
         return false;
     }
 
-    bool result = update_client_->install(bundle_path);
+    bool result = update_client_->install(package_path);
 
     if (result) {
-        DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Bundle installation started successfully"));
+        DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Package installation started successfully"));
     } else {
-        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Bundle installation failed to start: "), DLT_STRING(update_client_->getLastError().c_str()));
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Package installation failed to start: "), DLT_STRING(update_client_->getLastError().c_str()));
     }
 
     return result;
 }
 
-bool ServiceAgent::installBundleAsync(const std::string& bundle_path) {
-    // For update-library, install is already async, so just call installBundle
-    return installBundle(bundle_path);
+bool PackageInstaller::installPackageAsync(const std::string& package_path) {
+    // For update-library, install is already async, so just call installPackage
+    return installPackage(package_path);
 }
 
-bool ServiceAgent::getStatus(std::string& status) {
+bool PackageInstaller::getStatus(std::string& status) {
     if (!isConnected()) {
         DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to update library"));
         return false;
@@ -150,7 +150,7 @@ bool ServiceAgent::getStatus(std::string& status) {
     }
 }
 
-bool ServiceAgent::getBootSlot(std::string& boot_slot) {
+bool PackageInstaller::getBootSlot(std::string& boot_slot) {
     if (!isConnected()) {
         DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to update library"));
         return false;
@@ -168,7 +168,7 @@ bool ServiceAgent::getBootSlot(std::string& boot_slot) {
     }
 }
 
-bool ServiceAgent::markGood() {
+bool PackageInstaller::markGood() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Marking current slot as good"));
 
     if (!isConnected()) {
@@ -183,7 +183,7 @@ bool ServiceAgent::markGood() {
     return false;
 }
 
-bool ServiceAgent::markBad() {
+bool PackageInstaller::markBad() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Marking current slot as bad"));
 
     if (!isConnected()) {
@@ -198,8 +198,8 @@ bool ServiceAgent::markBad() {
     return false;
 }
 
-bool ServiceAgent::getBundleInfo(const std::string& bundle_path, std::string& info) {
-    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Getting bundle info for: "), DLT_STRING(bundle_path.c_str()));
+bool PackageInstaller::getPackageInfo(const std::string& package_path, std::string& info) {
+    DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Getting package info for: "), DLT_STRING(package_path.c_str()));
 
     if (!isConnected()) {
         DLT_LOG(dlt_context_updater, DLT_LOG_WARN, DLT_STRING("Not connected to update library"));
@@ -207,7 +207,7 @@ bool ServiceAgent::getBundleInfo(const std::string& bundle_path, std::string& in
     }
 
     std::string compatible, version;
-    if (update_client_->getBundleInfo(bundle_path, compatible, version)) {
+    if (update_client_->getPackageInfo(package_path, compatible, version)) {
         info = "Compatible: " + compatible + ", Version: " + version;
         DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Bundle info: "), DLT_STRING(info.c_str()));
         return true;
@@ -217,15 +217,15 @@ bool ServiceAgent::getBundleInfo(const std::string& bundle_path, std::string& in
     }
 }
 
-void ServiceAgent::setProgressCallback(std::function<void(int)> callback) {
+void PackageInstaller::setProgressCallback(std::function<void(int)> callback) {
     progress_callback_ = callback;
 }
 
-void ServiceAgent::setCompletedCallback(std::function<void(bool, const std::string&)> callback) {
+void PackageInstaller::setCompletedCallback(std::function<void(bool, const std::string&)> callback) {
     completed_callback_ = callback;
 }
 
-void ServiceAgent::processMessages() {
+void PackageInstaller::processMessages() {
     // For update-library, message processing is handled internally
     // This method is kept for compatibility but does nothing
     if (isConnected() && update_client_->isInstalling()) {
@@ -234,7 +234,7 @@ void ServiceAgent::processMessages() {
     }
 }
 
-void ServiceAgent::onProgressCallback(const ProgressInfo& progress) {
+void PackageInstaller::onProgressCallback(const ProgressInfo& progress) {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Progress: "), DLT_INT(progress.percentage), DLT_STRING("% - "), DLT_STRING(progress.message.c_str()));
 
     if (progress_callback_) {
@@ -245,7 +245,7 @@ void ServiceAgent::onProgressCallback(const ProgressInfo& progress) {
     }
 }
 
-void ServiceAgent::onCompletedCallback(InstallResult result, const std::string& message) {
+void PackageInstaller::onCompletedCallback(InstallResult result, const std::string& message) {
     bool success = (result == InstallResult::SUCCESS);
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Installation completed: "), DLT_BOOL(success), DLT_STRING(" - "), DLT_STRING(message.c_str()));
 

@@ -1,5 +1,5 @@
 #include "update_client.h"
-#include "rauc_engine.h"
+#include "legacy_engine.h"
 
 #ifdef WITH_DLT
 #include <dlt/dlt.h>
@@ -18,7 +18,7 @@ UpdateClient::UpdateClient()
     DLT_REGISTER_CONTEXT(dlt_context_client, "UCLI", "Update Client");
 #endif
 
-    rauc_engine_ = std::make_unique<RaucEngine>();
+    rauc_engine_ = std::make_unique<LegacyEngine>();
 }
 
 UpdateClient::~UpdateClient() {
@@ -55,7 +55,7 @@ bool UpdateClient::initialize(const std::string& config_file_path) {
     return true;
 }
 
-bool UpdateClient::install(const std::string& bundle_path) {
+bool UpdateClient::install(const std::string& package_path) {
     if (!initialized_) {
         if (error_callback_) {
             error_callback_("UpdateClient not initialized");
@@ -86,7 +86,7 @@ bool UpdateClient::install(const std::string& bundle_path) {
         }
     };
 
-    bool success = rauc_engine_->installBundle(bundle_path, progress_wrapper, completed_wrapper);
+    bool success = rauc_engine_->installPackage(package_path, progress_wrapper, completed_wrapper);
 
     if (!success) {
         installing_ = false;
@@ -97,12 +97,12 @@ bool UpdateClient::install(const std::string& bundle_path) {
 
 #ifdef WITH_DLT
     DLT_LOG(dlt_context_client, DLT_LOG_INFO,
-            DLT_CSTRING("Bundle installation"),
+            DLT_CSTRING("Package installation"),
             DLT_CSTRING(success ? "started" : "failed"),
             DLT_CSTRING("for"),
-            DLT_CSTRING(bundle_path.c_str()));
+            DLT_CSTRING(package_path.c_str()));
 #else
-    g_info("Bundle installation %s for %s", success ? "started" : "failed", bundle_path.c_str());
+    g_info("Package installation %s for %s", success ? "started" : "failed", package_path.c_str());
 #endif
 
     return success;
@@ -141,7 +141,7 @@ std::string UpdateClient::getCompatible() {
     return rauc_engine_->getCompatible();
 }
 
-bool UpdateClient::getBundleInfo(const std::string& bundle_path,
+bool UpdateClient::getPackageInfo(const std::string& package_path,
                                  std::string& compatible,
                                  std::string& version) {
     if (!initialized_) {
@@ -151,7 +151,7 @@ bool UpdateClient::getBundleInfo(const std::string& bundle_path,
         return false;
     }
 
-    return rauc_engine_->getBundleInfo(bundle_path, compatible, version);
+    return rauc_engine_->getPackageInfo(package_path, compatible, version);
 }
 
 ProgressInfo UpdateClient::getCurrentProgress() {

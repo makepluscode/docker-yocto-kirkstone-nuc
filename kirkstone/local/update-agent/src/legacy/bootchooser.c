@@ -4,9 +4,9 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include "../../include/rauc/bootchooser.h"
-#include "../../include/rauc/context.h"
-#include "../../include/rauc/utils.h"
+#include "../../include/legacy/bootchooser.h"
+#include "../../include/legacy/context.h"
+#include "../../include/legacy/utils.h"
 
 #define GRUB_EDITENV "grub-editenv"
 

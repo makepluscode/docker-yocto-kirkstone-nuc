@@ -58,7 +58,7 @@ The project includes comprehensive Google Test (gtest) framework integration wit
 ### Test Structure
 - **Configuration Tests**: Validate all configuration constants and settings
 - **ServerAgent Tests**: Test Hawkbit server communication and JSON parsing
-- **ServiceAgent Tests**: Test RAUC D-Bus communication and bundle installation
+- **PackageInstaller Tests**: Test RAUC D-Bus communication and package installation
 - **Integration Tests**: Test complete update flow and error handling
 
 ### Running Tests

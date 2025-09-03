@@ -28,7 +28,7 @@ public:
     MOCK_METHOD(void, disconnect, (), ());
     MOCK_METHOD(bool, isConnected, (), (const));
     MOCK_METHOD(bool, checkService, (), ());
-    MOCK_METHOD(bool, installBundle, (const std::string& bundle_path), ());
+    MOCK_METHOD(bool, installPackage, (const std::string& package_path), ());
     MOCK_METHOD(bool, getStatus, (std::string& status), ());
     MOCK_METHOD(bool, getBootSlot, (std::string& boot_slot), ());
     MOCK_METHOD(bool, markGood, (), ());
@@ -215,18 +215,18 @@ TEST_F(MockedOnlyTest, DbusServiceCheckMocking) {
  *
  * MockDbusClient의 번들 설치를 테스트합니다.
  */
-TEST_F(MockedOnlyTest, DbusBundleInstallMocking) {
+TEST_F(MockedOnlyTest, DbusPackageInstallMocking) {
     // Given: Mock D-Bus 클라이언트 설정
-    const std::string bundle_path = "/tmp/test-bundle.raucb";
+    const std::string package_path = "/tmp/test-bundle.raucb";
 
-    EXPECT_CALL(*mock_dbus_client_, installBundle(bundle_path))
+    EXPECT_CALL(*mock_dbus_client_, installPackage(package_path))
         .WillOnce(testing::Return(true));
 
-    // When: 번들 설치 실행
-    const bool result = mock_dbus_client_->installBundle(bundle_path);
+    // When: 패키지 설치 실행
+    const bool result = mock_dbus_client_->installPackage(package_path);
 
     // Then: 성공적으로 처리되어야 함
-    EXPECT_TRUE(result) << "번들 설치가 성공해야 합니다";
+    EXPECT_TRUE(result) << "패키지 설치가 성공해야 합니다";
 }
 
 /**
@@ -294,7 +294,7 @@ TEST_F(MockedOnlyTest, CompleteUpdateFlowMocking) {
     const std::string deployment_json = R"({"id": "deployment-123", "version": "2.1.0"})";
     const std::string download_url = "https://example.com/update.raucb";
     const std::string local_path = "/tmp/update.raucb";
-    const std::string bundle_path = "/tmp/update.raucb";
+    const std::string package_path = "/tmp/update.raucb";
     const std::string feedback_url = "https://hawkbit.example.com/feedback";
     const std::string feedback_data = R"({"status": "finished"})";
 
@@ -324,8 +324,8 @@ TEST_F(MockedOnlyTest, CompleteUpdateFlowMocking) {
     EXPECT_CALL(*mock_dbus_client_, checkService())
         .WillOnce(testing::Return(true));
 
-    // D-Bus 번들 설치 성공 설정
-    EXPECT_CALL(*mock_dbus_client_, installBundle(bundle_path))
+    // D-Bus 패키지 설치 성공 설정
+    EXPECT_CALL(*mock_dbus_client_, installPackage(package_path))
         .WillOnce(testing::Return(true));
 
     // When: 전체 업데이트 플로우 실행
@@ -349,10 +349,10 @@ TEST_F(MockedOnlyTest, CompleteUpdateFlowMocking) {
     // 5. D-Bus 서비스 확인
     bool service_result = mock_dbus_client_->checkService();
 
-    // 6. D-Bus 번들 설치
+    // 6. D-Bus 패키지 설치
     bool install_result = false;
     if (connect_result && service_result) {
-        install_result = mock_dbus_client_->installBundle(bundle_path);
+        install_result = mock_dbus_client_->installPackage(package_path);
     }
 
     // 7. HTTP 피드백 전송
@@ -369,7 +369,7 @@ TEST_F(MockedOnlyTest, CompleteUpdateFlowMocking) {
     EXPECT_TRUE(download_result) << "HTTP 다운로드가 성공해야 합니다";
     EXPECT_TRUE(connect_result) << "D-Bus 연결이 성공해야 합니다";
     EXPECT_TRUE(service_result) << "D-Bus 서비스 확인이 성공해야 합니다";
-    EXPECT_TRUE(install_result) << "D-Bus 번들 설치가 성공해야 합니다";
+    EXPECT_TRUE(install_result) << "D-Bus 패키지 설치가 성공해야 합니다";
     EXPECT_TRUE(feedback_result) << "HTTP 피드백 전송이 성공해야 합니다";
 }
 

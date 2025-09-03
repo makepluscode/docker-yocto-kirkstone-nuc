@@ -3,7 +3,7 @@
 #include "update_types.h"
 #include <memory>
 
-class RaucEngine;
+class LegacyEngine;
 
 /**
  * @brief Update 클라이언트 메인 인터페이스
@@ -24,11 +24,11 @@ public:
     bool initialize(const std::string& config_file_path = "");
 
     /**
-     * @brief 번들 설치 시작
-     * @param bundle_path 설치할 번들 파일 경로
+     * @brief 패키지 설치 시작
+     * @param package_path 설치할 패키지 파일 경로
      * @return 성공 시 true, 실패 시 false
      */
-    bool install(const std::string& bundle_path);
+    bool install(const std::string& package_path);
 
     /**
      * @brief 모든 슬롯의 상태 정보 가져오기
@@ -55,7 +55,7 @@ public:
      * @param version 버전 문자열 반환
      * @return 성공 시 true
      */
-    bool getBundleInfo(const std::string& bundle_path,
+    bool getPackageInfo(const std::string& package_path,
                       std::string& compatible,
                       std::string& version);
 
@@ -108,7 +108,7 @@ public:
     bool isInstalling() const;
 
 private:
-    std::unique_ptr<RaucEngine> rauc_engine_;
+    std::unique_ptr<LegacyEngine> rauc_engine_;
     CompletedCallback completed_callback_;
     ProgressCallback progress_callback_;
     ErrorCallback error_callback_;

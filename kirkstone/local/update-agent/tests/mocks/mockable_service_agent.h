@@ -1,39 +1,39 @@
 /**
- * @file mockable_service_agent.h
- * @brief 모킹 가능한 ServiceAgent 래퍼
+ * @file mockable_package_installer.h
+ * @brief 모킹 가능한 PackageInstaller 래퍼
  *
- * ServiceAgent의 D-Bus 통신을 모킹할 수 있도록
+ * PackageInstaller의 D-Bus 통신을 모킹할 수 있도록
  * 의존성 주입을 지원하는 래퍼 클래스입니다.
  */
 
-#ifndef MOCKABLE_SERVICE_AGENT_H
-#define MOCKABLE_SERVICE_AGENT_H
+#ifndef MOCKABLE_PACKAGE_INSTALLER_H
+#define MOCKABLE_PACKAGE_INSTALLER_H
 
 #include <memory>
 #include <string>
 #include <functional>
-#include "service_agent.h"
+#include "package_installer.h"
 #include "mock_dbus_client.h"
 
 /**
- * @class MockableServiceAgent
- * @brief 모킹 가능한 ServiceAgent 래퍼 클래스
+ * @class MockablePackageInstaller
+ * @brief 모킹 가능한 PackageInstaller 래퍼 클래스
  *
- * ServiceAgent의 D-Bus 통신을 모킹할 수 있도록
+ * PackageInstaller의 D-Bus 통신을 모킹할 수 있도록
  * 의존성 주입을 지원합니다.
  */
-class MockableServiceAgent {
+class MockablePackageInstaller {
 public:
     /**
      * @brief 생성자
      * @param dbus_client D-Bus 클라이언트 (선택적, nullptr이면 실제 클라이언트 사용)
      */
-    MockableServiceAgent(MockDbusClient* dbus_client = nullptr);
+    MockablePackageInstaller(MockDbusClient* dbus_client = nullptr);
 
     /**
      * @brief 소멸자
      */
-    ~MockableServiceAgent() = default;
+    ~MockablePackageInstaller() = default;
 
     /**
      * @brief D-Bus 연결 (모킹 가능)
@@ -60,10 +60,10 @@ public:
 
     /**
      * @brief 번들 설치 (모킹 가능)
-     * @param bundle_path 번들 파일 경로
+     * @param package_path 패키지 파일 경로
      * @return 설치 시작 성공 여부
      */
-    bool installBundle(const std::string& bundle_path);
+    bool installPackage(const std::string& package_path);
 
     /**
      * @brief 상태 조회 (모킹 가능)
@@ -93,11 +93,11 @@ public:
 
     /**
      * @brief 번들 정보 조회 (모킹 가능)
-     * @param bundle_path 번들 파일 경로
-     * @param info 번들 정보를 받을 문자열 참조
+     * @param package_path 패키지 파일 경로
+     * @param info 패키지 정보를 받을 문자열 참조
      * @return 조회 성공 여부
      */
-    bool getBundleInfo(const std::string& bundle_path, std::string& info);
+    bool getPackageInfo(const std::string& package_path, std::string& info);
 
     /**
      * @brief 진행률 콜백 설정 (모킹 가능)
@@ -117,8 +117,8 @@ public:
     void processMessages();
 
 private:
-    std::unique_ptr<ServiceAgent> real_agent_;
+    std::unique_ptr<PackageInstaller> real_agent_;
     MockDbusClient* mock_dbus_client_;
 };
 
-#endif // MOCKABLE_SERVICE_AGENT_H
+#endif // MOCKABLE_PACKAGE_INSTALLER_H

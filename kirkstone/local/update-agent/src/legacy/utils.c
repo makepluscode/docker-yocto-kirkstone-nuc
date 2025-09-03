@@ -1,4 +1,4 @@
-#include "rauc/utils.h"
+#include "legacy/utils.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>

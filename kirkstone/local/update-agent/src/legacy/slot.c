@@ -1,7 +1,7 @@
-#include "rauc/slot.h"
-#include "rauc/utils.h"
-#include "rauc/context.h"
-#include "rauc/checksum.h"
+#include "legacy/slot.h"
+#include "legacy/utils.h"
+#include "legacy/context.h"
+#include "legacy/checksum.h"
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/mount.h>

@@ -4,26 +4,26 @@
 #include <string>
 #include <memory>
 
-// Include RAUC headers for type definitions
+// Include Legacy RAUC headers for type definitions
 extern "C" {
-#include "rauc/context.h"
-#include "rauc/config_file.h"
-#include "rauc/bundle.h"
-#include "rauc/install.h"
-#include "rauc/slot.h"
-#include "rauc/utils.h"
+#include "legacy/context.h"
+#include "legacy/config_file.h"
+#include "legacy/bundle.h"
+#include "legacy/install.h"
+#include "legacy/slot.h"
+#include "legacy/utils.h"
 }
 
 /**
- * @brief RAUC 엔진 - RAUC 기능을 직접 구현한 C++ 래퍼 클래스
+ * @brief Legacy 엔진 - RAUC 기능을 직접 구현한 C++ 래퍼 클래스
  *
- * 이 클래스는 RAUC의 C 코드를 포팅하여 직접 번들 설치와 상태 조회 기능을 제공합니다.
+ * 이 클래스는 RAUC의 C 코드를 포팅하여 직접 패키지 설치와 상태 조회 기능을 제공합니다.
  * D-Bus 없이 동작하며 update-service에서 직접 사용할 수 있습니다.
  */
-class RaucEngine {
+class LegacyEngine {
 public:
-    RaucEngine();
-    ~RaucEngine();
+    LegacyEngine();
+    ~LegacyEngine();
 
     /**
      * @brief 엔진 초기화
@@ -33,13 +33,13 @@ public:
     bool initialize(const std::string& config_file_path = "/etc/rauc/system.conf");
 
     /**
-     * @brief 번들 설치 시작
-     * @param bundle_path 설치할 번들 파일 경로
+     * @brief 패키지 설치 시작
+     * @param package_path 설치할 패키지 파일 경로
      * @param progress_callback 진행률 콜백
      * @param completed_callback 완료 콜백
      * @return 성공 시 true
      */
-    bool installBundle(const std::string& bundle_path,
+    bool installPackage(const std::string& package_path,
                       ProgressCallback progress_callback = nullptr,
                       CompletedCallback completed_callback = nullptr);
 
@@ -80,13 +80,13 @@ public:
     std::string getOperation();
 
     /**
-     * @brief 번들 정보 확인
-     * @param bundle_path 번들 파일 경로
+     * @brief 패키지 정보 확인
+     * @param package_path 패키지 파일 경로
      * @param compatible 호환성 문자열 반환
      * @param version 버전 문자열 반환
      * @return 성공 시 true
      */
-    bool getBundleInfo(const std::string& bundle_path,
+    bool getPackageInfo(const std::string& package_path,
                       std::string& compatible,
                       std::string& version);
 
@@ -137,19 +137,19 @@ private:
     bool determineBootStates();
 
     /**
-     * @brief 번들 검증 (check_bundle 포팅)
-     * @param bundle_path 번들 경로
-     * @param bundle 번들 구조체 반환
+     * @brief 패키지 검증 (check_bundle 포팅)
+     * @param package_path 패키지 경로
+     * @param package 패키지 구조체 반환
      * @return 성공 시 true
      */
-    bool checkBundle(const std::string& bundle_path, RaucBundle** bundle);
+    bool checkPackage(const std::string& package_path, RaucBundle** package);
 
     /**
      * @brief 설치 실행 (do_install_bundle 포팅)
-     * @param bundle_path 번들 경로
+     * @param package_path 패키지 경로
      * @return 성공 시 true
      */
-    bool doInstallBundle(const std::string& bundle_path);
+    bool doInstallPackage(const std::string& package_path);
 
     /**
      * @brief 진행률 업데이트 콜백 (RAUC에서 호출)

@@ -1,18 +1,18 @@
 /**
- * @file mockable_service_agent.cpp
- * @brief 모킹 가능한 ServiceAgent 래퍼 구현
+ * @file mockable_package_installer.cpp
+ * @brief 모킹 가능한 PackageInstaller 래퍼 구현
  */
 
-#include "mockable_service_agent.h"
+#include "mockable_package_installer.h"
 
-MockableServiceAgent::MockableServiceAgent(MockDbusClient* dbus_client)
+MockablePackageInstaller::MockablePackageInstaller(MockDbusClient* dbus_client)
     : mock_dbus_client_(dbus_client) {
 
-    // 실제 ServiceAgent 생성
-    real_agent_ = std::make_unique<ServiceAgent>();
+    // 실제 PackageInstaller 생성
+    real_agent_ = std::make_unique<PackageInstaller>();
 }
 
-bool MockableServiceAgent::connect() {
+bool MockablePackageInstaller::connect() {
     if (mock_dbus_client_) {
         return mock_dbus_client_->connect();
     } else {
@@ -20,7 +20,7 @@ bool MockableServiceAgent::connect() {
     }
 }
 
-void MockableServiceAgent::disconnect() {
+void MockablePackageInstaller::disconnect() {
     if (mock_dbus_client_) {
         mock_dbus_client_->disconnect();
     } else {
@@ -28,7 +28,7 @@ void MockableServiceAgent::disconnect() {
     }
 }
 
-bool MockableServiceAgent::isConnected() const {
+bool MockablePackageInstaller::isConnected() const {
     if (mock_dbus_client_) {
         return mock_dbus_client_->isConnected();
     } else {
@@ -36,7 +36,7 @@ bool MockableServiceAgent::isConnected() const {
     }
 }
 
-bool MockableServiceAgent::checkService() {
+bool MockablePackageInstaller::checkService() {
     if (mock_dbus_client_) {
         return mock_dbus_client_->checkService();
     } else {
@@ -44,15 +44,15 @@ bool MockableServiceAgent::checkService() {
     }
 }
 
-bool MockableServiceAgent::installBundle(const std::string& bundle_path) {
+bool MockablePackageInstaller::installPackage(const std::string& package_path) {
     if (mock_dbus_client_) {
-        return mock_dbus_client_->installBundle(bundle_path);
+        return mock_dbus_client_->installPackage(package_path);
     } else {
-        return real_agent_->installBundle(bundle_path);
+        return real_agent_->installPackage(package_path);
     }
 }
 
-bool MockableServiceAgent::getStatus(std::string& status) {
+bool MockablePackageInstaller::getStatus(std::string& status) {
     if (mock_dbus_client_) {
         return mock_dbus_client_->getStatus(status);
     } else {
@@ -60,7 +60,7 @@ bool MockableServiceAgent::getStatus(std::string& status) {
     }
 }
 
-bool MockableServiceAgent::getBootSlot(std::string& boot_slot) {
+bool MockablePackageInstaller::getBootSlot(std::string& boot_slot) {
     if (mock_dbus_client_) {
         return mock_dbus_client_->getBootSlot(boot_slot);
     } else {
@@ -68,7 +68,7 @@ bool MockableServiceAgent::getBootSlot(std::string& boot_slot) {
     }
 }
 
-bool MockableServiceAgent::markGood() {
+bool MockablePackageInstaller::markGood() {
     if (mock_dbus_client_) {
         return mock_dbus_client_->markGood();
     } else {
@@ -76,7 +76,7 @@ bool MockableServiceAgent::markGood() {
     }
 }
 
-bool MockableServiceAgent::markBad() {
+bool MockablePackageInstaller::markBad() {
     if (mock_dbus_client_) {
         return mock_dbus_client_->markBad();
     } else {
@@ -84,15 +84,15 @@ bool MockableServiceAgent::markBad() {
     }
 }
 
-bool MockableServiceAgent::getBundleInfo(const std::string& bundle_path, std::string& info) {
+bool MockablePackageInstaller::getPackageInfo(const std::string& package_path, std::string& info) {
     if (mock_dbus_client_) {
-        return mock_dbus_client_->getBundleInfo(bundle_path, info);
+        return mock_dbus_client_->getPackageInfo(package_path, info);
     } else {
-        return real_agent_->getBundleInfo(bundle_path, info);
+        return real_agent_->getPackageInfo(package_path, info);
     }
 }
 
-void MockableServiceAgent::setProgressCallback(std::function<void(int)> callback) {
+void MockablePackageInstaller::setProgressCallback(std::function<void(int)> callback) {
     if (mock_dbus_client_) {
         mock_dbus_client_->setProgressCallback(callback);
     } else {
@@ -100,7 +100,7 @@ void MockableServiceAgent::setProgressCallback(std::function<void(int)> callback
     }
 }
 
-void MockableServiceAgent::setCompletedCallback(std::function<void(bool, const std::string&)> callback) {
+void MockablePackageInstaller::setCompletedCallback(std::function<void(bool, const std::string&)> callback) {
     if (mock_dbus_client_) {
         mock_dbus_client_->setCompletedCallback(callback);
     } else {
@@ -108,7 +108,7 @@ void MockableServiceAgent::setCompletedCallback(std::function<void(bool, const s
     }
 }
 
-void MockableServiceAgent::processMessages() {
+void MockablePackageInstaller::processMessages() {
     if (mock_dbus_client_) {
         mock_dbus_client_->processMessages();
     } else {

@@ -12,11 +12,11 @@
 #include <openssl/cms.h>
 #include <openssl/x509.h>
 
-#include "../../include/rauc/context.h"
-#include "../../include/rauc/bundle.h"
-#include "../../include/rauc/utils.h"
-#include "../../include/rauc/checksum.h"
-#include "../../include/rauc/signature.h"
+#include "../../include/legacy/context.h"
+#include "../../include/legacy/bundle.h"
+#include "../../include/legacy/utils.h"
+#include "../../include/legacy/checksum.h"
+#include "../../include/legacy/signature.h"
 
 static gchar *bundle_mount_point = NULL;
 

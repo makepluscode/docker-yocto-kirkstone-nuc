@@ -1,7 +1,7 @@
-#include "rauc/config_file.h"
-#include "rauc/context.h"
-#include "rauc/utils.h"
-#include "rauc/slot.h"
+#include "legacy/config_file.h"
+#include "legacy/context.h"
+#include "legacy/utils.h"
+#include "legacy/slot.h"
 #include <string.h>
 
 #ifdef WITH_DLT

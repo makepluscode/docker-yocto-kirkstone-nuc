@@ -1,5 +1,5 @@
-#include "../../include/rauc/checksum.h"
-#include "../../include/rauc/utils.h"
+#include "../../include/legacy/checksum.h"
+#include "../../include/legacy/utils.h"
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>

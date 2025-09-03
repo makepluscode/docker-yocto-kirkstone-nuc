@@ -8,14 +8,14 @@
 #include <fcntl.h>
 #include <glib.h>
 
-#include "../../include/rauc/context.h"
-#include "../../include/rauc/install.h"
-#include "../../include/rauc/bundle.h"
-#include "../../include/rauc/manifest.h"
-#include "../../include/rauc/slot.h"
-#include "../../include/rauc/utils.h"
-#include "../../include/rauc/checksum.h"
-#include "../../include/rauc/bootchooser.h"
+#include "../../include/legacy/context.h"
+#include "../../include/legacy/install.h"
+#include "../../include/legacy/bundle.h"
+#include "../../include/legacy/manifest.h"
+#include "../../include/legacy/slot.h"
+#include "../../include/legacy/utils.h"
+#include "../../include/legacy/checksum.h"
+#include "../../include/legacy/bootchooser.h"
 
 #ifdef WITH_DLT
 #include <dlt/dlt.h>

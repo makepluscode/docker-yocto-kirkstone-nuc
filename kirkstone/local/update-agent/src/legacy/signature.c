@@ -12,7 +12,7 @@
 #include <openssl/err.h>
 #include <openssl/bio.h>
 
-#include "../../include/rauc/signature.h"
+#include "../../include/legacy/signature.h"
 
 GQuark r_signature_error_quark(void)
 {
