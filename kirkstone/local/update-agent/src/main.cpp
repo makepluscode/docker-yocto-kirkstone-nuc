@@ -1,4 +1,4 @@
-#include "server_agent.h"
+#include "update_client.h"
 #include "package_installer.h"
 #include "config.h"
 #include <dlt/dlt.h>
@@ -79,7 +79,7 @@ public:
     }
 
 private:
-    ServerAgent server_agent_;
+    UpdateClient server_agent_;
     PackageInstaller package_installer_;
     std::string current_execution_id_;
     bool installation_in_progress_ = false;

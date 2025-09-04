@@ -8,19 +8,19 @@ The project uses Google Test (gtest) and Google Mock (gmock) frameworks for comp
 
 ### Core Test Files
 - `test_config.cpp` - Configuration constants and settings validation
-- `test_server_agent.cpp` - ServerAgent class functionality (comprehensive)
+- `test_server_agent.cpp` - UpdateClient class functionality (comprehensive)
 - `test_package_installer.cpp` - PackageInstaller class functionality (comprehensive)
 - `test_integration.cpp` - Integration tests and complete update flow
 
 ### Mocked Test Files
 - `test_mocked_only.cpp` - **Primary test file** - No external dependencies required
-- `test_server_agent_mocked.cpp` - ServerAgent with HTTP mocking
+- `test_server_agent_mocked.cpp` - UpdateClient with HTTP mocking
 - `test_package_installer_mocked.cpp` - PackageInstaller with D-Bus mocking
 
 ### Mock Framework
 - `mocks/mock_http_client.h` - HTTP client mocking interface
 - `mocks/mock_dbus_client.h` - D-Bus client mocking interface
-- `mocks/mockable_server_agent.*` - ServerAgent wrapper with dependency injection
+- `mocks/mockable_update_client.*` - UpdateClient wrapper with dependency injection
 - `mocks/mockable_package_installer.*` - PackageInstaller wrapper with dependency injection
 
 ## Test Structure
@@ -34,7 +34,7 @@ The project uses Google Test (gtest) and Google Mock (gmock) frameworks for comp
 - Logging configuration validation
 - Network configuration validation
 
-#### ServerAgent Tests (`test_server_agent.cpp`)
+#### UpdateClient Tests (`test_server_agent.cpp`)
 - Constructor and initialization
 - UpdateInfo structure validation
 - JSON response parsing (valid/invalid/empty)
@@ -144,7 +144,7 @@ make -j$(nproc)
 - ✅ `MockedOnlyTest.CompleteUpdateFlowMocking` - End-to-end update flow
 
 ### Comprehensive Tests (With Dependencies)
-**Files**: `test_server_agent.cpp`, `test_service_agent.cpp`, etc.
+**Files**: `test_server_agent.cpp`, `test_package_installer.cpp`, etc.
 - Configuration validation tests
 - JSON parsing tests (real implementation)
 - Structure validation tests
@@ -153,9 +153,9 @@ make -j$(nproc)
 
 ### Network-Dependent Tests (Cross-Compilation Only)
 Tests that require network connectivity (for target device):
-- `ServerAgentTest.PollForUpdates`
-- `ServerAgentTest.DownloadBundle*`
-- `ServerAgentTest.SendFeedback*`
+- `UpdateClientTest.PollForUpdates`
+- `UpdateClientTest.DownloadBundle*`
+- `UpdateClientTest.SendFeedback*`
 
 ### D-Bus-Dependent Tests (Cross-Compilation Only)
 Tests that require D-Bus service (for target device):
@@ -222,7 +222,7 @@ ctest --output-on-failure --verbose
 ### Individual Test Execution
 ```bash
 ./build/tests/update-agent-tests --gtest_filter="ConfigTest.*"
-./build/tests/update-agent-tests --gtest_filter="ServerAgentTest.*"
+./build/tests/update-agent-tests --gtest_filter="UpdateClientTest.*"
 ./build/tests/update-agent-tests --gtest_filter="PackageInstallerTest.*"
 ./build/tests/update-agent-tests --gtest_filter="IntegrationTest.*"
 ```
@@ -280,7 +280,7 @@ ldd build/tests/update-agent-tests
 #### 2. Mock Framework Architecture
 - **MockHttpClient**: HTTP operations mocking (GET, POST, download)
 - **MockDbusClient**: D-Bus operations mocking (connect, service, install, status)
-- **MockableServerAgent**: ServerAgent wrapper with dependency injection
+- **MockableUpdateClient**: UpdateClient wrapper with dependency injection
 - **MockablePackageInstaller**: PackageInstaller wrapper with dependency injection
 - **SimpleJsonParser**: Mock JSON parsing for testing
 

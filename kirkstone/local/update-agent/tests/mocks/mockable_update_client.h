@@ -1,27 +1,27 @@
 /**
- * @file mockable_server_agent.h
- * @brief 모킹 가능한 ServerAgent 래퍼
+ * @file mockable_update_client.h
+ * @brief 모킹 가능한 UpdateClient 래퍼
  *
- * ServerAgent의 HTTP 통신을 모킹할 수 있도록
+ * UpdateClient의 HTTP 통신을 모킹할 수 있도록
  * 의존성 주입을 지원하는 래퍼 클래스입니다.
  */
 
-#ifndef MOCKABLE_SERVER_AGENT_H
-#define MOCKABLE_SERVER_AGENT_H
+#ifndef MOCKABLE_UPDATE_CLIENT_H
+#define MOCKABLE_UPDATE_CLIENT_H
 
 #include <memory>
 #include <string>
-#include "server_agent.h"
+#include "update_client.h"
 #include "mock_http_client.h"
 
 /**
- * @class MockableServerAgent
- * @brief 모킹 가능한 ServerAgent 래퍼 클래스
+ * @class MockableUpdateClient
+ * @brief 모킹 가능한 UpdateClient 래퍼 클래스
  *
- * ServerAgent의 HTTP 통신을 모킹할 수 있도록
+ * UpdateClient의 HTTP 통신을 모킹할 수 있도록
  * 의존성 주입을 지원합니다.
  */
-class MockableServerAgent {
+class MockableUpdateClient {
 public:
     /**
      * @brief 생성자
@@ -30,7 +30,7 @@ public:
      * @param device_id 디바이스 ID
      * @param http_client HTTP 클라이언트 (선택적, nullptr이면 실제 클라이언트 사용)
      */
-    MockableServerAgent(const std::string& server_url,
+    MockableUpdateClient(const std::string& server_url,
                        const std::string& tenant,
                        const std::string& device_id,
                        MockHttpClient* http_client = nullptr);
@@ -38,7 +38,7 @@ public:
     /**
      * @brief 소멸자
      */
-    ~MockableServerAgent() = default;
+    ~MockableUpdateClient() = default;
 
     /**
      * @brief 업데이트 폴링 (모킹 가능)
@@ -98,11 +98,11 @@ public:
     bool parseUpdateResponse(const std::string& response, UpdateInfo& update_info);
 
 private:
-    std::unique_ptr<ServerAgent> real_agent_;
+    std::unique_ptr<UpdateClient> real_agent_;
     MockHttpClient* mock_http_client_;
     std::string server_url_;
     std::string tenant_;
     std::string device_id_;
 };
 
-#endif // MOCKABLE_SERVER_AGENT_H
+#endif // MOCKABLE_UPDATE_CLIENT_H 

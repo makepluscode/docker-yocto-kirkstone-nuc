@@ -57,7 +57,7 @@ The project includes comprehensive Google Test (gtest) framework integration wit
 
 ### Test Structure
 - **Configuration Tests**: Validate all configuration constants and settings
-- **ServerAgent Tests**: Test Hawkbit server communication and JSON parsing
+- **UpdateClient Tests**: Test Hawkbit server communication and JSON parsing
 - **PackageInstaller Tests**: Test RAUC D-Bus communication and package installation
 - **Integration Tests**: Test complete update flow and error handling
 
@@ -78,7 +78,7 @@ For detailed testing information, see [tests/TESTING.md](tests/TESTING.md).
 
 The application consists of:
 - `main.cpp`: Main application loop and integration
-- `server_agent.h/cpp`: Hawkbit server communication
+- `update_client.h/cpp`: Hawkbit server communication
 - `service_agent.h/cpp`: RAUC D-Bus communication
 - `config.h`: Configuration constants
 

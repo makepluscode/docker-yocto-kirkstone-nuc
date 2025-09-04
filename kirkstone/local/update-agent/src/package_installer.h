@@ -4,7 +4,8 @@
 #include <string>
 #include <functional>
 #include <memory>
-#include "update_client.h"
+#include "legacy_engine.h"
+#include "update_types.h"
 
 class PackageInstaller {
 public:
@@ -29,7 +30,7 @@ public:
     void processMessages();
 
 private:
-    std::unique_ptr<UpdateClient> update_client_;
+    std::unique_ptr<LegacyEngine> update_client_;
     bool connected_;
     std::function<void(int)> progress_callback_;
     std::function<void(bool, const std::string&)> completed_callback_;

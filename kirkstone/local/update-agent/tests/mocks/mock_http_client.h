@@ -2,7 +2,7 @@
  * @file mock_http_client.h
  * @brief HTTP 클라이언트 모킹 인터페이스
  *
- * ServerAgent의 HTTP 통신을 모킹하기 위한 인터페이스입니다.
+ * UpdateClient의 HTTP 통신을 모킹하기 위한 인터페이스입니다.
  * 실제 네트워크 호출 없이 테스트할 수 있도록 합니다.
  */
 
@@ -16,7 +16,7 @@
  * @class MockHttpClient
  * @brief HTTP 클라이언트 모킹 클래스
  *
- * ServerAgent의 HTTP 통신을 모킹하여
+ * UpdateClient의 HTTP 통신을 모킹하여
  * 네트워크 의존성 없이 테스트할 수 있도록 합니다.
  */
 class MockHttpClient {

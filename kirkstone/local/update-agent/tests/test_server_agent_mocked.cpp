@@ -1,8 +1,8 @@
 /**
  * @file test_server_agent_mocked.cpp
- * @brief ServerAgent 모킹 테스트
+ * @brief UpdateClient 모킹 테스트
  *
- * MockHttpClient를 사용하여 ServerAgent의 HTTP 통신을 모킹하고
+ * MockHttpClient를 사용하여 UpdateClient의 HTTP 통신을 모킹하고
  * 실제 네트워크 호출 없이 테스트합니다.
  */
 
@@ -11,18 +11,18 @@
 #include <string>
 #include <memory>
 #include "mocks/mock_http_client.h"
-#include "mocks/mockable_server_agent.h"
+#include "mocks/mockable_update_client.h"
 
 namespace {
 
 /**
- * @class ServerAgentMockedTest
- * @brief ServerAgent 모킹 테스트 클래스
+ * @class UpdateClientMockedTest
+ * @brief UpdateClient 모킹 테스트 클래스
  *
  * MockHttpClient를 사용하여 HTTP 통신을 모킹하고
- * ServerAgent의 로직을 테스트합니다.
+ * UpdateClient의 로직을 테스트합니다.
  */
-class ServerAgentMockedTest : public ::testing::Test {
+class UpdateClientMockedTest : public ::testing::Test {
 protected:
     /**
      * @brief 각 테스트 시작 전 초기화
@@ -36,8 +36,8 @@ protected:
         test_tenant_ = "default";
         test_device_id_ = "test-device-001";
 
-        // MockableServerAgent 생성 (Mock HTTP 클라이언트 주입)
-        server_agent_ = std::make_unique<MockableServerAgent>(
+        // MockableUpdateClient 생성 (Mock HTTP 클라이언트 주입)
+        server_agent_ = std::make_unique<MockableUpdateClient>(
             test_server_url_, test_tenant_, test_device_id_, mock_http_client_.get());
     }
 
@@ -54,7 +54,7 @@ protected:
     std::string test_tenant_;
     std::string test_device_id_;
     std::unique_ptr<MockHttpClient> mock_http_client_;
-    std::unique_ptr<MockableServerAgent> server_agent_;
+    std::unique_ptr<MockableUpdateClient> server_agent_;
 
     /**
      * @brief 테스트용 유효한 JSON 응답 생성
@@ -108,7 +108,7 @@ protected:
  * MockHttpClient가 성공 응답을 반환할 때
  * ServerAgent가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServerAgentMockedTest, PollForUpdatesSuccess) {
+TEST_F(UpdateClientMockedTest, PollForUpdatesSuccess) {
     // Given: Mock HTTP 클라이언트가 성공 응답을 반환하도록 설정
     const std::string expected_response = createValidJsonResponse();
     EXPECT_CALL(*mock_http_client_, get(testing::_, testing::_))
@@ -132,7 +132,7 @@ TEST_F(ServerAgentMockedTest, PollForUpdatesSuccess) {
  * MockHttpClient가 실패를 반환할 때
  * ServerAgent가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServerAgentMockedTest, PollForUpdatesFailure) {
+TEST_F(UpdateClientMockedTest, PollForUpdatesFailure) {
     // Given: Mock HTTP 클라이언트가 실패를 반환하도록 설정
     EXPECT_CALL(*mock_http_client_, get(testing::_, testing::_))
         .WillOnce(testing::Return(false));
@@ -151,7 +151,7 @@ TEST_F(ServerAgentMockedTest, PollForUpdatesFailure) {
  * MockHttpClient가 성공적으로 파일을 다운로드할 때
  * ServerAgent가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServerAgentMockedTest, DownloadBundleSuccess) {
+TEST_F(UpdateClientMockedTest, DownloadBundleSuccess) {
     // Given: Mock HTTP 클라이언트가 성공적으로 다운로드하도록 설정
     const std::string download_url = "https://example.com/update.raucb";
     const std::string local_path = "/tmp/update.raucb";
@@ -172,7 +172,7 @@ TEST_F(ServerAgentMockedTest, DownloadBundleSuccess) {
  * MockHttpClient가 다운로드 실패를 반환할 때
  * ServerAgent가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServerAgentMockedTest, DownloadBundleFailure) {
+TEST_F(UpdateClientMockedTest, DownloadBundleFailure) {
     // Given: Mock HTTP 클라이언트가 다운로드 실패를 반환하도록 설정
     const std::string download_url = "https://example.com/update.raucb";
     const std::string local_path = "/tmp/update.raucb";
@@ -193,7 +193,7 @@ TEST_F(ServerAgentMockedTest, DownloadBundleFailure) {
  * MockHttpClient가 성공적으로 피드백을 전송할 때
  * ServerAgent가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServerAgentMockedTest, SendFeedbackSuccess) {
+TEST_F(UpdateClientMockedTest, SendFeedbackSuccess) {
     // Given: Mock HTTP 클라이언트가 성공적으로 POST 요청을 처리하도록 설정
     const std::string execution_id = "test-execution-123";
     const std::string status = "finished";
@@ -215,7 +215,7 @@ TEST_F(ServerAgentMockedTest, SendFeedbackSuccess) {
  * MockHttpClient가 피드백 전송 실패를 반환할 때
  * ServerAgent가 올바르게 처리하는지 검증합니다.
  */
-TEST_F(ServerAgentMockedTest, SendFeedbackFailure) {
+TEST_F(UpdateClientMockedTest, SendFeedbackFailure) {
     // Given: Mock HTTP 클라이언트가 POST 요청 실패를 반환하도록 설정
     const std::string execution_id = "test-execution-123";
     const std::string status = "error";
@@ -236,7 +236,7 @@ TEST_F(ServerAgentMockedTest, SendFeedbackFailure) {
  *
  * MockHttpClient를 사용하여 진행률 피드백 전송을 테스트합니다.
  */
-TEST_F(ServerAgentMockedTest, SendProgressFeedback) {
+TEST_F(UpdateClientMockedTest, SendProgressFeedback) {
     // Given: Mock HTTP 클라이언트가 성공적으로 POST 요청을 처리하도록 설정
     const std::string execution_id = "test-execution-456";
     const int progress = 50;
@@ -255,10 +255,10 @@ TEST_F(ServerAgentMockedTest, SendProgressFeedback) {
 /**
  * @brief JSON 파싱 테스트 (실제 구현 사용)
  *
- * MockableServerAgent의 parseUpdateResponse는 실제 ServerAgent 구현을 사용하므로
+ * MockableUpdateClient의 parseUpdateResponse는 실제 UpdateClient 구현을 사용하므로
  * JSON 파싱 로직을 테스트할 수 있습니다.
  */
-TEST_F(ServerAgentMockedTest, ParseUpdateResponseWithDeploymentInfo) {
+TEST_F(UpdateClientMockedTest, ParseUpdateResponseWithDeploymentInfo) {
     // Given: 배포 정보가 포함된 JSON 응답
     const std::string deployment_json = createDeploymentJsonResponse();
     UpdateInfo update_info;
@@ -281,7 +281,7 @@ TEST_F(ServerAgentMockedTest, ParseUpdateResponseWithDeploymentInfo) {
  *
  * 폴링, 파싱, 다운로드, 피드백 전송의 전체 플로우를 모킹으로 테스트합니다.
  */
-TEST_F(ServerAgentMockedTest, CompleteUpdateFlow) {
+TEST_F(UpdateClientMockedTest, CompleteUpdateFlow) {
     // Given: Mock HTTP 클라이언트 설정
     const std::string deployment_json = createDeploymentJsonResponse();
     const std::string download_url = "https://example.com/update-v2.1.0.tar.gz";

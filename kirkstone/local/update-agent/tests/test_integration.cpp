@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "server_agent.h"
+#include "update_client.h"
 #include "package_installer.h"
 #include "config.h"
 #include <fstream>
@@ -15,7 +15,7 @@ protected:
         tenant = "TEST_TENANT";
         device_id = "test-device-001";
 
-        server_agent = std::make_unique<ServerAgent>(server_url, tenant, device_id);
+        server_agent = std::make_unique<UpdateClient>(server_url, tenant, device_id);
         service_agent = std::make_unique<PackageInstaller>();
 
         // Create test bundle file
@@ -50,7 +50,7 @@ protected:
     std::string tenant;
     std::string device_id;
     std::string test_package_path;
-    std::unique_ptr<ServerAgent> server_agent;
+    std::unique_ptr<UpdateClient> server_agent;
     std::unique_ptr<PackageInstaller> service_agent;
 };
 
@@ -206,7 +206,7 @@ TEST_F(IntegrationTest, ResourceManagement) {
 
     // Test that agents can be created and destroyed multiple times
     for (int i = 0; i < 3; ++i) {
-        auto temp_server_agent = std::make_unique<ServerAgent>(server_url, tenant, device_id);
+        auto temp_server_agent = std::make_unique<UpdateClient>(server_url, tenant, device_id);
         auto temp_service_agent = std::make_unique<PackageInstaller>();
 
         EXPECT_NE(temp_server_agent, nullptr);
@@ -225,8 +225,8 @@ TEST_F(IntegrationTest, ThreadSafety) {
     // Test basic thread safety (limited test without actual threading)
 
     // Create multiple agents
-    auto agent1 = std::make_unique<ServerAgent>(server_url, tenant, device_id);
-    auto agent2 = std::make_unique<ServerAgent>(server_url, tenant, device_id);
+            auto agent1 = std::make_unique<UpdateClient>(server_url, tenant, device_id);
+        auto agent2 = std::make_unique<UpdateClient>(server_url, tenant, device_id);
             auto service1 = std::make_unique<PackageInstaller>();
         auto service2 = std::make_unique<PackageInstaller>();
 

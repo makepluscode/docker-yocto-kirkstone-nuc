@@ -22,9 +22,9 @@ add_executable(update-agent-tests
     test_integration.cpp
     test_server_agent_mocked.cpp
     test_service_agent_mocked.cpp
-    mocks/mockable_server_agent.cpp
+    mocks/mockable_update_client.cpp
     mocks/mockable_service_agent.cpp
-    ../src/server_agent.cpp
+    ../src/update_client.cpp
     ../src/service_agent.cpp
 )
 

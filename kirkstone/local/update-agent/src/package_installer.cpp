@@ -19,21 +19,12 @@ PackageInstaller::~PackageInstaller() {
 bool PackageInstaller::connect() {
     DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Connecting to update library"));
 
-    // Create update client instance
-    update_client_ = std::make_unique<UpdateClient>();
+    // Create legacy engine instance
+    update_client_ = std::make_unique<LegacyEngine>();
 
-    // Set up callbacks
-    update_client_->setProgressCallback([this](const ProgressInfo& progress) {
-        this->onProgressCallback(progress);
-    });
-
-    update_client_->setCompletedCallback([this](InstallResult result, const std::string& message) {
-        this->onCompletedCallback(result, message);
-    });
-
-    // Initialize the client
+    // Initialize the engine
     if (!update_client_->initialize()) {
-        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to initialize update library: "), DLT_STRING(update_client_->getLastError().c_str()));
+        DLT_LOG(dlt_context_updater, DLT_LOG_ERROR, DLT_STRING("Failed to initialize legacy engine: "), DLT_STRING(update_client_->getLastError().c_str()));
         update_client_.reset();
         return false;
     }
@@ -53,7 +44,7 @@ void PackageInstaller::disconnect() {
 }
 
 bool PackageInstaller::isConnected() const {
-    return connected_ && update_client_ && update_client_->isInitialized();
+    return connected_ && update_client_;
 }
 
 bool PackageInstaller::checkService() {
@@ -116,7 +107,19 @@ bool PackageInstaller::installPackage(const std::string& package_path) {
         return false;
     }
 
-    bool result = update_client_->install(package_path);
+    // Set up callbacks for this installation
+    auto progress_wrapper = [this](const ProgressInfo& progress) {
+        if (progress_callback_) {
+            progress_callback_(progress.percentage);
+        }
+        this->onProgressCallback(progress);
+    };
+
+    auto completed_wrapper = [this](InstallResult result, const std::string& message) {
+        this->onCompletedCallback(result, message);
+    };
+
+    bool result = update_client_->installPackage(package_path, progress_wrapper, completed_wrapper);
 
     if (result) {
         DLT_LOG(dlt_context_updater, DLT_LOG_INFO, DLT_STRING("Package installation started successfully"));

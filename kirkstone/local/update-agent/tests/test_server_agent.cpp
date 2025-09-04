@@ -1,8 +1,8 @@
 /**
  * @file test_server_agent.cpp
- * @brief ServerAgent 클래스 테스트
+ * @brief UpdateClient 클래스 테스트
  *
- * Hawkbit 서버와의 통신을 담당하는 ServerAgent 클래스의
+ * Hawkbit 서버와의 통신을 담당하는 UpdateClient 클래스의
  * 주요 기능들을 테스트합니다.
  *
  * 테스트 범위:
@@ -23,19 +23,19 @@
 #include <memory>
 #include <vector>
 #include <json-c/json.h>
-#include "server_agent.h"
+#include "update_client.h"
 #include "config.h"
 
 namespace {
 
 /**
- * @class ServerAgentTest
- * @brief ServerAgent 테스트 클래스
+ * @class UpdateClientTest
+ * @brief UpdateClient 테스트 클래스
  *
  * Google Test의 Test Fixture를 상속받아
- * ServerAgent 관련 테스트들을 그룹화합니다.
+ * UpdateClient 관련 테스트들을 그룹화합니다.
  */
-class ServerAgentTest : public ::testing::Test {
+class UpdateClientTest : public ::testing::Test {
 protected:
     /**
      * @brief 각 테스트 시작 전 초기화
@@ -46,8 +46,8 @@ protected:
         test_tenant_ = "default";
         test_device_id_ = "test-device-001";
 
-        // ServerAgent 객체 생성
-        server_agent_ = std::make_unique<ServerAgent>(
+        // UpdateClient 객체 생성
+        server_agent_ = std::make_unique<UpdateClient>(
             test_server_url_, test_tenant_, test_device_id_);
     }
 
@@ -63,7 +63,7 @@ protected:
     std::string test_server_url_;
     std::string test_tenant_;
     std::string test_device_id_;
-    std::unique_ptr<ServerAgent> server_agent_;
+    std::unique_ptr<UpdateClient> server_agent_;
 
     /**
      * @brief 테스트용 JSON 문자열 생성
@@ -121,15 +121,15 @@ protected:
 /**
  * @brief 생성자 테스트
  *
- * ServerAgent의 생성자가 올바른 매개변수로
+ * UpdateClient의 생성자가 올바른 매개변수로
  * 객체를 초기화하는지 검증합니다.
  */
-TEST_F(ServerAgentTest, ConstructorInitializesCorrectly) {
+TEST_F(UpdateClientTest, ConstructorInitializesCorrectly) {
     // Given & When: SetUp에서 이미 생성됨
 
     // Then: 객체가 성공적으로 생성되었는지 확인
     ASSERT_NE(server_agent_.get(), nullptr)
-        << "ServerAgent 객체가 성공적으로 생성되어야 합니다";
+        << "UpdateClient 객체가 성공적으로 생성되어야 합니다";
 
     // 추가 검증: 내부 상태가 올바르게 초기화되었는지 간접 확인
     // (private 멤버에 직접 접근할 수 없으므로 동작을 통해 확인)
@@ -146,12 +146,12 @@ TEST_F(ServerAgentTest, ConstructorInitializesCorrectly) {
 /**
  * @brief 소멸자 테스트
  *
- * ServerAgent가 안전하게 소멸되는지 확인합니다.
+ * UpdateClient가 안전하게 소멸되는지 확인합니다.
  * 메모리 누수나 이중 해제가 없어야 합니다.
  */
-TEST_F(ServerAgentTest, DestructorCleansUpSafely) {
-    // Given: 추가 ServerAgent 객체 생성
-    auto additional_agent = std::make_unique<ServerAgent>(
+TEST_F(UpdateClientTest, DestructorCleansUpSafely) {
+            // Given: 추가 UpdateClient 객체 생성
+            auto additional_agent = std::make_unique<UpdateClient>(
         "https://test.com", "tenant", "device");
 
     // When: 명시적 소멸
@@ -159,7 +159,7 @@ TEST_F(ServerAgentTest, DestructorCleansUpSafely) {
 
     // Then: 예외나 크래시 없이 완료되어야 함
     // (이 테스트는 주로 메모리 검사 도구로 확인)
-    SUCCEED() << "ServerAgent가 안전하게 소멸되었습니다";
+            SUCCEED() << "UpdateClient가 안전하게 소멸되었습니다";
 }
 
 /**
@@ -167,7 +167,7 @@ TEST_F(ServerAgentTest, DestructorCleansUpSafely) {
  *
  * UpdateInfo 구조체가 올바르게 초기화되는지 검증합니다.
  */
-TEST_F(ServerAgentTest, UpdateInfoStructureInitialization) {
+TEST_F(UpdateClientTest, UpdateInfoStructureInitialization) {
     // Given: UpdateInfo 객체 생성
     UpdateInfo info;
 
@@ -209,7 +209,7 @@ TEST_F(ServerAgentTest, UpdateInfoStructureInitialization) {
  * 올바른 JSON 형식의 Hawkbit 응답을
  * 정확하게 파싱하는지 검증합니다.
  */
-TEST_F(ServerAgentTest, ParseValidJsonResponse) {
+TEST_F(UpdateClientTest, ParseValidJsonResponse) {
     // Given: 유효한 JSON 응답
     const std::string valid_json = createValidJsonResponse();
     UpdateInfo update_info;
@@ -232,7 +232,7 @@ TEST_F(ServerAgentTest, ParseValidJsonResponse) {
  * 배포 정보가 포함된 JSON 응답을
  * 올바르게 파싱하고 UpdateInfo에 설정하는지 검증합니다.
  */
-TEST_F(ServerAgentTest, ParseJsonWithDeploymentInfo) {
+TEST_F(UpdateClientTest, ParseJsonWithDeploymentInfo) {
     // Given: 배포 정보가 포함된 JSON 응답
     const std::string deployment_json = createDeploymentJsonResponse();
     UpdateInfo update_info;
@@ -280,7 +280,7 @@ TEST_F(ServerAgentTest, ParseJsonWithDeploymentInfo) {
  * 잘못된 형식의 JSON에 대해
  * 적절히 에러를 처리하는지 검증합니다.
  */
-TEST_F(ServerAgentTest, ParseInvalidJsonHandlesError) {
+TEST_F(UpdateClientTest, ParseInvalidJsonHandlesError) {
     // Given: 잘못된 JSON 문자열들
     const std::vector<std::string> invalid_jsons = {
         "",                    // 빈 문자열
@@ -312,7 +312,7 @@ TEST_F(ServerAgentTest, ParseInvalidJsonHandlesError) {
  * 피드백 메시지 생성 로직을 테스트합니다.
  * (실제 네트워크 전송은 하지 않고 로직만 검증)
  */
-TEST_F(ServerAgentTest, FeedbackMessageConstruction) {
+TEST_F(UpdateClientTest, FeedbackMessageConstruction) {
     // Given: 테스트 데이터
     const std::string execution_id = "test-execution-123";
     const std::string status = "proceeding";
@@ -332,7 +332,7 @@ TEST_F(ServerAgentTest, FeedbackMessageConstruction) {
  *
  * 진행률 피드백 메서드의 매개변수 검증을 테스트합니다.
  */
-TEST_F(ServerAgentTest, ProgressFeedbackParameterValidation) {
+TEST_F(UpdateClientTest, ProgressFeedbackParameterValidation) {
     // Given: 테스트 데이터
     const std::string execution_id = "progress-test-456";
 
@@ -360,7 +360,7 @@ TEST_F(ServerAgentTest, ProgressFeedbackParameterValidation) {
  *
  * 빈 문자열이나 null 값에 대한 방어적 처리를 검증합니다.
  */
-TEST_F(ServerAgentTest, EmptyParameterHandling) {
+TEST_F(UpdateClientTest, EmptyParameterHandling) {
     // Given: 빈 문자열들
     const std::string empty_string = "";
     UpdateInfo update_info;

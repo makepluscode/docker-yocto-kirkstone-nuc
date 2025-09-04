@@ -40,7 +40,7 @@ set(CPP_SOURCES
 
 add_executable(update-agent
     src/main.cpp
-    src/server_agent.cpp
+    src/update_client.cpp
     src/package_installer.cpp
     ${LEGACY_SOURCES}
     ${CPP_SOURCES}
